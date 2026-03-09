@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-inter), "Inter", "Helvetica Neue", sans-serif;
+  --font-heading: var(--font-montserrat), "Montserrat", sans-serif;
+
+  /* Theme Nude & Rose Gold */
+  --color-nude-bg: #FFFBF7;
+  --color-nude-primary: #D4A373;
+  --color-nude-secondary: #FAEDCD;
+  --color-nude-text: #4A3B32;
+
+  /* Theme Minimalist Lavender */
+  --color-lavender-bg: #F8F7FF;
+  --color-lavender-primary: #B8B8FF;
+  --color-lavender-secondary: #E0E0FF;
+  --color-lavender-text: #2D2D44;
+
+  /* Theme Sage & Cream */
+  --color-sage-bg: #F9F7F2;
+  --color-sage-primary: #A3B18A;
+  --color-sage-secondary: #DAD7CD;
+  --color-sage-text: #344E41;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: var(--color-nude-bg);
+    --foreground: var(--color-nude-text);
+    --primary: var(--color-nude-primary);
+    --secondary: var(--color-nude-secondary);
+  }
+
+  /* Tenant themes applied dynamically by adding a class to body/html or dynamically setting variables */
+  .theme-nude {
+    --background: var(--color-nude-bg);
+    --foreground: var(--color-nude-text);
+    --primary: var(--color-nude-primary);
+    --secondary: var(--color-nude-secondary);
+  }
+
+  .theme-lavender {
+    --background: var(--color-lavender-bg);
+    --foreground: var(--color-lavender-text);
+    --primary: var(--color-lavender-primary);
+    --secondary: var(--color-lavender-secondary);
+  }
+
+  .theme-sage {
+    --background: var(--color-sage-bg);
+    --foreground: var(--color-sage-text);
+    --primary: var(--color-sage-primary);
+    --secondary: var(--color-sage-secondary);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased font-sans transition-colors duration-300;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
 }
