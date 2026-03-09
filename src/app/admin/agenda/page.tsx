@@ -9,6 +9,7 @@ import { es } from "date-fns/locale";
 import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import { getTurnosPorFecha, createTurno, updateTurnoPosicion, TurnoDB } from "@/lib/services/agendaService";
+import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -20,15 +21,23 @@ export default function AgendaPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [turnos, setTurnos] = useState<TurnoData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [boxesCount, setBoxesCount] = useState(3);
 
-    const loadTurnos = async (date: Date) => {
+    const loadData = async (date: Date) => {
         setLoading(true);
         try {
+            // Cargar configuración de boxes
+            const tenantData = await getTenant(CURRENT_TENANT);
+            if (tenantData?.config_boxes) {
+                setBoxesCount(tenantData.config_boxes);
+            }
+
+            // Cargar turnos
             const dateString = format(date, 'yyyy-MM-dd');
             const turnosDb = await getTurnosPorFecha(CURRENT_TENANT, dateString);
             setTurnos(turnosDb as TurnoData[]);
         } catch (error) {
-            console.error("Error cargando turnos:", error);
+            console.error("Error cargando datos:", error);
             toast.error("Error al cargar la agenda");
         } finally {
             setLoading(false);
@@ -36,7 +45,7 @@ export default function AgendaPage() {
     };
 
     React.useEffect(() => {
-        loadTurnos(currentDate);
+        loadData(currentDate);
     }, [currentDate]);
 
     const handleCrearTurno = async (turnoData: any) => {
@@ -51,7 +60,7 @@ export default function AgendaPage() {
 
             toast.success("Turno guardado", { id: loadingToast });
             setIsModalOpen(false);
-            loadTurnos(currentDate); // refetch
+            loadData(currentDate); // refetch
         } catch (error) {
             console.error(error);
             toast.error("Error al guardar el turno");
@@ -70,7 +79,7 @@ export default function AgendaPage() {
         } catch (error) {
             console.error(error);
             toast.error("Error al mover el turno. Restaurando...");
-            loadTurnos(currentDate); // revert on error
+            loadData(currentDate); // revert on error
         }
     };
 
@@ -110,7 +119,7 @@ export default function AgendaPage() {
                             <div className="animate-spin w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full"></div>
                         </div>
                     ) : null}
-                    <AgendaGrid boxesCount={3} turnos={turnos} onTurnoMove={handleMoverTurno} />
+                    <AgendaGrid boxesCount={boxesCount} turnos={turnos} onTurnoMove={handleMoverTurno} />
                 </div>
             </div>
 

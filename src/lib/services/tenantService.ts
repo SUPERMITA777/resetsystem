@@ -1,5 +1,5 @@
 import { db } from "../firebase";
-import { collection, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getDocs, query, orderBy } from "firebase/firestore";
 
 export interface TenantData {
     slug: string;
@@ -27,8 +27,19 @@ export async function getTenant(slug: string): Promise<TenantData | null> {
     const docSnap = await getDoc(tenantRef);
 
     if (docSnap.exists()) {
-        return docSnap.data() as TenantData;
+        return { ...docSnap.data() } as TenantData;
     }
 
     return null;
+}
+
+export async function getAllTenants(): Promise<(TenantData & { id: string })[]> {
+    const tenantsRef = collection(db, COLLECTION_NAME);
+    const q = query(tenantsRef, orderBy("nombre_salon", "asc"));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as TenantData & { id: string }));
 }

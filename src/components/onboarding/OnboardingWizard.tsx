@@ -23,6 +23,7 @@ export function OnboardingWizard() {
     // States - Paso 1
     const [salonName, setSalonName] = useState('');
     const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
 
     // States - Paso 2
     const [boxesCount, setBoxesCount] = useState<number>(3);
@@ -60,6 +61,7 @@ export function OnboardingWizard() {
             batch.update(tenantRef, {
                 nombre_salon: salonName || 'Mi Salón',
                 "datos_contacto.whatsapp": phone,
+                "datos_contacto.direccion": address,
                 config_boxes: boxesCount
             });
 
@@ -175,6 +177,14 @@ export function OnboardingWizard() {
                                         onChange={(e) => setPhone(e.target.value)}
                                     />
                                     <p className="text-xs text-gray-400 mt-1">Donde recibirás los pedidos de turnos.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Dirección Física</label>
+                                    <Input
+                                        placeholder="Ej: Av. Santa Fe 1234, CABA"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         )}
