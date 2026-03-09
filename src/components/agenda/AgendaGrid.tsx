@@ -11,6 +11,7 @@ import {
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AgendaCell } from './AgendaCell';
 import { TurnoCard, TurnoData } from './TurnoCard';
+import { useAuth } from '../auth/AuthProvider';
 
 interface AgendaGridProps {
     boxesCount: number;
@@ -25,6 +26,7 @@ const HORAS = Array.from({ length: 12 }).map((_, i) => {
 
 export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const { isStaff, staffId } = useAuth();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -37,6 +39,13 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridPr
     const boxes = Array.from({ length: boxesCount }).map((_, i) => `box-${i + 1}`);
 
     const handleDragStart = (event: any) => {
+        const turnoToDrag = turnos.find(t => t.id === event.active.id);
+
+        // Bloquear Drag si es Empleado y el turno no es suyo
+        if (isStaff && turnoToDrag?.profesionalId !== staffId) {
+            return;
+        }
+
         setActiveId(event.active.id);
     };
 
@@ -101,11 +110,19 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridPr
                             {boxes.map(box => (
                                 <div key={box} className="flex flex-col border-r last:border-0 border-[var(--secondary)]">
                                     {HORAS.map(hora => {
-                                        const turnosEnCelda = turnos.filter(t => t.boxId === box && t.horaInicio === hora);
+                                        let turnosEnCelda = turnos.filter(t => t.boxId === box && t.horaInicio === hora);
+
+                                        // Si es staff, solo ve y edita un turno si le pertenece a él. 
+                                        // De lo contrario puede verlo pero bloqueado (o en un futuro "ocupado")
+
                                         return (
                                             <AgendaCell key={`${box}-${hora}`} boxId={box} hora={hora}>
                                                 {turnosEnCelda.map(turno => (
-                                                    <TurnoCard key={turno.id} turno={turno} />
+                                                    <TurnoCard
+                                                        key={turno.id}
+                                                        turno={turno}
+                                                        disabled={isStaff && turno.profesionalId !== staffId}
+                                                    />
                                                 ))}
                                             </AgendaCell>
                                         );
