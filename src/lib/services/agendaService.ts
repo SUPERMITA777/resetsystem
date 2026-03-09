@@ -11,6 +11,16 @@ export interface TurnoDB {
     boxId: string; // ej: 'box-1'
     fecha: string; // formato 'YYYY-MM-DD'
     horaInicio: string; // formato 'HH:mm'
+    whatsapp?: string;
+    sena?: number;
+    total?: number;
+    status?: 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+}
+
+// Actualizar un turno completo
+export async function updateTurno(tenantId: string, turnoId: string, data: Partial<Omit<TurnoDB, 'id' | 'tenantId'>>) {
+    const turnoRef = doc(db, `tenants/${tenantId}/agenda`, turnoId);
+    await updateDoc(turnoRef, data);
 }
 
 // Obtener todos los turnos para un tenant en una fecha específica

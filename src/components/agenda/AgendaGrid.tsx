@@ -26,9 +26,11 @@ interface AgendaGridProps {
     };
     view: 'diaria' | 'semanal' | 'mensual';
     currentDate: Date;
+    onCellClick: (date: string, boxId: string, hora: string) => void;
+    onTurnoClick: (turno: TurnoData) => void;
 }
 
-export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate }: AgendaGridProps) {
+export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate, onCellClick, onTurnoClick }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const { isStaff, staffId } = useAuth();
 
@@ -160,31 +162,33 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
         >
             <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-[var(--secondary)] overflow-hidden">
                 {/* Cabecera */}
-                <div className="flex border-b border-[var(--secondary)]">
-                    <div className="w-20 shrink-0 border-r border-[var(--secondary)] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-tighter bg-gray-50 flex items-center justify-center">
+                <div className="flex border-b border-gray-100 bg-gray-50/50 sticky top-0 z-30">
+                    <div className="w-20 shrink-0 border-r border-gray-100 p-3 text-center text-[10px] font-black text-gray-400 uppercase tracking-tighter flex items-center justify-center bg-gray-50">
                         GMT-3
                     </div>
                     <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
                         {columns.map((col) => (
-                            <div key={col.id} className={`p-4 border-r last:border-0 border-[var(--secondary)] text-center bg-[var(--secondary)]/10 flex flex-col items-center justify-center gap-0.5`}>
-                                <span className={`text-[10px] font-bold uppercase tracking-widest ${isToday(col.date) ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <div key={col.id} className="p-3 border-r last:border-0 border-gray-100 text-center flex flex-col items-center justify-center gap-1 min-w-0">
+                                <span className={`text-[10px] font-black uppercase tracking-widest truncate w-full ${isToday(col.date) ? 'text-blue-600' : 'text-gray-400'}`}>
                                     {col.label.split(' ')[0]}
                                 </span>
-                                <span className={`text-xl font-black ${isToday(col.date) ? 'text-blue-600' : 'text-gray-900'}`}>
+                                <span className={`text-lg font-black leading-none ${isToday(col.date) ? 'text-blue-600' : 'text-gray-900'}`}>
                                     {col.label.split(' ')[1] || (columns.indexOf(col) + 1)}
                                 </span>
                             </div>
                         ))}
                     </div>
+                    {/* Spacer for scrollbar alignment if needed */}
+                    <div className="w-4 shrink-0 bg-gray-50/50" />
                 </div>
 
                 {/* Grilla principal */}
-                <div className="flex-1 overflow-y-auto w-full relative group">
-                    <div className="flex w-full min-h-full relative">
+                <div className="flex-1 overflow-y-auto w-full relative custom-scrollbar">
+                    <div className="flex w-full min-h-full">
                         {/* Columna de Horas */}
-                        <div className="w-20 shrink-0 flex flex-col border-r border-[var(--secondary)] bg-gray-50/50 sticky left-0 z-10 backdrop-blur-sm">
+                        <div className="w-20 shrink-0 flex flex-col border-r border-gray-100 bg-gray-50/30 sticky left-0 z-20">
                             {HORAS.map(hora => (
-                                <div key={hora} className="h-5 border-b border-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-400">
+                                <div key={hora} className="h-5 border-b border-gray-50 flex items-center justify-center text-[9px] font-bold text-gray-400 bg-gray-50/50">
                                     {hora}
                                 </div>
                             ))}
@@ -195,7 +199,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                             <CurrentTimeIndicator config={config} HORAS={HORAS} />
 
                             {columns.map(col => (
-                                <div key={col.id} className="flex flex-col border-r last:border-0 border-gray-100 bg-white/50">
+                                <div key={col.id} className="flex flex-col border-r last:border-0 border-gray-100">
                                     {HORAS.map(hora => {
                                         let turnosEnCelda = turnos.filter(t => {
                                             if (view === 'diaria') return t.boxId === col.id && t.horaInicio === hora;
@@ -203,15 +207,23 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                         });
 
                                         return (
-                                            <AgendaCell key={`${col.id}-${hora}`} boxId={view === 'diaria' ? col.id : 'box-1'} hora={hora}>
+                                            <AgendaCell
+                                                key={`${col.id}-${hora}`}
+                                                boxId={view === 'diaria' ? col.id : 'box-1'}
+                                                hora={hora}
+                                                onClick={() => onCellClick(format(col.date, 'yyyy-MM-dd'), view === 'diaria' ? col.id : 'box-1', hora)}
+                                            >
                                                 <div className="h-5 w-full relative group/cell">
-                                                    <div className="absolute inset-0 border-b border-gray-50 bg-transparent group-hover/cell:bg-gray-50/30 transition-colors pointer-events-none" />
                                                     {turnosEnCelda.map(turno => (
                                                         <TurnoCard
                                                             key={turno.id}
                                                             turno={turno}
                                                             disabled={isStaff && turno.profesionalId !== staffId}
                                                             interval={config.intervalo}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onTurnoClick(turno);
+                                                            }}
                                                         />
                                                     ))}
                                                 </div>
@@ -221,6 +233,8 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                 </div>
                             ))}
                         </div>
+                        {/* Right spacer to match header scrollbar spacer */}
+                        <div className="w-4 shrink-0" />
                     </div>
                 </div>
             </div>

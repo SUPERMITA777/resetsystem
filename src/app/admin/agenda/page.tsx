@@ -9,7 +9,7 @@ import { es } from "date-fns/locale";
 import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import { AgendaSettingsModal } from "@/components/agenda/AgendaSettingsModal";
-import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
+import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
 import toast, { Toaster } from "react-hot-toast";
@@ -26,6 +26,12 @@ export default function AgendaPage() {
         intervalo: 60,
         horario_inicio: "09:00",
         horario_fin: "21:00"
+    });
+    const [modalInitialData, setModalInitialData] = useState<{ fecha?: string, boxId?: string, hora?: string, turno?: TurnoData | null }>({
+        fecha: format(new Date(), 'yyyy-MM-dd'),
+        boxId: 'box-1',
+        hora: '09:00',
+        turno: null
     });
 
     // In production, current tenant would come from auth context
@@ -71,20 +77,27 @@ export default function AgendaPage() {
 
     const handleCrearTurno = async (turnoData: any) => {
         try {
-            const loadingToast = toast.loading("Guardando turno...");
+            const loadingToast = toast.loading(modalInitialData.turno ? "Actualizando turno..." : "Guardando turno...");
             const dateString = turnoData.fecha || format(currentDate, 'yyyy-MM-dd');
 
-            await createTurno(currentTenant, {
-                ...turnoData,
-                fecha: dateString
-            });
+            if (modalInitialData.turno) {
+                await updateTurno(currentTenant, modalInitialData.turno.id, {
+                    ...turnoData,
+                    fecha: dateString
+                });
+            } else {
+                await createTurno(currentTenant, {
+                    ...turnoData,
+                    fecha: dateString
+                });
+            }
 
-            toast.success("Turno guardado", { id: loadingToast });
+            toast.success(modalInitialData.turno ? "Turno actualizado" : "Turno guardado", { id: loadingToast });
             setIsModalOpen(false);
             loadData(currentDate, view); // refetch
         } catch (error) {
             console.error(error);
-            toast.error("Error al guardar el turno");
+            toast.error("Error al procesar el turno");
         }
     };
 
@@ -202,7 +215,13 @@ export default function AgendaPage() {
                                 <Settings className="w-5 h-5" />
                             </button>
 
-                            <Button className="shrink-0 bg-black text-white hover:bg-gray-800 h-12 px-8 rounded-2xl shadow-xl shadow-gray-200 font-bold" onClick={() => setIsModalOpen(true)}>
+                            <Button
+                                className="shrink-0 bg-black text-white hover:bg-gray-800 h-12 px-8 rounded-2xl shadow-xl shadow-gray-200 font-bold"
+                                onClick={() => {
+                                    setModalInitialData({ fecha: format(currentDate, 'yyyy-MM-dd'), boxId: 'box-1', hora: '09:00', turno: null });
+                                    setIsModalOpen(true);
+                                }}
+                            >
                                 <Plus className="w-5 h-5 mr-2" />
                                 Nuevo Turno
                             </Button>
@@ -228,6 +247,14 @@ export default function AgendaPage() {
                         config={agendaConfig}
                         view={view}
                         currentDate={currentDate}
+                        onCellClick={(fecha, boxId, hora) => {
+                            setModalInitialData({ fecha, boxId, hora, turno: null });
+                            setIsModalOpen(true);
+                        }}
+                        onTurnoClick={(turno) => {
+                            setModalInitialData({ fecha: turno.fecha, boxId: turno.boxId, hora: turno.horaInicio, turno });
+                            setIsModalOpen(true);
+                        }}
                     />
                 </div>
             </div>
@@ -236,7 +263,10 @@ export default function AgendaPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleCrearTurno}
-                initialFecha={format(currentDate, 'yyyy-MM-dd')}
+                initialFecha={modalInitialData.fecha}
+                initialBox={modalInitialData.boxId}
+                initialHora={modalInitialData.hora}
+                editTurno={modalInitialData.turno}
             />
 
             <AgendaSettingsModal

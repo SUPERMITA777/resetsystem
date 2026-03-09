@@ -5,9 +5,10 @@ interface AgendaCellProps {
     boxId: string;
     hora: string; // HH:mm
     children?: React.ReactNode;
+    onClick?: () => void;
 }
 
-export function AgendaCell({ boxId, hora, children }: AgendaCellProps) {
+export function AgendaCell({ boxId, hora, children, onClick }: AgendaCellProps) {
     const id = `${boxId}-${hora}`;
 
     const { isOver, setNodeRef } = useDroppable({
@@ -21,12 +22,12 @@ export function AgendaCell({ boxId, hora, children }: AgendaCellProps) {
     return (
         <div
             ref={setNodeRef}
-            className={`border-b border-r border-gray-100 p-1 relative transition-colors
-        ${isOver ? 'bg-[var(--secondary)]/50' : 'hover:bg-gray-50'}
+            onClick={onClick}
+            className={`h-5 border-b border-r border-gray-50 relative transition-colors cursor-pointer
+        ${isOver ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'}
       `}
         >
-            {/* Contenedor relativo para posicionar los turnos absolutos */}
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full pointer-events-none">
                 {children}
             </div>
         </div>
