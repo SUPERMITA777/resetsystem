@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { serviceManagement, Tratamiento } from "@/lib/services/serviceManagement";
+import { getUsersByTenant, UserProfile } from "@/lib/services/userService";
 import { X, Save, Clock, Box, User, Plus, Trash2, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -15,6 +16,7 @@ interface TratamientoModalProps {
 }
 
 export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantId }: TratamientoModalProps) {
+    const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
     const [formData, setFormData] = useState<Partial<Tratamiento>>({
         nombre: "",
         descripcion: "",
@@ -25,31 +27,68 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
             {
                 inicio: "09:00",
                 fin: "21:00",
-                dias: [1, 2, 3, 4, 5]
+                dias: [0, 1, 2, 3, 4, 5, 6] // Default all days
             }
         ]
     });
 
     useEffect(() => {
+        if (isOpen && tenantId) {
+            getUsersByTenant(tenantId).then(users => {
+                const staff = users.filter(u => u.role === 'staff' || u.role === 'salon_admin');
+                setProfesionales(staff);
+            });
+        }
+    }, [isOpen, tenantId]);
+
+    useEffect(() => {
         if (tratamiento) {
             setFormData(tratamiento);
+        } else {
+            setFormData({
+                nombre: "",
+                descripcion: "",
+                habilitado: true,
+                boxId: "box-1",
+                profesionalId: "",
+                rangos_disponibilidad: [
+                    {
+                        inicio: "09:00",
+                        fin: "21:00",
+                        dias: [0, 1, 2, 3, 4, 5, 6]
+                    }
+                ]
+            });
         }
-    }, [tratamiento]);
+    }, [tratamiento, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Limpieza de datos antes de enviar a Firestore
+            const cleanData = {
+                ...formData,
+                rangos_disponibilidad: formData.rangos_disponibilidad?.map(r => ({
+                    inicio: r.inicio || "09:00",
+                    fin: r.fin || "18:00",
+                    dias: r.dias || [0, 1, 2, 3, 4, 5, 6],
+                    fecha_inicio: r.fecha_inicio || null,
+                    fecha_fin: r.fecha_fin || null
+                }))
+            };
+
             if (tratamiento) {
-                await serviceManagement.updateTratamiento(tenantId, tratamiento.id, formData);
+                await serviceManagement.updateTratamiento(tenantId, tratamiento.id, cleanData);
                 toast.success("Tratamiento actualizado");
             } else {
-                await serviceManagement.createTratamiento(tenantId, formData as Omit<Tratamiento, "id">);
+                await serviceManagement.createTratamiento(tenantId, cleanData as Omit<Tratamiento, "id">);
                 toast.success("Tratamiento creado");
             }
             onSave();
             onClose();
-        } catch (error) {
-            toast.error("Error al guardar");
+        } catch (error: any) {
+            console.error("Firestore Save Error:", error);
+            toast.error(`Error al guardar: ${error.message || "Error desconocido"}`);
         }
     };
 
@@ -58,7 +97,7 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
             ...prev,
             rangos_disponibilidad: [
                 ...(prev.rangos_disponibilidad || []),
-                { inicio: "09:00", fin: "18:00", dias: [1, 2, 3, 4, 5] }
+                { inicio: "09:00", fin: "18:00", dias: [0, 1, 2, 3, 4, 5, 6] }
             ]
         }));
     };
@@ -76,15 +115,6 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
             newRangos[index] = { ...newRangos[index], ...data };
             return { ...prev, rangos_disponibilidad: newRangos };
         });
-    };
-
-    const toggleDia = (rangoIndex: number, dia: number) => {
-        const ranges = [...(formData.rangos_disponibilidad || [])];
-        const dias = ranges[rangoIndex].dias || [];
-        ranges[rangoIndex].dias = dias.includes(dia)
-            ? dias.filter(d => d !== dia)
-            : [...dias, dia];
-        setFormData({ ...formData, rangos_disponibilidad: ranges });
     };
 
     if (!isOpen) return null;
@@ -135,12 +165,16 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1 text-gray-300">Profesional</label>
                                 <div className="relative">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                                    <input
+                                    <select
                                         value={formData.profesionalId}
                                         onChange={e => setFormData({ ...formData, profesionalId: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
-                                        placeholder="ID Profesional"
-                                    />
+                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none appearance-none"
+                                    >
+                                        <option value="">Seleccionar Profesional</option>
+                                        {profesionales.map(p => (
+                                            <option key={p.uid} value={p.uid}>{p.displayName || p.email}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -207,22 +241,6 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                                             onChange={e => updateRango(idx, { fin: e.target.value })}
                                             className="bg-white border-none rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black shadow-sm"
                                         />
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 pt-2">
-                                        {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((d, i) => (
-                                            <button
-                                                key={i}
-                                                type="button"
-                                                onClick={() => toggleDia(idx, i)}
-                                                className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${rango.dias.includes(i)
-                                                    ? 'bg-black text-white border-black shadow-lg shadow-black/10'
-                                                    : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                {d}
-                                            </button>
-                                        ))}
                                     </div>
                                 </div>
                             ))}

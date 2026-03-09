@@ -31,8 +31,8 @@ export interface Tratamiento {
         inicio: string; // HH:mm
         fin: string; // HH:mm
         dias: number[]; // [0...6]
-        fecha_inicio?: string; // YYYY-MM-DD (Opcional para rangos temporales)
-        fecha_fin?: string; // YYYY-MM-DD
+        fecha_inicio?: string | null; // YYYY-MM-DD (Opcional para rangos temporales)
+        fecha_fin?: string | null; // YYYY-MM-DD
     }[];
     // En Firestore, los subtratamientos irán en una subcolección
 }
