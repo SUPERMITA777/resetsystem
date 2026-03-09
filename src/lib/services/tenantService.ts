@@ -7,11 +7,15 @@ export interface TenantData {
     huso_horario_global: string;
     config_boxes: number;
     tema_visual: "nude" | "lavender" | "sage";
+    status: 'active' | 'paused' | 'deleted';
+    activeUntil?: any; // Firestore Timestamp
+    createdAt?: any;  // Firestore Timestamp
     datos_contacto?: {
         direccion?: string;
         descripcion?: string;
         telefono?: string;
         instagram?: string;
+        whatsapp?: string;
     };
 }
 

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import toast, { Toaster } from "react-hot-toast";
 
+import { getUserProfile } from "@/lib/services/userService";
+
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -20,10 +22,29 @@ export default function LoginPage() {
 
         try {
             const auth = getAuth(app);
-            await signInWithEmailAndPassword(auth, email, password);
-            // Redirigimos al admin
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Fetch profile
+            const profile = await getUserProfile(user.uid);
+
+            if (profile?.status === 'inactive') {
+                toast.error("Tu cuenta está inactiva. Contacta al administrador.");
+                return;
+            }
+
             toast.success("¡Bienvenido/a de nuevo!");
-            router.push("/admin/dashboard");
+
+            // Role based redirect
+            if (profile?.role === 'superadmin') {
+                router.push("/superadmin");
+            } else {
+                if (profile?.tenantId) {
+                    localStorage.setItem('currentTenant', profile.tenantId);
+                }
+                router.push("/admin/dashboard");
+            }
+
         } catch (error: any) {
             console.error(error);
             toast.error("Error al iniciar sesión. Verifica tus credenciales.");
