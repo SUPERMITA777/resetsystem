@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
 import { Clock, MapPin, Instagram } from "lucide-react";
+import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
 
 export default function SalonPublicPage() {
     const params = useParams();
@@ -73,36 +74,9 @@ export default function SalonPublicPage() {
                 </div>
             </header>
 
-            {/* Main Content: Services */}
-            <main className="flex-1 max-w-2xl w-full mx-auto p-6 flex flex-col gap-8 mt-4">
-                <section>
-                    <h2 className="text-xl font-bold mb-4 border-b border-[var(--secondary)] pb-2">Nuestros Servicios</h2>
-
-                    <div className="grid gap-4">
-                        {/* Mocked Service Card */}
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-[var(--secondary)] flex justify-between items-center transition-all hover:shadow-md cursor-pointer hover:border-[var(--primary)]">
-                            <div>
-                                <h3 className="font-semibold">Depilación Láser Rostro</h3>
-                                <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 30 min</span>
-                                    <span className="text-[var(--primary)] font-medium">$5.500</span>
-                                </div>
-                            </div>
-                            <Button variant="outline" size="sm">Seleccionar</Button>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-[var(--secondary)] flex justify-between items-center transition-all hover:shadow-md cursor-pointer hover:border-[var(--primary)]">
-                            <div>
-                                <h3 className="font-semibold">Masaje Relajante</h3>
-                                <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 60 min</span>
-                                    <span className="text-[var(--primary)] font-medium">$12.000</span>
-                                </div>
-                            </div>
-                            <Button variant="outline" size="sm">Seleccionar</Button>
-                        </div>
-                    </div>
-                </section>
+            {/* Main Content: Booking Flow */}
+            <main className="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-8 mt-4">
+                <PublicBookingFlow tenantName={tenant.nombre_salon} />
             </main>
         </div>
     );

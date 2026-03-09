@@ -14,18 +14,26 @@ interface NuevoTurnoModalProps {
 export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialBox }: NuevoTurnoModalProps) {
     const [cliente, setCliente] = useState('');
     const [tratamiento, setTratamiento] = useState('Depilación Láser'); // mock default
+    const [hora, setHora] = useState(initialHora || '09:00');
+
+    // Convertir tratamiento texto a duración estática mock por simplicidad temporal
+    const getDuracion = (t: string) => {
+        if (t.includes('60')) return 60;
+        if (t.includes('45')) return 45;
+        return 30; // 30 min default
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (onSave) {
             onSave({
-                cliente,
-                tratamiento,
-                hora: initialHora,
-                box: initialBox
+                clienteAbreviado: cliente,
+                tratamientoAbreviado: tratamiento,
+                duracionMinutos: getDuracion(tratamiento),
+                horaInicio: hora,
+                boxId: initialBox || 'box-1'
             });
         }
-        // Lógica de reseteo y cierre (mock por ahora)
         setCliente('');
         onClose();
     };
@@ -63,7 +71,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Hora</label>
-                        <Input type="time" defaultValue={initialHora || "09:00"} />
+                        <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} required />
                     </div>
                 </div>
 

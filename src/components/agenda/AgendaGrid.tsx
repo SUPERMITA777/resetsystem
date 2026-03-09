@@ -14,22 +14,16 @@ import { TurnoCard, TurnoData } from './TurnoCard';
 
 interface AgendaGridProps {
     boxesCount: number;
+    turnos: TurnoData[];
+    onTurnoMove: (turnoId: string, newBoxId: string, newHoraInicio: string) => Promise<void>;
 }
-
-// Datos de mock para probar el drag and drop
-const initialTurnos: TurnoData[] = [
-    { id: 't1', clienteAbreviado: 'Ana G.', tratamientoAbreviado: 'Dep. Láser Rostro', duracionMinutos: 30, boxId: 'box-1', horaInicio: '09:00' },
-    { id: 't2', clienteAbreviado: 'Carlos M.', tratamientoAbreviado: 'Masaje Descontract.', duracionMinutos: 60, boxId: 'box-2', horaInicio: '10:00' },
-    { id: 't3', clienteAbreviado: 'Lucía P.', tratamientoAbreviado: 'Limpieza Facial', duracionMinutos: 45, boxId: 'box-1', horaInicio: '11:00' }
-];
 
 const HORAS = Array.from({ length: 12 }).map((_, i) => {
     const h = i + 9;
     return `${h.toString().padStart(2, '0')}:00`;
 });
 
-export function AgendaGrid({ boxesCount = 7 }: AgendaGridProps) {
-    const [turnos, setTurnos] = useState<TurnoData[]>(initialTurnos);
+export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
 
     const sensors = useSensors(
@@ -46,7 +40,7 @@ export function AgendaGrid({ boxesCount = 7 }: AgendaGridProps) {
         setActiveId(event.active.id);
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveId(null);
 
@@ -55,12 +49,13 @@ export function AgendaGrid({ boxesCount = 7 }: AgendaGridProps) {
             const [boxId, hora] = (over.id as string).split('-');
             const formattedHora = `${hora}:00`;
 
-            setTurnos((items) =>
-                items.map(t => t.id === active.id
-                    ? { ...t, boxId: `box-${boxId}`, horaInicio: formattedHora }
-                    : t
-                )
-            );
+            const parsedBoxId = `box-${boxId}`;
+
+            // Check if it really changed
+            const currentTurno = turnos.find(t => t.id === active.id);
+            if (currentTurno && (currentTurno.boxId !== parsedBoxId || currentTurno.horaInicio !== formattedHora)) {
+                await onTurnoMove(active.id as string, parsedBoxId, formattedHora);
+            }
         }
     };
 

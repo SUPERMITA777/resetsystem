@@ -4,14 +4,75 @@ import React, { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
+import { getTurnosPorFecha, createTurno, updateTurnoPosicion, TurnoDB } from "@/lib/services/agendaService";
+import { TurnoData } from "@/components/agenda/TurnoCard";
+import toast, { Toaster } from "react-hot-toast";
+
+// MOCK CONSTANTE PARA ESTA PRUEBA TENANT (En producción esto vendría del contexto/store del admin)
+const CURRENT_TENANT = "resetspa";
 
 export default function AgendaPage() {
-    const [currentDate, setCurrentDate] = React.useState(new Date());
+    const [currentDate, setCurrentDate] = useState(new Date());
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [turnos, setTurnos] = useState<TurnoData[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadTurnos = async (date: Date) => {
+        setLoading(true);
+        try {
+            const dateString = format(date, 'yyyy-MM-dd');
+            const turnosDb = await getTurnosPorFecha(CURRENT_TENANT, dateString);
+            setTurnos(turnosDb as TurnoData[]);
+        } catch (error) {
+            console.error("Error cargando turnos:", error);
+            toast.error("Error al cargar la agenda");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        loadTurnos(currentDate);
+    }, [currentDate]);
+
+    const handleCrearTurno = async (turnoData: any) => {
+        try {
+            const loadingToast = toast.loading("Guardando turno...");
+            const dateString = format(currentDate, 'yyyy-MM-dd');
+
+            await createTurno(CURRENT_TENANT, {
+                ...turnoData,
+                fecha: dateString
+            });
+
+            toast.success("Turno guardado", { id: loadingToast });
+            setIsModalOpen(false);
+            loadTurnos(currentDate); // refetch
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al guardar el turno");
+        }
+    };
+
+    const handleMoverTurno = async (turnoId: string, newBoxId: string, newHoraInicio: string) => {
+        try {
+            // Optimistic update
+            setTurnos(prev => prev.map(t =>
+                t.id === turnoId ? { ...t, boxId: newBoxId, horaInicio: newHoraInicio } : t
+            ));
+
+            await updateTurnoPosicion(CURRENT_TENANT, turnoId, newBoxId, newHoraInicio);
+            toast.success("Turno actualizado");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al mover el turno. Restaurando...");
+            loadTurnos(currentDate); // revert on error
+        }
+    };
 
     return (
         <AdminLayout>
@@ -23,15 +84,16 @@ export default function AgendaPage() {
                     </div>
 
                     <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <Toaster />
                         <div className="flex items-center bg-white border border-[var(--secondary)] rounded-lg p-1">
-                            <button className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                            <button onClick={() => setCurrentDate(subDays(currentDate, 1))} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
                             <div className="px-4 py-1 flex items-center gap-2 font-medium min-w-[140px] justify-center">
                                 <CalendarIcon className="w-4 h-4 text-[var(--primary)]" />
                                 <span className="capitalize">{format(currentDate, "EEEE d 'de' MMMM", { locale: es })}</span>
                             </div>
-                            <button className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                            <button onClick={() => setCurrentDate(addDays(currentDate, 1))} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
@@ -42,18 +104,20 @@ export default function AgendaPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden mt-4">
-                    <AgendaGrid boxesCount={3} />
+                <div className="flex-1 overflow-hidden mt-4 relative">
+                    {loading ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+                            <div className="animate-spin w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full"></div>
+                        </div>
+                    ) : null}
+                    <AgendaGrid boxesCount={3} turnos={turnos} onTurnoMove={handleMoverTurno} />
                 </div>
             </div>
 
             <NuevoTurnoModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onSave={(turno) => {
-                    console.log("Nuevo turno guardado:", turno);
-                    // TODO: Lógica de vinculación con Firebase y Grid
-                }}
+                onSave={handleCrearTurno}
             />
         </AdminLayout>
     );
