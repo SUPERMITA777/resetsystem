@@ -1,14 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { AgendaGrid } from "@/components/agenda/AgendaGrid";
+import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 
 export default function AgendaPage() {
     const [currentDate, setCurrentDate] = React.useState(new Date());
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     return (
         <AdminLayout>
@@ -32,38 +35,26 @@ export default function AgendaPage() {
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
-                        <Button className="shrink-0">
+                        <Button className="shrink-0" onClick={() => setIsModalOpen(true)}>
                             <Plus className="w-4 h-4 mr-2" />
                             Nuevo Turno
                         </Button>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-[var(--secondary)] flex-1 overflow-hidden flex flex-col">
-                    {/* Skeleton of Agenda grid */}
-                    <div className="grid grid-cols-4 border-b border-[var(--secondary)]">
-                        <div className="p-4 border-r border-[var(--secondary)] text-center font-medium text-[var(--foreground)]">Hora</div>
-                        <div className="p-4 border-r border-[var(--secondary)] text-center font-medium bg-[var(--secondary)]/30">Box 1</div>
-                        <div className="p-4 border-r border-[var(--secondary)] text-center font-medium bg-[var(--secondary)]/30">Box 2</div>
-                        <div className="p-4 text-center font-medium bg-[var(--secondary)]/30">Box 3</div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                        {Array.from({ length: 10 }).map((_, i) => (
-                            <div key={i} className="grid grid-cols-4 border-b border-gray-100 h-20 group">
-                                <div className="border-r border-[var(--secondary)] flex items-center justify-center text-sm text-gray-500 bg-gray-50">
-                                    {i + 9}:00
-                                </div>
-                                <div className="border-r border-gray-100 p-1 group-hover:bg-gray-50 transition-colors cursor-pointer">
-                                </div>
-                                <div className="border-r border-gray-100 p-1 group-hover:bg-gray-50 transition-colors cursor-pointer">
-                                </div>
-                                <div className="p-1 group-hover:bg-gray-50 transition-colors cursor-pointer">
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                <div className="flex-1 overflow-hidden mt-4">
+                    <AgendaGrid boxesCount={3} />
                 </div>
             </div>
+
+            <NuevoTurnoModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={(turno) => {
+                    console.log("Nuevo turno guardado:", turno);
+                    // TODO: Lógica de vinculación con Firebase y Grid
+                }}
+            />
         </AdminLayout>
     );
 }
