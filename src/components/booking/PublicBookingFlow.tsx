@@ -1,213 +1,217 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Clock, Calendar as CalendarIcon, ArrowLeft, ChevronRight } from 'lucide-react';
-import { format, addDays } from 'date-fns';
-import { es } from 'date-fns/locale';
-
-interface Service {
-    id: string;
-    name: string;
-    durationMinutes: number;
-    price: number;
-}
+import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
+import { Card } from '@/components/ui/Card';
+import { ChevronRight, Smartphone, User, Clock, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface PublicBookingFlowProps {
     tenantName: string;
 }
 
-// Moqueando datos de servicios
-const mockServices: Service[] = [
-    { id: 's1', name: 'Depilación Láser Rostro', durationMinutes: 30, price: 5500 },
-    { id: 's2', name: 'Masaje Relajante', durationMinutes: 60, price: 12000 },
-    { id: 's3', name: 'Limpieza Facial Profunda', durationMinutes: 45, price: 8000 },
-];
-
-// Moqueando días disponibles (Próximos 7 días)
-const mockAvailableDates = Array.from({ length: 7 }).map((_, i) => addDays(new Date(), i + 1));
-
-// Moqueando horas para un día
-const mockAvailableTimes = ["09:00", "10:30", "14:00", "16:00", "17:30"];
-
 export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
-    const [step, setStep] = useState<1 | 2 | 3>(1);
-    const [selectedService, setSelectedService] = useState<Service | null>(null);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [step, setStep] = useState<'categories' | 'services' | 'details' | 'success'>('categories');
+    const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
+    const [subtratamientos, setSubtratamientos] = useState<Subtratamiento[]>([]);
+    const [selectedTratamiento, setSelectedTratamiento] = useState<Tratamiento | null>(null);
+    const [selectedService, setSelectedService] = useState<Subtratamiento | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const handleServiceSelect = (service: Service) => {
-        setSelectedService(service);
-        setStep(2);
+    // Form states
+    const [name, setName] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
+
+    const tenantId = 'resetspa'; // En un entorno real, vendría del slug
+
+    useEffect(() => {
+        async function loadCategories() {
+            setLoading(true);
+            try {
+                const data = await serviceManagement.getTratamientos(tenantId);
+                setTratamientos(data);
+            } catch (error) {
+                console.error("Error loading categories", error);
+                toast.error("Error al cargar los servicios");
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadCategories();
+    }, []);
+
+    const handleCategorySelect = async (t: Tratamiento) => {
+        setSelectedTratamiento(t);
+        setLoading(true);
+        try {
+            const subs = await serviceManagement.getSubtratamientos(tenantId, t.id);
+            setSubtratamientos(subs);
+            setStep('services');
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al cargar sub-servicios");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleDateSelect = (date: Date) => {
-        setSelectedDate(date);
-        // Para simplificar, asumimos que siempre elige la fecha y luego la hora en el mismo paso 2,
-        // Aquí solo lo seteamos y mostramos horas.
-        setSelectedTime(null);
+    const handleServiceSelect = (s: Subtratamiento) => {
+        setSelectedService(s);
+        setStep('details');
     };
 
-    const handleTimeSelect = (time: string) => {
-        setSelectedTime(time);
-        setStep(3);
+    const handleRequestTurno = async () => {
+        if (!name || !whatsapp) {
+            toast.error("Por favor completa tus datos");
+            return;
+        }
+
+        const leadData = {
+            cliente_nombre: name,
+            whatsapp,
+            tratamiento: selectedTratamiento?.nombre,
+            servicio: selectedService?.nombre,
+            precio: selectedService?.precio,
+            duracion: selectedService?.duracion_minutos,
+            status: 'pendiente',
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            // 1. Guardar en leads_whatsapp subcollection
+            await addDoc(collection(db, 'tenants', tenantId, 'leads_whatsapp'), leadData);
+
+            // 2. Preparar mensaje de WhatsApp
+            const message = `✨ ¡Nuevo pedido de turno en RESET SYSTEM! ✨\n\n👤 Cliente: ${name}\n📱 WhatsApp: https://wa.me/${whatsapp.replace(/\D/g, '')}\n💆 Servicio: ${selectedTratamiento?.nombre} > ${selectedService?.nombre}\n💰 Precio: $${selectedService?.precio}\n\nPor favor, confirme este turno en su panel de gestión.`;
+            const encodedMessage = encodeURIComponent(message);
+            const waLink = `https://wa.me/5491112345678?text=${encodedMessage}`; // Número del salón mockeado
+
+            // 3. Abrir WhatsApp
+            window.open(waLink, '_blank');
+
+            setStep('success');
+        } catch (error) {
+            console.error(error);
+            toast.error("Hubo un problema al procesar tu pedido");
+        }
     };
 
-    const generateWhatsAppLink = () => {
-        if (!selectedService || !selectedDate || !selectedTime) return "#";
+    if (loading) {
+        return <div className="p-12 text-center animate-pulse text-gray-500">Cargando catálogo...</div>;
+    }
 
-        const formattedDate = format(selectedDate, "EEEE d 'de' MMMM", { locale: es });
-        const message = `Hola ${tenantName}! Tienen lugar disponible para un turno de *${selectedService.name}* el día *${formattedDate}* a las *${selectedTime}* hs? Mi nombre es: `;
-
-        // Aquí idealmente vendría el número del tenant desde DB. Usando uno de prueba o redirigiendo genérico.
-        const waUrl = `https://wa.me/5491100000000?text=${encodeURIComponent(message)}`;
-        return waUrl;
-    };
-
-    return (
-        <div className="w-full">
-            {/* Header de navegación interna */}
-            {step > 1 && (
-                <button
-                    onClick={() => setStep(prev => (prev - 1) as 1 | 2 | 3)}
-                    className="flex items-center gap-2 text-sm text-[var(--foreground)] opacity-70 hover:opacity-100 transition-opacity mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Volver
-                </button>
-            )}
-
-            {/* STEP 1: Selección de Servicio */}
-            {step === 1 && (
-                <section className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <h2 className="text-xl font-bold mb-4 border-b border-[var(--secondary)] pb-2 flex items-center justify-between">
-                        <span>Selecciona un Servicio</span>
-                        <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Paso 1/3</span>
-                    </h2>
-
-                    <div className="grid gap-3">
-                        {mockServices.map(service => (
-                            <div
-                                key={service.id}
-                                onClick={() => handleServiceSelect(service)}
-                                className="bg-white p-4 rounded-xl shadow-sm border border-[var(--secondary)] flex justify-between items-center transition-all hover:shadow-md cursor-pointer hover:border-[var(--primary)] group"
-                            >
-                                <div>
-                                    <h3 className="font-semibold text-gray-900 group-hover:text-[var(--primary)] transition-colors">{service.name}</h3>
-                                    <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {service.durationMinutes} min</span>
-                                        <span className="text-[var(--primary)] font-medium">${service.price.toLocaleString('es-AR')}</span>
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[var(--primary)] transition-colors" />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* STEP 2: Selección de Fecha y Hora */}
-            {step === 2 && selectedService && (
-                <section className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <h2 className="text-xl font-bold mb-4 border-b border-[var(--secondary)] pb-2 flex items-center justify-between">
-                        <span>¿Cuándo te esperamos?</span>
-                        <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Paso 2/3</span>
-                    </h2>
-
-                    {/* Card Resumen Servicio Seleccionado */}
-                    <div className="bg-[var(--secondary)]/30 border border-[var(--secondary)] p-3 rounded-lg mb-6 flex justify-between items-center">
-                        <span className="text-sm font-medium">{selectedService.name}</span>
-                        <span className="text-sm text-gray-500">{selectedService.durationMinutes} min</span>
-                    </div>
-
-                    <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Fechas Disponibles</h3>
-                    <div className="flex overflow-x-auto gap-3 pb-4 scrollbar-hide">
-                        {mockAvailableDates.map(date => {
-                            const isSelected = selectedDate?.toDateString() === date.toDateString();
-                            return (
-                                <button
-                                    key={date.toISOString()}
-                                    onClick={() => handleDateSelect(date)}
-                                    className={`flex-shrink-0 flex flex-col items-center justify-center p-3 w-20 h-24 rounded-2xl border transition-all
-                      ${isSelected
-                                            ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-md scale-105'
-                                            : 'border-[var(--secondary)] bg-white text-gray-600 hover:border-[var(--primary)] hover:text-[var(--primary)]'}
-                    `}
-                                >
-                                    <span className="text-xs uppercase font-medium opacity-80">{format(date, 'eee', { locale: es })}</span>
-                                    <span className="text-2xl font-bold my-1">{format(date, 'd')}</span>
-                                    <span className="text-xs capitalize opacity-80">{format(date, 'MMM', { locale: es })}</span>
-                                </button>
-                            )
-                        })}
-                    </div>
-
-                    {selectedDate && (
-                        <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider flex items-center gap-2">
-                                <Clock className="w-4 h-4" /> Horarios Visibles
-                            </h3>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                {mockAvailableTimes.map(time => (
-                                    <button
-                                        key={time}
-                                        onClick={() => handleTimeSelect(time)}
-                                        className="p-3 bg-white border border-[var(--secondary)] rounded-xl font-medium text-gray-700 hover:border-[var(--primary)] hover:text-[var(--primary)] hover:shadow-sm transition-all"
-                                    >
-                                        {time}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </section>
-            )}
-
-            {/* STEP 3: Confirmación y Envío WhatsApp */}
-            {step === 3 && selectedService && selectedDate && selectedTime && (
-                <section className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <h2 className="text-xl font-bold mb-4 border-b border-[var(--secondary)] pb-2 flex items-center justify-between">
-                        <span>Confirma tu Turno</span>
-                        <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Final</span>
-                    </h2>
-
-                    <div className="bg-white border-2 border-[var(--primary)]/20 p-6 rounded-2xl shadow-sm text-center">
-                        <div className="w-16 h-16 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CalendarIcon className="w-8 h-8" />
-                        </div>
-
-                        <h3 className="text-2xl font-bold text-gray-900 mb-1 capitalize">
-                            {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-                        </h3>
-                        <p className="text-xl font-medium text-[var(--primary)] mb-6">a las {selectedTime} hs</p>
-
-                        <div className="bg-gray-50 rounded-xl p-4 text-left border border-gray-100 mb-8">
-                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-200">
-                                <span className="text-gray-500">Servicio</span>
-                                <span className="font-semibold">{selectedService.name}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-200">
-                                <span className="text-gray-500">Duración</span>
-                                <span className="font-semibold">{selectedService.durationMinutes} min</span>
-                            </div>
-                            <div className="flex justify-between items-center text-lg">
-                                <span className="text-gray-500 font-medium">Total Estimado</span>
-                                <span className="font-bold text-[var(--primary)]">${selectedService.price.toLocaleString('es-AR')}</span>
-                            </div>
-                        </div>
-
-                        <a
-                            href={generateWhatsAppLink()}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center w-full gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-md shadow-green-500/20"
+    if (step === 'categories') {
+        return (
+            <div className="space-y-6">
+                <h2 className="text-xl font-heading font-bold">Elige un Tratamiento</h2>
+                <div className="grid gap-4">
+                    {tratamientos.map(t => (
+                        <Card
+                            key={t.id}
+                            className="p-4 flex justify-between items-center hover:shadow-md cursor-pointer transition-all border-l-4 border-l-[var(--primary)]"
+                            onClick={() => handleCategorySelect(t)}
                         >
-                            Solicitar por WhatsApp
-                        </a>
-                        <p className="text-xs text-gray-400 mt-4">Serás redirigido/a al chat de WhatsApp oficial del salón para confirmar la cita.</p>
-                    </div>
-                </section>
-            )}
+                            <div>
+                                <h3 className="font-bold">{t.nombre}</h3>
+                                {t.descripcion && <p className="text-xs text-gray-500">{t.descripcion}</p>}
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
-        </div>
-    );
+    if (step === 'services') {
+        return (
+            <div className="space-y-6">
+                <Button variant="ghost" size="sm" onClick={() => setStep('categories')}>← Volver</Button>
+                <h2 className="text-xl font-heading font-bold">{selectedTratamiento?.nombre}</h2>
+                <div className="grid gap-3">
+                    {subtratamientos.map(s => (
+                        <Card
+                            key={s.id}
+                            className="p-4 flex justify-between items-center hover:shadow-md cursor-pointer transition-all"
+                            onClick={() => handleServiceSelect(s)}
+                        >
+                            <div>
+                                <h3 className="font-semibold">{s.nombre}</h3>
+                                <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-xs font-bold text-[var(--primary)]">${s.precio}</span>
+                                    <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" /> {s.duracion_minutos} min</span>
+                                </div>
+                            </div>
+                            <Button size="sm" className="rounded-full">Elegir</Button>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 'details') {
+        return (
+            <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                <Button variant="ghost" size="sm" onClick={() => setStep('services')}>← Volver</Button>
+
+                <div className="bg-[var(--secondary)]/20 p-6 rounded-2xl border border-[var(--primary)]/10">
+                    <h3 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-2">Resumen de tu elección</h3>
+                    <p className="text-lg font-bold">{selectedTratamiento?.nombre} &gt; {selectedService?.nombre}</p>
+                    <p className="text-2xl font-bold mt-2 text-[var(--foreground)]">${selectedService?.precio}</p>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="text-lg font-heading font-bold">Tus Datos de Contacto</h3>
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><User className="w-5 h-5" /></span>
+                            <input
+                                className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-6 focus:ring-2 focus:ring-[var(--primary)] outline-none transition-all"
+                                placeholder="Nombre y Apellido"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </div>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Smartphone className="w-5 h-5" /></span>
+                            <input
+                                className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-6 focus:ring-2 focus:ring-[var(--primary)] outline-none transition-all"
+                                placeholder="Tu WhatsApp (con código de área)"
+                                value={whatsapp}
+                                onChange={(e) => setWhatsapp(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <Button
+                    className="w-full h-16 text-lg rounded-2xl shadow-lg shadow-[var(--primary)]/20 font-bold"
+                    onClick={handleRequestTurno}
+                >
+                    PEDIR TURNO POR WHATSAPP
+                </Button>
+            </div>
+        );
+    }
+
+    if (step === 'success') {
+        return (
+            <div className="text-center space-y-6 py-12 animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-10 h-10" />
+                </div>
+                <h1 className="text-3xl font-heading font-bold">¡Solicitud Enviada!</h1>
+                <p className="text-gray-600 max-w-sm mx-auto">
+                    Tu pedido ha sido enviado. El salón se contactará contigo por WhatsApp para confirmar el horario final.
+                </p>
+                <Button variant="outline" className="rounded-full px-8" onClick={() => window.location.reload()}>Pedir otro turno</Button>
+            </div>
+        );
+    }
+
+    return null;
 }

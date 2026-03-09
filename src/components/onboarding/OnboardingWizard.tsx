@@ -75,7 +75,7 @@ export function OnboardingWizard() {
                 });
             }
 
-            // 3. Crear primer tratamiento (categoría) y subtratamiento (servicio)
+            // 3. Tus Servicios (Estructura Jerárquica)
             if (serviceName) {
                 // Crear Categoría
                 const categoryRef = doc(collection(db, `tenants/${tenantId}/tratamientos`));
