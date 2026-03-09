@@ -56,8 +56,7 @@ export async function getUsersByTenant(tenantId: string): Promise<UserProfile[]>
     const usersRef = collection(db, COLLECTION_NAME);
     const q = query(
         usersRef,
-        where("tenantId", "==", tenantId),
-        orderBy("createdAt", "desc")
+        where("tenantId", "==", tenantId)
     );
     const snapshot = await getDocs(q);
 

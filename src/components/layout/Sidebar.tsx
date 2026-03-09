@@ -42,7 +42,7 @@ export function Sidebar() {
                 </Link>
                 <Link href="/admin/staff" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <Users className="w-5 h-5 text-[var(--primary)]" />
-                    Staff
+                    Profesionales
                 </Link>
                 <Link href="/admin/tratamientos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <Sparkles className="w-5 h-5 text-[var(--primary)]" />
