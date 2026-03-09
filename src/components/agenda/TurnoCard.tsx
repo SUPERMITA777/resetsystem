@@ -29,8 +29,8 @@ export function TurnoCard({ turno, disabled = false, interval }: TurnoCardProps)
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     } : undefined;
 
-    // Base cell height is 80px (matching h-20 in AgendaGrid)
-    const CELL_HEIGHT = 80;
+    // Base cell height is 40px (matching h-10 in AgendaGrid)
+    const CELL_HEIGHT = 40;
     const intervalToUse = interval || 60;
     const heightPx = (turno.duracionMinutos / intervalToUse) * CELL_HEIGHT;
 

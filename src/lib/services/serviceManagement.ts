@@ -25,6 +25,13 @@ export interface Tratamiento {
     nombre: string;
     descripcion?: string;
     habilitado: boolean;
+    boxId?: string; // Box asignado por defecto
+    profesionalId?: string; // Profesional asignado por defecto
+    disponibilidad?: {
+        inicio: string; // HH:mm
+        fin: string; // HH:mm
+        dias: number[]; // [0,1,2,3,4,5,6]
+    };
     // En Firestore, los subtratamientos irán en una subcolección
 }
 
@@ -46,6 +53,16 @@ export const serviceManagement = {
         return snap.docs.map(doc => doc.data() as Tratamiento);
     },
 
+    async updateTratamiento(tenantId: string, id: string, data: Partial<Tratamiento>) {
+        const ref = doc(db, "tenants", tenantId, "tratamientos", id);
+        await updateDoc(ref, data);
+    },
+
+    async deleteTratamiento(tenantId: string, id: string) {
+        const ref = doc(db, "tenants", tenantId, "tratamientos", id);
+        await deleteDoc(ref);
+    },
+
     // SERVICIOS (SUBTRATAMIENTOS)
     async createSubtratamiento(tenantId: string, tratamientoId: string, data: Omit<Subtratamiento, "id">) {
         const ref = collection(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos");
@@ -58,6 +75,16 @@ export const serviceManagement = {
         const ref = collection(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos");
         const snap = await getDocs(ref);
         return snap.docs.map(doc => doc.data() as Subtratamiento);
+    },
+
+    async updateSubtratamiento(tenantId: string, tratamientoId: string, id: string, data: Partial<Subtratamiento>) {
+        const ref = doc(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos", id);
+        await updateDoc(ref, data);
+    },
+
+    async deleteSubtratamiento(tenantId: string, tratamientoId: string, id: string) {
+        const ref = doc(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos", id);
+        await deleteDoc(ref);
     },
 
     /**

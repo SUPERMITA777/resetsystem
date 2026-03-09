@@ -72,7 +72,7 @@ export default function AgendaPage() {
     const handleCrearTurno = async (turnoData: any) => {
         try {
             const loadingToast = toast.loading("Guardando turno...");
-            const dateString = format(currentDate, 'yyyy-MM-dd');
+            const dateString = turnoData.fecha || format(currentDate, 'yyyy-MM-dd');
 
             await createTurno(currentTenant, {
                 ...turnoData,
@@ -236,6 +236,7 @@ export default function AgendaPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleCrearTurno}
+                initialFecha={format(currentDate, 'yyyy-MM-dd')}
             />
 
             <AgendaSettingsModal

@@ -184,7 +184,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                         {/* Columna de Horas */}
                         <div className="w-16 shrink-0 flex flex-col border-r border-[var(--secondary)] bg-gray-50/50 sticky left-0 z-10 backdrop-blur-sm">
                             {HORAS.map(hora => (
-                                <div key={hora} className="h-20 border-b border-gray-100 flex items-start justify-center pt-2 text-[10px] font-bold text-gray-400">
+                                <div key={hora} className="h-10 border-b border-gray-100 flex items-start justify-center pt-1 text-[10px] font-bold text-gray-400">
                                     {hora}
                                 </div>
                             ))}
@@ -204,7 +204,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
 
                                         return (
                                             <AgendaCell key={`${col.id}-${hora}`} boxId={view === 'diaria' ? col.id : 'box-1'} hora={hora}>
-                                                <div className="h-20 w-full relative group/cell">
+                                                <div className="h-10 w-full relative group/cell">
                                                     <div className="absolute inset-0 border-b border-gray-50 bg-transparent group-hover/cell:bg-gray-50/30 transition-colors pointer-events-none" />
                                                     {turnosEnCelda.map(turno => (
                                                         <TurnoCard
@@ -253,7 +253,7 @@ function CurrentTimeIndicator({ config, HORAS }: { config: any, HORAS: string[] 
     if (currentH === endH && currentM > 0) return null;
 
     const minutesSinceStart = (currentH - startH) * 60 + (currentM - startM);
-    const pixelPerMinute = 80 / config.intervalo; // h-20 = 80px
+    const pixelPerMinute = 40 / config.intervalo; // h-10 = 40px
     const top = minutesSinceStart * pixelPerMinute;
 
     return (

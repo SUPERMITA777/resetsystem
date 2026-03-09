@@ -1,0 +1,193 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { serviceManagement, Tratamiento } from "@/lib/services/serviceManagement";
+import { X, Save, Clock, Box, User } from "lucide-react";
+import toast from "react-hot-toast";
+
+interface TratamientoModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: () => void;
+    tratamiento: Tratamiento | null;
+    tenantId: string;
+}
+
+export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantId }: TratamientoModalProps) {
+    const [formData, setFormData] = useState<Partial<Tratamiento>>({
+        nombre: "",
+        descripcion: "",
+        habilitado: true,
+        boxId: "box-1",
+        profesionalId: "",
+        disponibilidad: {
+            inicio: "09:00",
+            fin: "21:00",
+            dias: [1, 2, 3, 4, 5] // Lun-Vie
+        }
+    });
+
+    useEffect(() => {
+        if (tratamiento) {
+            setFormData(tratamiento);
+        }
+    }, [tratamiento]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            if (tratamiento) {
+                await serviceManagement.updateTratamiento(tenantId, tratamiento.id, formData);
+                toast.success("Tratamiento actualizado");
+            } else {
+                await serviceManagement.createTratamiento(tenantId, formData as Omit<Tratamiento, "id">);
+                toast.success("Tratamiento creado");
+            }
+            onSave();
+            onClose();
+        } catch (error) {
+            toast.error("Error al guardar");
+        }
+    };
+
+    const toggleDia = (dia: number) => {
+        setFormData(prev => {
+            const dias = prev.disponibilidad?.dias || [];
+            const newDias = dias.includes(dia)
+                ? dias.filter(d => d !== dia)
+                : [...dias, dia];
+            return {
+                ...prev,
+                disponibilidad: {
+                    ...prev.disponibilidad!,
+                    dias: newDias
+                }
+            };
+        });
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="bg-gray-50/50 px-8 py-6 border-b border-gray-100 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
+                            {tratamiento ? "Editar Tratamiento" : "Nuevo Tratamiento"}
+                        </h2>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Configuración general</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm">
+                        <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 shadow-sm px-1">Nombre</label>
+                            <input
+                                required
+                                value={formData.nombre}
+                                onChange={e => setFormData({ ...formData, nombre: e.target.value })}
+                                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                placeholder="Ej: Depilación Laser"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Box Defecto</label>
+                                <div className="relative">
+                                    <Box className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                    <select
+                                        value={formData.boxId}
+                                        onChange={e => setFormData({ ...formData, boxId: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none appearance-none"
+                                    >
+                                        {[1, 2, 3, 4, 5, 6, 7].map(n => <option key={n} value={`box-${n}`}>Box {n}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1 text-gray-300">Profesional</label>
+                                <div className="relative">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                    <input
+                                        value={formData.profesionalId}
+                                        onChange={e => setFormData({ ...formData, profesionalId: e.target.value })}
+                                        className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                        placeholder="ID Profesional"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50/50 p-6 rounded-[1.5rem] space-y-4">
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Clock className="w-4 h-4" /> Horario de Disponibilidad
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <input
+                                    type="time"
+                                    value={formData.disponibilidad?.inicio}
+                                    onChange={e => setFormData({
+                                        ...formData,
+                                        disponibilidad: { ...formData.disponibilidad!, inicio: e.target.value }
+                                    })}
+                                    className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black"
+                                />
+                                <input
+                                    type="time"
+                                    value={formData.disponibilidad?.fin}
+                                    onChange={e => setFormData({
+                                        ...formData,
+                                        disponibilidad: { ...formData.disponibilidad!, fin: e.target.value }
+                                    })}
+                                    className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black"
+                                />
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((d, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => toggleDia(i)}
+                                        className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${formData.disponibilidad?.dias.includes(i)
+                                                ? 'bg-black text-white border-black shadow-lg shadow-black/10'
+                                                : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        {d}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 pt-4">
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, habilitado: !formData.habilitado })}
+                                className={`w-12 h-6 rounded-full transition-all relative ${formData.habilitado ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                            >
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.habilitado ? 'left-7' : 'left-1'}`} />
+                            </button>
+                            <span className="text-xs font-bold text-gray-600">Tratamiento Habilitado</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-4">
+                        <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
+                            <Save className="w-5 h-5" />
+                            {tratamiento ? "Gudar Cambios" : "Crear Tratamiento"}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
