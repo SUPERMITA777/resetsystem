@@ -1,0 +1,34 @@
+import { db } from "../firebase";
+import { collection, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
+
+export interface TenantData {
+    slug: string;
+    nombre_salon: string;
+    huso_horario_global: string;
+    config_boxes: number;
+    tema_visual: "nude" | "lavender" | "sage";
+    datos_contacto?: {
+        direccion?: string;
+        descripcion?: string;
+        telefono?: string;
+        instagram?: string;
+    };
+}
+
+const COLLECTION_NAME = "tenants";
+
+export async function createOrUpdateTenant(slug: string, data: Partial<TenantData>) {
+    const tenantRef = doc(db, COLLECTION_NAME, slug);
+    await setDoc(tenantRef, data, { merge: true });
+}
+
+export async function getTenant(slug: string): Promise<TenantData | null> {
+    const tenantRef = doc(db, COLLECTION_NAME, slug);
+    const docSnap = await getDoc(tenantRef);
+
+    if (docSnap.exists()) {
+        return docSnap.data() as TenantData;
+    }
+
+    return null;
+}
