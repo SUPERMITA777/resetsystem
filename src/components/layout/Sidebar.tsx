@@ -1,12 +1,32 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Users, LayoutDashboard, Settings } from "lucide-react";
+import { CalendarDays, Users, LayoutDashboard, Settings, Sparkles } from "lucide-react";
+import { getTenant, TenantData } from "@/lib/services/tenantService";
 
 export function Sidebar() {
+    const [tenantName, setTenantName] = useState("RESET SYSTEM");
+
+    useEffect(() => {
+        const tenantId = localStorage.getItem('currentTenant') || 'resetspa';
+        getTenant(tenantId).then(data => {
+            if (data?.nombre_salon) {
+                setTenantName(data.nombre_salon);
+            }
+        });
+    }, []);
+
     return (
-        <aside className="w-64 bg-[var(--background)] border-r border-[var(--secondary)] flex flex-col items-center py-6 h-screen sticky top-0 hidden md:flex">
-            <div className="font-heading font-bold text-xl mb-12 text-[var(--foreground)] tracking-wide">
-                RESET<span className="text-[var(--primary)]">SYSTEM</span>
+        <aside className="w-64 bg-[var(--background)] border-r border-[var(--secondary)] flex flex-col items-center py-6 h-screen sticky top-0 hidden md:flex overflow-y-auto">
+            <div className="mb-10 w-full px-6">
+                <div className="flex flex-col items-start">
+                    <div className="font-heading font-extrabold text-2xl text-[var(--foreground)] tracking-tight uppercase leading-none">
+                        {tenantName}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1 opacity-40">
+                        <Sparkles className="w-3 h-3 text-[var(--primary)]" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]">by resetsystem</span>
+                    </div>
+                </div>
             </div>
 
             <nav className="flex flex-col gap-2 w-full px-4">

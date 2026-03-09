@@ -10,6 +10,11 @@ export interface TenantData {
     status: 'active' | 'paused' | 'deleted';
     activeUntil?: any; // Firestore Timestamp
     createdAt?: any;  // Firestore Timestamp
+    agenda_config?: {
+        intervalo: 10 | 15 | 30 | 60;
+        horario_inicio: string; // "HH:mm"
+        horario_fin: string;    // "HH:mm"
+    };
     datos_contacto?: {
         direccion?: string;
         descripcion?: string;

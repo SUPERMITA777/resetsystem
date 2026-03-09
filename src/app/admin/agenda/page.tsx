@@ -3,38 +3,47 @@
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
-import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Settings, LayoutGrid, CalendarDays, Calendar as CalendarMonth } from "lucide-react";
 import { format, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
-import { getTurnosPorFecha, createTurno, updateTurnoPosicion, TurnoDB } from "@/lib/services/agendaService";
-import { getTenant, TenantData } from "@/lib/services/tenantService";
+import { AgendaSettingsModal } from "@/components/agenda/AgendaSettingsModal";
+import { getTurnosPorFecha, createTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
+import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
 import toast, { Toaster } from "react-hot-toast";
-
-// MOCK CONSTANTE PARA ESTA PRUEBA TENANT (En producción esto vendría del contexto/store del admin)
-const CURRENT_TENANT = "resetspa";
 
 export default function AgendaPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [view, setView] = useState<'diaria' | 'semanal' | 'mensual'>('diaria');
     const [turnos, setTurnos] = useState<TurnoData[]>([]);
     const [loading, setLoading] = useState(true);
     const [boxesCount, setBoxesCount] = useState(3);
+    const [agendaConfig, setAgendaConfig] = useState<any>({
+        intervalo: 60,
+        horario_inicio: "09:00",
+        horario_fin: "21:00"
+    });
+
+    // In production, current tenant would come from auth context
+    const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
     const loadData = async (date: Date) => {
         setLoading(true);
         try {
-            // Cargar configuración de boxes
-            const tenantData = await getTenant(CURRENT_TENANT);
-            if (tenantData?.config_boxes) {
-                setBoxesCount(tenantData.config_boxes);
+            // Cargar configuración del tenant
+            const tenantData = await getTenant(currentTenant);
+            if (tenantData) {
+                if (tenantData.config_boxes) setBoxesCount(tenantData.config_boxes);
+                if (tenantData.agenda_config) setAgendaConfig(tenantData.agenda_config);
             }
 
-            // Cargar turnos
+            // Cargar turnos (solo para vista diaria por ahora)
             const dateString = format(date, 'yyyy-MM-dd');
-            const turnosDb = await getTurnosPorFecha(CURRENT_TENANT, dateString);
+            const turnosDb = await getTurnosPorFecha(currentTenant, dateString);
             setTurnos(turnosDb as TurnoData[]);
         } catch (error) {
             console.error("Error cargando datos:", error);
@@ -46,14 +55,14 @@ export default function AgendaPage() {
 
     React.useEffect(() => {
         loadData(currentDate);
-    }, [currentDate]);
+    }, [currentDate, currentTenant]);
 
     const handleCrearTurno = async (turnoData: any) => {
         try {
             const loadingToast = toast.loading("Guardando turno...");
             const dateString = format(currentDate, 'yyyy-MM-dd');
 
-            await createTurno(CURRENT_TENANT, {
+            await createTurno(currentTenant, {
                 ...turnoData,
                 fecha: dateString
             });
@@ -74,7 +83,7 @@ export default function AgendaPage() {
                 t.id === turnoId ? { ...t, boxId: newBoxId, horaInicio: newHoraInicio } : t
             ));
 
-            await updateTurnoPosicion(CURRENT_TENANT, turnoId, newBoxId, newHoraInicio);
+            await updateTurnoPosicion(currentTenant, turnoId, newBoxId, newHoraInicio);
             toast.success("Turno actualizado");
         } catch (error) {
             console.error(error);
@@ -83,43 +92,106 @@ export default function AgendaPage() {
         }
     };
 
+    const handleSaveSettings = async (newConfig: any) => {
+        try {
+            const loadingToast = toast.loading("Actualizando configuración...");
+            await createOrUpdateTenant(currentTenant, { agenda_config: newConfig });
+            setAgendaConfig(newConfig);
+            toast.success("Configuración actualizada", { id: loadingToast });
+            loadData(currentDate);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al guardar configuración");
+        }
+    };
+
     return (
         <AdminLayout>
-            <div className="flex flex-col h-full w-full animate-in fade-in duration-300">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-[var(--foreground)]">Agenda</h1>
-                        <p className="text-gray-500 mt-1">Gestión de turnos diarios.</p>
-                    </div>
+            <div className="flex flex-col h-full w-full animate-in fade-in duration-500">
+                {/* Header Section */}
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight font-montserrat">Agenda</h1>
+                            <p className="text-gray-500 mt-1">Planificación y gestión de turnos.</p>
+                        </div>
 
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                        <Toaster />
-                        <div className="flex items-center bg-white border border-[var(--secondary)] rounded-lg p-1">
-                            <button onClick={() => setCurrentDate(subDays(currentDate, 1))} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
-                                <ChevronLeft className="w-5 h-5" />
+                        {/* View Switcher */}
+                        <div className="hidden lg:flex p-1 bg-gray-100 rounded-2xl ml-4">
+                            <button
+                                onClick={() => setView('diaria')}
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${view === 'diaria' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                                DIARIA
                             </button>
-                            <div className="px-4 py-1 flex items-center gap-2 font-medium min-w-[140px] justify-center">
-                                <CalendarIcon className="w-4 h-4 text-[var(--primary)]" />
-                                <span className="capitalize">{format(currentDate, "EEEE d 'de' MMMM", { locale: es })}</span>
-                            </div>
-                            <button onClick={() => setCurrentDate(addDays(currentDate, 1))} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
-                                <ChevronRight className="w-5 h-5" />
+                            <button
+                                onClick={() => setView('semanal')}
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${view === 'semanal' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                <CalendarDays className="w-3.5 h-3.5" />
+                                SEMANAL
+                            </button>
+                            <button
+                                onClick={() => setView('mensual')}
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${view === 'mensual' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                <CalendarMonth className="w-3.5 h-3.5" />
+                                MENSUAL
                             </button>
                         </div>
-                        <Button className="shrink-0" onClick={() => setIsModalOpen(true)}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Nuevo Turno
-                        </Button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+                        <Toaster />
+
+                        {/* Selector de Fecha */}
+                        <div className="flex items-center bg-white border border-gray-100 rounded-2xl p-1 shadow-sm">
+                            <button onClick={() => setCurrentDate(subDays(currentDate, 1))} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
+                                <ChevronLeft className="w-5 h-5 text-gray-400" />
+                            </button>
+                            <div className="px-6 py-1 flex items-center gap-3 font-bold text-gray-800 min-w-[200px] justify-center border-x border-gray-50">
+                                <CalendarIcon className="w-4 h-4 text-black" />
+                                <span className="capitalize text-sm">{format(currentDate, "EEEE d 'de' MMMM", { locale: es })}</span>
+                            </div>
+                            <button onClick={() => setCurrentDate(addDays(currentDate, 1))} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
+                                <ChevronRight className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 ml-auto">
+                            <button
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="w-12 h-12 rounded-2xl border border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-black hover:bg-gray-50 transition-all shadow-sm active:scale-90"
+                            >
+                                <Settings className="w-5 h-5" />
+                            </button>
+
+                            <Button className="shrink-0 bg-black text-white hover:bg-gray-800 h-12 px-8 rounded-2xl shadow-xl shadow-gray-200 font-bold" onClick={() => setIsModalOpen(true)}>
+                                <Plus className="w-5 h-5 mr-2" />
+                                Nuevo Turno
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden mt-4 relative">
+                {/* Grid Section */}
+                <div className="flex-1 overflow-hidden relative bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200 border border-gray-50">
                     {loading ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
-                            <div className="animate-spin w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full"></div>
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="animate-spin w-12 h-12 border-[5px] border-black border-t-transparent rounded-full shadow-lg shadow-black/10"></div>
+                                <span className="text-xs font-extrabold text-black uppercase tracking-widest">Cargando Agenda</span>
+                            </div>
                         </div>
                     ) : null}
-                    <AgendaGrid boxesCount={boxesCount} turnos={turnos} onTurnoMove={handleMoverTurno} />
+
+                    <AgendaGrid
+                        boxesCount={boxesCount}
+                        turnos={turnos}
+                        onTurnoMove={handleMoverTurno}
+                        config={agendaConfig}
+                    />
                 </div>
             </div>
 
@@ -127,6 +199,13 @@ export default function AgendaPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleCrearTurno}
+            />
+
+            <AgendaSettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                currentConfig={agendaConfig}
+                onSave={handleSaveSettings}
             />
         </AdminLayout>
     );

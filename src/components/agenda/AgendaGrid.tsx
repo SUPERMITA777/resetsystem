@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format, addMinutes } from 'date-fns';
 import {
     DndContext,
     DragEndEvent,
@@ -17,16 +18,37 @@ interface AgendaGridProps {
     boxesCount: number;
     turnos: TurnoData[];
     onTurnoMove: (turnoId: string, newBoxId: string, newHoraInicio: string) => Promise<void>;
+    config: {
+        intervalo: 10 | 15 | 30 | 60;
+        horario_inicio: string;
+        horario_fin: string;
+    };
 }
 
-const HORAS = Array.from({ length: 12 }).map((_, i) => {
-    const h = i + 9;
-    return `${h.toString().padStart(2, '0')}:00`;
-});
-
-export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridProps) {
+export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const { isStaff, staffId } = useAuth();
+
+    // Generar horas dinámicamente según configuración
+    const generateHoras = () => {
+        const horas: string[] = [];
+        const [startH, startM] = config.horario_inicio.split(':').map(Number);
+        const [endH, endM] = config.horario_fin.split(':').map(Number);
+
+        let current = new Date();
+        current.setHours(startH, startM, 0, 0);
+
+        const end = new Date();
+        end.setHours(endH, endM, 0, 0);
+
+        while (current <= end) {
+            horas.push(format(current, 'HH:mm'));
+            current = addMinutes(current, config.intervalo);
+        }
+        return horas;
+    };
+
+    const HORAS = generateHoras();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -95,11 +117,11 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridPr
 
                 {/* Grilla principal */}
                 <div className="flex-1 overflow-y-auto w-full relative">
-                    <div className="flex w-full">
+                    <div className="flex w-full min-h-full">
                         {/* Columna de Horas */}
-                        <div className="w-16 shrink-0 flex flex-col border-r border-[var(--secondary)] bg-gray-50">
+                        <div className="w-16 shrink-0 flex flex-col border-r border-[var(--secondary)] bg-gray-50/50">
                             {HORAS.map(hora => (
-                                <div key={hora} className="h-[80px] border-b border-gray-200 flex items-center justify-center text-xs font-medium text-gray-500">
+                                <div key={hora} className="h-20 border-b border-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">
                                     {hora}
                                 </div>
                             ))}
@@ -108,22 +130,22 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridPr
                         {/* Columnas de Boxes */}
                         <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${boxesCount}, minmax(0, 1fr))` }}>
                             {boxes.map(box => (
-                                <div key={box} className="flex flex-col border-r last:border-0 border-[var(--secondary)]">
+                                <div key={box} className="flex flex-col border-r last:border-0 border-gray-100">
                                     {HORAS.map(hora => {
                                         let turnosEnCelda = turnos.filter(t => t.boxId === box && t.horaInicio === hora);
 
-                                        // Si es staff, solo ve y edita un turno si le pertenece a él. 
-                                        // De lo contrario puede verlo pero bloqueado (o en un futuro "ocupado")
-
                                         return (
                                             <AgendaCell key={`${box}-${hora}`} boxId={box} hora={hora}>
-                                                {turnosEnCelda.map(turno => (
-                                                    <TurnoCard
-                                                        key={turno.id}
-                                                        turno={turno}
-                                                        disabled={isStaff && turno.profesionalId !== staffId}
-                                                    />
-                                                ))}
+                                                <div className="h-20 w-full relative">
+                                                    {turnosEnCelda.map(turno => (
+                                                        <TurnoCard
+                                                            key={turno.id}
+                                                            turno={turno}
+                                                            disabled={isStaff && turno.profesionalId !== staffId}
+                                                            interval={config.intervalo}
+                                                        />
+                                                    ))}
+                                                </div>
                                             </AgendaCell>
                                         );
                                     })}
@@ -136,7 +158,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove }: AgendaGridPr
 
             <DragOverlay dropAnimation={null}>
                 {activeTurno ? (
-                    <TurnoCard turno={activeTurno} />
+                    <TurnoCard turno={activeTurno} interval={config.intervalo} />
                 ) : null}
             </DragOverlay>
         </DndContext>

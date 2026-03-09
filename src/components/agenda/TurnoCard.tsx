@@ -14,9 +14,10 @@ export interface TurnoData {
 interface TurnoCardProps {
     turno: TurnoData;
     disabled?: boolean;
+    interval?: number; // minutos por celda
 }
 
-export function TurnoCard({ turno, disabled = false }: TurnoCardProps) {
+export function TurnoCard({ turno, disabled = false, interval }: TurnoCardProps) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: turno.id,
         data: turno,
@@ -27,9 +28,10 @@ export function TurnoCard({ turno, disabled = false }: TurnoCardProps) {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     } : undefined;
 
-    // Assume 1 hora = 80px de alto (para cuadrar con una grilla hipotética)
-    // Calculado: height = (duracion / 60) * 80px
-    const heightPx = (turno.duracionMinutos / 60) * 80;
+    // Base cell height is 80px (matching h-20 in AgendaGrid)
+    const CELL_HEIGHT = 80;
+    const intervalToUse = interval || 60;
+    const heightPx = (turno.duracionMinutos / intervalToUse) * CELL_HEIGHT;
 
     return (
         <div
