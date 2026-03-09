@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Users, LayoutDashboard, Settings, Sparkles } from "lucide-react";
