@@ -161,7 +161,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
             <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-[var(--secondary)] overflow-hidden">
                 {/* Cabecera */}
                 <div className="flex border-b border-[var(--secondary)]">
-                    <div className="w-16 shrink-0 border-r border-[var(--secondary)] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-tighter bg-gray-50 flex items-center justify-center">
+                    <div className="w-20 shrink-0 border-r border-[var(--secondary)] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-tighter bg-gray-50 flex items-center justify-center">
                         GMT-3
                     </div>
                     <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
@@ -182,9 +182,9 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                 <div className="flex-1 overflow-y-auto w-full relative group">
                     <div className="flex w-full min-h-full relative">
                         {/* Columna de Horas */}
-                        <div className="w-16 shrink-0 flex flex-col border-r border-[var(--secondary)] bg-gray-50/50 sticky left-0 z-10 backdrop-blur-sm">
+                        <div className="w-20 shrink-0 flex flex-col border-r border-[var(--secondary)] bg-gray-50/50 sticky left-0 z-10 backdrop-blur-sm">
                             {HORAS.map(hora => (
-                                <div key={hora} className="h-10 border-b border-gray-100 flex items-start justify-center pt-1 text-[10px] font-bold text-gray-400">
+                                <div key={hora} className="h-5 border-b border-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-400">
                                     {hora}
                                 </div>
                             ))}
@@ -204,7 +204,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
 
                                         return (
                                             <AgendaCell key={`${col.id}-${hora}`} boxId={view === 'diaria' ? col.id : 'box-1'} hora={hora}>
-                                                <div className="h-10 w-full relative group/cell">
+                                                <div className="h-5 w-full relative group/cell">
                                                     <div className="absolute inset-0 border-b border-gray-50 bg-transparent group-hover/cell:bg-gray-50/30 transition-colors pointer-events-none" />
                                                     {turnosEnCelda.map(turno => (
                                                         <TurnoCard
@@ -253,7 +253,7 @@ function CurrentTimeIndicator({ config, HORAS }: { config: any, HORAS: string[] 
     if (currentH === endH && currentM > 0) return null;
 
     const minutesSinceStart = (currentH - startH) * 60 + (currentM - startM);
-    const pixelPerMinute = 40 / config.intervalo; // h-10 = 40px
+    const pixelPerMinute = 20 / config.intervalo; // h-5 = 20px
     const top = minutesSinceStart * pixelPerMinute;
 
     return (

@@ -27,11 +27,13 @@ export interface Tratamiento {
     habilitado: boolean;
     boxId?: string; // Box asignado por defecto
     profesionalId?: string; // Profesional asignado por defecto
-    disponibilidad?: {
+    rangos_disponibilidad?: {
         inicio: string; // HH:mm
         fin: string; // HH:mm
-        dias: number[]; // [0,1,2,3,4,5,6]
-    };
+        dias: number[]; // [0...6]
+        fecha_inicio?: string; // YYYY-MM-DD (Opcional para rangos temporales)
+        fecha_fin?: string; // YYYY-MM-DD
+    }[];
     // En Firestore, los subtratamientos irán en una subcolección
 }
 
@@ -72,6 +74,7 @@ export const serviceManagement = {
     },
 
     async getSubtratamientos(tenantId: string, tratamientoId: string): Promise<Subtratamiento[]> {
+        if (!tratamientoId) return [];
         const ref = collection(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos");
         const snap = await getDocs(ref);
         return snap.docs.map(doc => doc.data() as Subtratamiento);

@@ -111,9 +111,14 @@ export default function TratamientosPage() {
                                         <div className={`w-3 h-3 rounded-full ${t.habilitado ? 'bg-emerald-500 shadow-emerald-200' : 'bg-gray-300'} shadow-lg`} />
                                         <div>
                                             <h3 className="text-xl font-bold text-gray-900">{t.nombre}</h3>
-                                            <div className="flex items-center gap-4 mt-1 text-xs text-gray-400 font-bold uppercase tracking-wider">
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                                                 {t.boxId && <span className="flex items-center gap-1"><Box className="w-3 h-3" /> {t.boxId}</span>}
                                                 {t.profesionalId && <span className="flex items-center gap-1"><User className="w-3 h-3" /> {t.profesionalId}</span>}
+                                                {t.rangos_disponibilidad?.map((r, i) => (
+                                                    <span key={i} className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-md text-[9px]">
+                                                        <Clock className="w-2.5 h-2.5" /> {r.inicio}-{r.fin}
+                                                    </span>
+                                                ))}
                                             </div>
                                         </div>
                                     </div>

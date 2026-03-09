@@ -29,8 +29,8 @@ export function TurnoCard({ turno, disabled = false, interval }: TurnoCardProps)
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     } : undefined;
 
-    // Base cell height is 40px (matching h-10 in AgendaGrid)
-    const CELL_HEIGHT = 40;
+    // Base cell height is 20px (matching h-5 in AgendaGrid)
+    const CELL_HEIGHT = 20;
     const intervalToUse = interval || 60;
     const heightPx = (turno.duracionMinutos / intervalToUse) * CELL_HEIGHT;
 
@@ -40,13 +40,13 @@ export function TurnoCard({ turno, disabled = false, interval }: TurnoCardProps)
             style={{ ...style, height: `${heightPx}px` }}
             {...listeners}
             {...attributes}
-            className={`absolute left-0 right-0 mx-1 rounded-md p-2 text-xs text-white shadow-sm transition-all
+            className={`absolute left-0 right-0 mx-0.5 rounded-sm px-1.5 py-0.5 text-[9px] text-white shadow-sm transition-all
         ${disabled ? 'cursor-not-allowed opacity-60 bg-gray-400 grayscale' : 'cursor-grab active:cursor-grabbing hover:brightness-105 bg-[var(--primary)]'}
-        ${isDragging ? 'z-50 opacity-80 ring-2 ring-[var(--primary)]' : 'z-10'}
+        ${isDragging ? 'z-50 opacity-80 ring-1 ring-[var(--primary)]' : 'z-10'}
       `}
         >
-            <div className={`font-semibold truncate ${disabled ? 'text-gray-100' : ''}`}>{turno.clienteAbreviado}</div>
-            <div className={`truncate ${disabled ? 'text-gray-200' : 'opacity-90'}`}>{turno.tratamientoAbreviado}</div>
+            <div className={`font-bold truncate leading-none ${disabled ? 'text-gray-100' : ''}`}>{turno.clienteAbreviado}</div>
+            {heightPx >= 15 && <div className={`truncate leading-none mt-0.5 ${disabled ? 'text-gray-200' : 'opacity-80'}`}>{turno.tratamientoAbreviado}</div>}
         </div>
     );
 }

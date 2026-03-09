@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { serviceManagement, Tratamiento } from "@/lib/services/serviceManagement";
-import { X, Save, Clock, Box, User } from "lucide-react";
+import { X, Save, Clock, Box, User, Plus, Trash2, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface TratamientoModalProps {
@@ -21,11 +21,13 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
         habilitado: true,
         boxId: "box-1",
         profesionalId: "",
-        disponibilidad: {
-            inicio: "09:00",
-            fin: "21:00",
-            dias: [1, 2, 3, 4, 5] // Lun-Vie
-        }
+        rangos_disponibilidad: [
+            {
+                inicio: "09:00",
+                fin: "21:00",
+                dias: [1, 2, 3, 4, 5]
+            }
+        ]
     });
 
     useEffect(() => {
@@ -51,27 +53,45 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
         }
     };
 
-    const toggleDia = (dia: number) => {
+    const addRango = () => {
+        setFormData(prev => ({
+            ...prev,
+            rangos_disponibilidad: [
+                ...(prev.rangos_disponibilidad || []),
+                { inicio: "09:00", fin: "18:00", dias: [1, 2, 3, 4, 5] }
+            ]
+        }));
+    };
+
+    const removeRango = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            rangos_disponibilidad: prev.rangos_disponibilidad?.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateRango = (index: number, data: any) => {
         setFormData(prev => {
-            const dias = prev.disponibilidad?.dias || [];
-            const newDias = dias.includes(dia)
-                ? dias.filter(d => d !== dia)
-                : [...dias, dia];
-            return {
-                ...prev,
-                disponibilidad: {
-                    ...prev.disponibilidad!,
-                    dias: newDias
-                }
-            };
+            const newRangos = [...(prev.rangos_disponibilidad || [])];
+            newRangos[index] = { ...newRangos[index], ...data };
+            return { ...prev, rangos_disponibilidad: newRangos };
         });
+    };
+
+    const toggleDia = (rangoIndex: number, dia: number) => {
+        const ranges = [...(formData.rangos_disponibilidad || [])];
+        const dias = ranges[rangoIndex].dias || [];
+        ranges[rangoIndex].dias = dias.includes(dia)
+            ? dias.filter(d => d !== dia)
+            : [...dias, dia];
+        setFormData({ ...formData, rangos_disponibilidad: ranges });
     };
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-gray-50/50 px-8 py-6 border-b border-gray-100 flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
@@ -84,10 +104,10 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 shadow-sm px-1">Nombre</label>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Nombre</label>
                             <input
                                 required
                                 value={formData.nombre}
@@ -125,47 +145,87 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                             </div>
                         </div>
 
-                        <div className="bg-gray-50/50 p-6 rounded-[1.5rem] space-y-4">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                <Clock className="w-4 h-4" /> Horario de Disponibilidad
-                            </h3>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <input
-                                    type="time"
-                                    value={formData.disponibilidad?.inicio}
-                                    onChange={e => setFormData({
-                                        ...formData,
-                                        disponibilidad: { ...formData.disponibilidad!, inicio: e.target.value }
-                                    })}
-                                    className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black"
-                                />
-                                <input
-                                    type="time"
-                                    value={formData.disponibilidad?.fin}
-                                    onChange={e => setFormData({
-                                        ...formData,
-                                        disponibilidad: { ...formData.disponibilidad!, fin: e.target.value }
-                                    })}
-                                    className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black"
-                                />
+                        <div className="space-y-4 pt-4 border-t border-gray-100">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Clock className="w-4 h-4" /> Disponibilidad Horaria
+                                </h3>
+                                <button type="button" onClick={addRango} className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-1 hover:text-blue-700 transition-all">
+                                    <Plus className="w-3 h-3" /> Añadir Rango
+                                </button>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 pt-2">
-                                {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((d, i) => (
-                                    <button
-                                        key={i}
-                                        type="button"
-                                        onClick={() => toggleDia(i)}
-                                        className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${formData.disponibilidad?.dias.includes(i)
-                                                ? 'bg-black text-white border-black shadow-lg shadow-black/10'
-                                                : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'
-                                            }`}
-                                    >
-                                        {d}
-                                    </button>
-                                ))}
-                            </div>
+                            {formData.rangos_disponibilidad?.map((rango, idx) => (
+                                <div key={idx} className="bg-gray-50/50 p-6 rounded-[1.5rem] space-y-4 relative group/rango border border-transparent hover:border-gray-200 transition-all">
+                                    {idx > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeRango(idx)}
+                                            className="absolute top-4 right-4 p-2 text-gray-300 hover:text-red-500 transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Fecha Inicio (Opcional)</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
+                                                <input
+                                                    type="date"
+                                                    value={rango.fecha_inicio || ""}
+                                                    onChange={e => updateRango(idx, { fecha_inicio: e.target.value })}
+                                                    className="w-full bg-white border-none rounded-xl pl-9 pr-3 py-2 text-[11px] font-bold focus:ring-1 focus:ring-black outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Fecha Fin (Opcional)</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
+                                                <input
+                                                    type="date"
+                                                    value={rango.fecha_fin || ""}
+                                                    onChange={e => updateRango(idx, { fecha_fin: e.target.value })}
+                                                    className="w-full bg-white border-none rounded-xl pl-9 pr-3 py-2 text-[11px] font-bold focus:ring-1 focus:ring-black outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input
+                                            type="time"
+                                            value={rango.inicio}
+                                            onChange={e => updateRango(idx, { inicio: e.target.value })}
+                                            className="bg-white border-none rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black shadow-sm"
+                                        />
+                                        <input
+                                            type="time"
+                                            value={rango.fin}
+                                            onChange={e => updateRango(idx, { fin: e.target.value })}
+                                            className="bg-white border-none rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-black shadow-sm"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((d, i) => (
+                                            <button
+                                                key={i}
+                                                type="button"
+                                                onClick={() => toggleDia(idx, i)}
+                                                className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${rango.dias.includes(i)
+                                                    ? 'bg-black text-white border-black shadow-lg shadow-black/10'
+                                                    : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="flex items-center gap-3 pt-4">
@@ -183,7 +243,7 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                     <div className="pt-4">
                         <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
                             <Save className="w-5 h-5" />
-                            {tratamiento ? "Gudar Cambios" : "Crear Tratamiento"}
+                            {tratamiento ? "Guardar Cambios" : "Crear Tratamiento"}
                         </Button>
                     </div>
                 </form>
