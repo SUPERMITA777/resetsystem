@@ -21,7 +21,7 @@ export function AgendaCell({ boxId, hora, children }: AgendaCellProps) {
     return (
         <div
             ref={setNodeRef}
-            className={`border-b border-r border-gray-100 p-1 relative transition-colors h-[80px]
+            className={`border-b border-r border-gray-100 p-1 relative transition-colors
         ${isOver ? 'bg-[var(--secondary)]/50' : 'hover:bg-gray-50'}
       `}
         >

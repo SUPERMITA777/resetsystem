@@ -4,12 +4,12 @@ import React, { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Settings, LayoutGrid, CalendarDays, Calendar as CalendarMonth } from "lucide-react";
-import { format, addDays, subDays } from "date-fns";
+import { format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
 import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import { AgendaSettingsModal } from "@/components/agenda/AgendaSettingsModal";
-import { getTurnosPorFecha, createTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
+import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
 import toast, { Toaster } from "react-hot-toast";
@@ -31,7 +31,7 @@ export default function AgendaPage() {
     // In production, current tenant would come from auth context
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
-    const loadData = async (date: Date) => {
+    const loadData = async (date: Date, currentView: string) => {
         setLoading(true);
         try {
             // Cargar configuración del tenant
@@ -41,9 +41,21 @@ export default function AgendaPage() {
                 if (tenantData.agenda_config) setAgendaConfig(tenantData.agenda_config);
             }
 
-            // Cargar turnos (solo para vista diaria por ahora)
-            const dateString = format(date, 'yyyy-MM-dd');
-            const turnosDb = await getTurnosPorFecha(currentTenant, dateString);
+            // Cargar turnos según la vista
+            let turnosDb: TurnoData[] = [];
+            if (currentView === 'diaria') {
+                const dateString = format(date, 'yyyy-MM-dd');
+                turnosDb = await getTurnosPorFecha(currentTenant, dateString);
+            } else if (currentView === 'semanal') {
+                const start = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                const end = format(endOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                turnosDb = await getTurnosPorRango(currentTenant, start, end);
+            } else if (currentView === 'mensual') {
+                const start = format(startOfMonth(date), 'yyyy-MM-dd');
+                const end = format(endOfMonth(date), 'yyyy-MM-dd');
+                turnosDb = await getTurnosPorRango(currentTenant, start, end);
+            }
+
             setTurnos(turnosDb as TurnoData[]);
         } catch (error) {
             console.error("Error cargando datos:", error);
@@ -54,8 +66,8 @@ export default function AgendaPage() {
     };
 
     React.useEffect(() => {
-        loadData(currentDate);
-    }, [currentDate, currentTenant]);
+        loadData(currentDate, view);
+    }, [currentDate, currentTenant, view]);
 
     const handleCrearTurno = async (turnoData: any) => {
         try {
@@ -69,7 +81,7 @@ export default function AgendaPage() {
 
             toast.success("Turno guardado", { id: loadingToast });
             setIsModalOpen(false);
-            loadData(currentDate); // refetch
+            loadData(currentDate, view); // refetch
         } catch (error) {
             console.error(error);
             toast.error("Error al guardar el turno");
@@ -88,7 +100,7 @@ export default function AgendaPage() {
         } catch (error) {
             console.error(error);
             toast.error("Error al mover el turno. Restaurando...");
-            loadData(currentDate); // revert on error
+            loadData(currentDate, view); // revert on error
         }
     };
 
@@ -98,11 +110,34 @@ export default function AgendaPage() {
             await createOrUpdateTenant(currentTenant, { agenda_config: newConfig });
             setAgendaConfig(newConfig);
             toast.success("Configuración actualizada", { id: loadingToast });
-            loadData(currentDate);
+            loadData(currentDate, view);
         } catch (error) {
             console.error(error);
             toast.error("Error al guardar configuración");
         }
+    };
+
+    const handleNext = () => {
+        if (view === 'diaria') setCurrentDate(addDays(currentDate, 1));
+        else if (view === 'semanal') setCurrentDate(addWeeks(currentDate, 1));
+        else if (view === 'mensual') setCurrentDate(addMonths(currentDate, 1));
+    };
+
+    const handlePrev = () => {
+        if (view === 'diaria') setCurrentDate(subDays(currentDate, 1));
+        else if (view === 'semanal') setCurrentDate(subWeeks(currentDate, 1));
+        else if (view === 'mensual') setCurrentDate(subMonths(currentDate, 1));
+    };
+
+    const getFormattedDate = () => {
+        if (view === 'diaria') return format(currentDate, "EEEE d 'de' MMMM", { locale: es });
+        if (view === 'semanal') {
+            const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+            const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+            return `${format(start, "d 'de' MMM", { locale: es })} - ${format(end, "d 'de' MMM", { locale: es })}`;
+        }
+        if (view === 'mensual') return format(currentDate, "MMMM yyyy", { locale: es });
+        return "";
     };
 
     return (
@@ -147,14 +182,14 @@ export default function AgendaPage() {
 
                         {/* Selector de Fecha */}
                         <div className="flex items-center bg-white border border-gray-100 rounded-2xl p-1 shadow-sm">
-                            <button onClick={() => setCurrentDate(subDays(currentDate, 1))} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
+                            <button onClick={handlePrev} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
                                 <ChevronLeft className="w-5 h-5 text-gray-400" />
                             </button>
                             <div className="px-6 py-1 flex items-center gap-3 font-bold text-gray-800 min-w-[200px] justify-center border-x border-gray-50">
                                 <CalendarIcon className="w-4 h-4 text-black" />
-                                <span className="capitalize text-sm">{format(currentDate, "EEEE d 'de' MMMM", { locale: es })}</span>
+                                <span className="capitalize text-sm">{getFormattedDate()}</span>
                             </div>
-                            <button onClick={() => setCurrentDate(addDays(currentDate, 1))} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
+                            <button onClick={handleNext} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
                                 <ChevronRight className="w-5 h-5 text-gray-400" />
                             </button>
                         </div>
@@ -191,6 +226,8 @@ export default function AgendaPage() {
                         turnos={turnos}
                         onTurnoMove={handleMoverTurno}
                         config={agendaConfig}
+                        view={view}
+                        currentDate={currentDate}
                     />
                 </div>
             </div>

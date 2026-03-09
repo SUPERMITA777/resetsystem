@@ -7,6 +7,7 @@ export interface TurnoData {
     tratamientoAbreviado: string;
     duracionMinutos: number;
     boxId: string;
+    fecha: string; // YYYY-MM-DD
     horaInicio: string; // HH:mm
     profesionalId?: string; // Para control de Staff
 }
