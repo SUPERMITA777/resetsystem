@@ -55,23 +55,27 @@ export default function TratamientosPage() {
 
     const handleDeleteTratamiento = async (id: string) => {
         if (!confirm("¿Estás seguro de eliminar este tratamiento y todos sus sub-tratamientos?")) return;
+        const loadingToast = toast.loading("Eliminando tratamiento...");
         try {
             await serviceManagement.deleteTratamiento(currentTenant, id);
-            toast.success("Tratamiento eliminado");
+            toast.success("Tratamiento eliminado", { id: loadingToast });
             loadData();
-        } catch (error) {
-            toast.error("Error al eliminar");
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Error al eliminar: ${error.message || "Error desconocido"}`, { id: loadingToast });
         }
     };
 
     const handleDeleteSubtratamiento = async (tId: string, sId: string) => {
         if (!confirm("¿Estás seguro de eliminar este sub-tratamiento?")) return;
+        const loadingToast = toast.loading("Eliminando sub-tratamiento...");
         try {
             await serviceManagement.deleteSubtratamiento(currentTenant, tId, sId);
-            toast.success("Sub-tratamiento eliminado");
+            toast.success("Sub-tratamiento eliminado", { id: loadingToast });
             loadData();
-        } catch (error) {
-            toast.error("Error al eliminar");
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Error al eliminar: ${error.message || "Error desconocido"}`, { id: loadingToast });
         }
     };
 

@@ -54,7 +54,43 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
     const loadTratamientos = async () => {
         try {
             const data = await serviceManagement.getTratamientos(currentTenant);
-            setTratamientos(data.filter(t => t.habilitado));
+            
+            // Filtrar tratamientos por habilitación y disponibilidad (Box, Fecha, Hora)
+            const filtered = data.filter(t => {
+                // 1. Debe estar habilitado
+                if (!t.habilitado) return false;
+
+                // 2. Si el modal tiene un box inicial, solo mostrar tratamientos de ese box (si el tratamiento tiene box asignado)
+                if (initialBox && t.boxId && t.boxId !== initialBox) return false;
+
+                // 3. Filtrar por disponibilidad horaria y día de la semana
+                if (t.rangos_disponibilidad && t.rangos_disponibilidad.length > 0) {
+                    const selectedDate = initialFecha ? new Date(initialFecha + 'T12:00:00') : new Date();
+                    const dayOfWeek = selectedDate.getDay(); // 0 is Sunday, 1 is Monday...
+
+                    const isAvailable = t.rangos_disponibilidad.some(rango => {
+                        // Verificar día
+                        if (!rango.dias.includes(dayOfWeek)) return false;
+
+                        // Verificar hora
+                        const [h_ini, m_ini] = rango.inicio.split(':').map(Number);
+                        const [h_fin, m_fin] = rango.fin.split(':').map(Number);
+                        const [h_sel, m_sel] = hora.split(':').map(Number);
+
+                        const startMinutes = h_ini * 60 + m_ini;
+                        const endMinutes = h_fin * 60 + m_fin;
+                        const selectedMinutes = h_sel * 60 + m_sel;
+
+                        return selectedMinutes >= startMinutes && selectedMinutes < endMinutes;
+                    });
+
+                    if (!isAvailable) return false;
+                }
+
+                return true;
+            });
+
+            setTratamientos(filtered);
         } catch (error) {
             console.error(error);
         }
@@ -99,7 +135,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
             whatsapp: telefono,
             tratamientoAbreviado: sub.nombre,
             duracionMinutos: sub.duracion_minutos,
-            horaInicio: hora.includes(':') && hora.length === 5 ? `${hora}:00` : hora,
+            horaInicio: hora, // Usar hora HH:mm sin el :00 para consistencia con AgendaGrid
             boxId: initialBox || trat.boxId || 'box-1',
             fecha: initialFecha || new Date().toISOString().split('T')[0],
             sena,
