@@ -4,18 +4,20 @@ import { useDroppable } from '@dnd-kit/core';
 interface AgendaCellProps {
     boxId: string;
     hora: string; // HH:mm
+    fecha: string; // yyyy-MM-dd
     children?: React.ReactNode;
     onClick?: () => void;
 }
 
-export function AgendaCell({ boxId, hora, children, onClick }: AgendaCellProps) {
-    const id = `${boxId}|${hora}`;
+export function AgendaCell({ boxId, hora, fecha, children, onClick }: AgendaCellProps) {
+    const id = `${fecha}|${boxId}|${hora}`;
 
     const { isOver, setNodeRef } = useDroppable({
         id: id,
         data: {
             boxId,
-            hora
+            hora,
+            fecha
         }
     });
 

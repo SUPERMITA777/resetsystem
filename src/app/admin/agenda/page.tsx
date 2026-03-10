@@ -121,14 +121,14 @@ export default function AgendaPage() {
         }
     };
 
-    const handleMoverTurno = async (turnoId: string, newBoxId: string, newHoraInicio: string) => {
+    const handleMoverTurno = async (turnoId: string, newBoxId: string, newHoraInicio: string, newFecha: string) => {
         try {
             // Optimistic update
             setTurnos(prev => prev.map(t =>
-                t.id === turnoId ? { ...t, boxId: newBoxId, horaInicio: newHoraInicio } : t
+                t.id === turnoId ? { ...t, boxId: newBoxId, horaInicio: newHoraInicio, fecha: newFecha } : t
             ));
 
-            await updateTurnoPosicion(currentTenant, turnoId, newBoxId, newHoraInicio);
+            await updateTurnoPosicion(currentTenant, turnoId, newBoxId, newHoraInicio, newFecha);
             toast.success("Turno actualizado");
         } catch (error) {
             console.error(error);

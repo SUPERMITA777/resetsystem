@@ -52,13 +52,14 @@ export async function createTurno(tenantId: string, data: Omit<TurnoDB, 'id' | '
     return agendaRef.id;
 }
 
-// Actualizar la hora o box de un turno (usado por el drag and drop)
-export async function updateTurnoPosicion(tenantId: string, turnoId: string, newBoxId: string, newHoraInicio: string) {
+// Actualizar la hora, box o fecha de un turno (usado por el drag and drop)
+export async function updateTurnoPosicion(tenantId: string, turnoId: string, newBoxId: string, newHoraInicio: string, newFecha: string) {
     const turnoRef = doc(db, `tenants/${tenantId}/agenda`, turnoId);
 
     await updateDoc(turnoRef, {
         boxId: newBoxId,
-        horaInicio: newHoraInicio
+        horaInicio: newHoraInicio,
+        fecha: newFecha
     });
 }
 

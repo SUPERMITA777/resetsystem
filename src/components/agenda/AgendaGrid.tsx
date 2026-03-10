@@ -15,10 +15,8 @@ import { AgendaCell } from './AgendaCell';
 import { TurnoCard, TurnoData } from './TurnoCard';
 import { useAuth } from '../auth/AuthProvider';
 
-interface AgendaGridProps {
-    boxesCount: number;
     turnos: TurnoData[];
-    onTurnoMove: (turnoId: string, newBoxId: string, newHoraInicio: string) => Promise<void>;
+    onTurnoMove: (turnoId: string, newBoxId: string, newHoraInicio: string, newFecha: string) => Promise<void>;
     config: {
         intervalo: 10 | 15 | 30 | 60;
         horario_inicio: string;
@@ -32,7 +30,13 @@ interface AgendaGridProps {
 
 export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate, onCellClick, onTurnoClick }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [localTurnos, setLocalTurnos] = useState<TurnoData[]>(turnos);
     const { isStaff, staffId } = useAuth();
+
+    // Sync local state with props
+    React.useEffect(() => {
+        setLocalTurnos(turnos);
+    }, [turnos]);
 
     // Generar horas dinámicamente según configuración
     const generateHoras = () => {
@@ -81,16 +85,17 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
         setActiveId(null);
 
         if (over && active.id !== over.id) {
-            // over.id es de la forma "box-1|09:00"
-            const [boxId, hora] = (over.id as string).split('|');
-            const formattedHora = hora; // Ya viene como HH:mm
-
-            const parsedBoxId = `box-${boxId}`;
-
+            // over.id es de la forma "yyyy-MM-dd|box-1|09:00"
+            const [fecha, boxId, hora] = (over.id as string).split('|');
+            
             // Check if it really changed
-            const currentTurno = turnos.find(t => t.id === active.id);
-            if (currentTurno && (currentTurno.boxId !== parsedBoxId || currentTurno.horaInicio !== formattedHora)) {
-                await onTurnoMove(active.id as string, parsedBoxId, formattedHora);
+            const currentTurno = localTurnos.find(t => t.id === active.id);
+            if (currentTurno && (currentTurno.boxId !== boxId || currentTurno.horaInicio !== hora || currentTurno.fecha !== fecha)) {
+                // Optimistic update
+                setLocalTurnos(prev => prev.map(t => 
+                    t.id === active.id as string ? { ...t, boxId, horaInicio: hora, fecha } : t
+                ));
+                await onTurnoMove(active.id as string, boxId, hora, fecha);
             }
         }
     };
@@ -124,7 +129,11 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                 </span>
                                 <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px]">
                                     {dayTurnos.slice(0, 3).map(t => (
-                                        <div key={t.id} className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md truncate font-medium border border-blue-100">
+                                        <div 
+                                            key={t.id} 
+                                            onClick={() => onTurnoClick(t)}
+                                            className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md truncate font-medium border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                                        >
                                             {t.horaInicio.substring(0, 5)} {t.clienteAbreviado}
                                         </div>
                                     ))}
@@ -211,6 +220,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                                 key={`${col.id}-${hora}`}
                                                 boxId={view === 'diaria' ? col.id : 'box-1'}
                                                 hora={hora}
+                                                fecha={format(col.date, 'yyyy-MM-dd')}
                                                 onClick={() => onCellClick(format(col.date, 'yyyy-MM-dd'), view === 'diaria' ? col.id : 'box-1', hora)}
                                             >
                                                 <div className="h-5 w-full relative group/cell">

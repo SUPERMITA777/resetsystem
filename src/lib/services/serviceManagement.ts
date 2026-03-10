@@ -61,8 +61,11 @@ export const serviceManagement = {
     },
 
     async deleteTratamiento(tenantId: string, id: string) {
-        if (!tenantId || !id) throw new Error("ID de tenant o tratamiento faltante");
-        const ref = doc(db, "tenants", tenantId, "tratamientos", id);
+        if (!tenantId || !id || tenantId.trim() === "" || id.trim() === "") {
+            console.error("deleteTratamiento called with invalid IDs:", { tenantId, id });
+            throw new Error("ID de tenant o tratamiento inválido");
+        }
+        const ref = doc(db, "tenants", tenantId.trim(), "tratamientos", id.trim());
         await deleteDoc(ref);
     },
 
