@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -95,16 +96,28 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 if (initialBox && t.boxId && t.boxId !== initialBox) return false;
                 if (t.rangos_disponibilidad && t.rangos_disponibilidad.length > 0) {
                     const selectedDate = initialFecha ? new Date(initialFecha + 'T12:00:00') : new Date();
+                    const dateStr = initialFecha || format(selectedDate, 'yyyy-MM-dd');
                     const dayOfWeek = selectedDate.getDay();
+
                     const isAvailable = t.rangos_disponibilidad.some(rango => {
+                        // Check day of week
                         if (!rango.dias.includes(dayOfWeek)) return false;
-                        const [h_ini, m_ini] = rango.inicio.split(':').map(Number);
-                        const [h_fin, m_fin] = rango.fin.split(':').map(Number);
-                        const [h_sel, m_sel] = hora.split(':').map(Number);
-                        const startMinutes = h_ini * 60 + m_ini;
-                        const endMinutes = h_fin * 60 + m_fin;
-                        const selectedMinutes = h_sel * 60 + m_sel;
-                        return selectedMinutes >= startMinutes && selectedMinutes < endMinutes;
+                        
+                        // Check date range if present
+                        if (rango.fecha_inicio && dateStr < rango.fecha_inicio) return false;
+                        if (rango.fecha_fin && dateStr > rango.fecha_fin) return false;
+
+                        // Check time if it's for a specific slot
+                        if (initialHora) {
+                            const [h_ini, m_ini] = rango.inicio.split(':').map(Number);
+                            const [h_fin, m_fin] = rango.fin.split(':').map(Number);
+                            const [h_sel, m_sel] = initialHora.split(':').map(Number);
+                            const startMinutes = h_ini * 60 + m_ini;
+                            const endMinutes = h_fin * 60 + m_fin;
+                            const selectedMinutes = h_sel * 60 + m_sel;
+                            return selectedMinutes >= startMinutes && selectedMinutes < endMinutes;
+                        }
+                        return true;
                     });
                     if (!isAvailable) return false;
                 }

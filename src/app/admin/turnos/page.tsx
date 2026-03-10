@@ -26,6 +26,7 @@ export default function TurnosPage() {
     
     // List state
     const [allTurnos, setAllTurnos] = useState<TurnoDB[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -63,8 +64,23 @@ export default function TurnosPage() {
 
     const isDateAvailable = (trat: Tratamiento, date: Date) => {
         if (!trat.rangos_disponibilidad || trat.rangos_disponibilidad.length === 0) return false;
+        
+        const dateStr = format(date, 'yyyy-MM-dd');
         const dayOfWeek = date.getDay();
-        return trat.rangos_disponibilidad.some(r => r.dias.includes(dayOfWeek));
+        
+        return trat.rangos_disponibilidad.some(r => {
+            // Check day of week
+            if (!r.dias.includes(dayOfWeek)) return false;
+            
+            // Check date range if present
+            const startStr = r.fecha_inicio || null;
+            const endStr = r.fecha_fin || null;
+            
+            if (startStr && dateStr < startStr) return false;
+            if (endStr && dateStr > endStr) return false;
+            
+            return true;
+        });
     };
 
     const handleSelectTratamiento = (t: Tratamiento) => {
@@ -104,7 +120,13 @@ export default function TurnosPage() {
         // 2. Filter availability by treatment ranges
         if (trat.rangos_disponibilidad && trat.rangos_disponibilidad.length > 0) {
             const dayOfWeek = date.getDay();
-            const ranges = trat.rangos_disponibilidad.filter(r => r.dias.includes(dayOfWeek));
+            
+            const ranges = trat.rangos_disponibilidad.filter(r => {
+                if (!r.dias.includes(dayOfWeek)) return false;
+                if (r.fecha_inicio && dateStr < r.fecha_inicio) return false;
+                if (r.fecha_fin && dateStr > r.fecha_fin) return false;
+                return true;
+            });
             
             ranges.forEach(range => {
                 let start = new Date(`${dateStr}T${range.inicio.padStart(5, '0')}:00`);
@@ -269,7 +291,12 @@ export default function TurnosPage() {
                         <div className="flex bg-white p-4 rounded-[2rem] shadow-premium-soft border border-gray-50 gap-4">
                             <div className="relative flex-1">
                                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                                <input className="w-full h-14 pl-14 pr-6 bg-gray-50 border-none rounded-[1.5rem] font-bold outline-none focus:ring-2 focus:ring-black transition-all" placeholder="Buscar por cliente o tratamiento..." />
+                                <input 
+                                    className="w-full h-14 pl-14 pr-6 bg-gray-50 border-none rounded-[1.5rem] font-bold outline-none focus:ring-2 focus:ring-black transition-all" 
+                                    placeholder="Buscar por cliente o tratamiento..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
                             <Button className="h-14 px-8 rounded-[1.5rem] bg-black text-white font-bold hovre:bg-gray-800">
                                 <Filter className="w-5 h-5 mr-2" />
@@ -284,7 +311,12 @@ export default function TurnosPage() {
                             </div>
                         ) : (
                             <div className="grid gap-4">
-                                {allTurnos.map(t => (
+                                {allTurnos
+                                    .filter(t => 
+                                        t.clienteAbreviado?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                        t.tratamientoAbreviado?.toLowerCase().includes(searchTerm.toLowerCase())
+                                    )
+                                    .map(t => (
                                     <Card 
                                         key={t.id} 
                                         className="p-6 border-none shadow-premium-soft rounded-[2rem] hover:shadow-premium transition-all group cursor-pointer"

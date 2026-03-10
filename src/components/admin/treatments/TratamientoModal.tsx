@@ -228,6 +228,30 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                                         </div>
                                     </div>
 
+                                    <div className="space-y-2">
+                                        <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Días Disponibles</label>
+                                        <div className="flex gap-1.5">
+                                            {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((day, dIdx) => {
+                                                const isSelected = rango.dias.includes(dIdx);
+                                                return (
+                                                    <button
+                                                        key={day}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newDays = isSelected 
+                                                                ? rango.dias.filter(d => d !== dIdx)
+                                                                : [...rango.dias, dIdx].sort();
+                                                            updateRango(idx, { dias: newDays });
+                                                        }}
+                                                        className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${isSelected ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'}`}
+                                                    >
+                                                        {day}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <input
                                             type="time"
