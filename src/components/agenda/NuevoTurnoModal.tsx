@@ -4,7 +4,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
 import { clienteService, Cliente } from '@/lib/services/clienteService';
-import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2 } from 'lucide-react';
+import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar } from 'lucide-react';
 import { TurnoData } from './TurnoCard';
 
 interface NuevoTurnoModalProps {
@@ -27,6 +27,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [selectedTratamientoId, setSelectedTratamientoId] = useState('');
     const [subtratamientos, setSubtratamientos] = useState<Subtratamiento[]>([]);
     const [selectedSubs, setSelectedSubs] = useState<Subtratamiento[]>([]);
+    const [fecha, setFecha] = useState(initialFecha || '');
     const [hora, setHora] = useState(initialHora || '09:00');
     const [sena, setSena] = useState<number>(0);
     const [total, setTotal] = useState<number>(0);
@@ -52,6 +53,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setSena(editTurno.sena || 0);
                 setTotal(editTurno.total || 0);
                 setStatus(editTurno.status || 'RESERVADO');
+                setFecha(editTurno.fecha || '');
                 setSelectedTratamientoId(editTurno.tratamientoId || '');
                 if (editTurno.tratamientoId) {
                     loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || []);
@@ -60,6 +62,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setCliente('');
                 setTelefono('');
                 setEmail('');
+                setFecha(initialFecha || '');
                 setHora(initialHora || '09:00');
                 setSena(0);
                 setTotal(0);
@@ -217,7 +220,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             duracionMinutos: totalDuration,
             horaInicio: hora,
             boxId: initialBox || trat.boxId || 'box-1',
-            fecha: initialFecha || new Date().toISOString().split('T')[0],
+            fecha,
             sena,
             total,
             status,
