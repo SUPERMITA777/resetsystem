@@ -10,6 +10,13 @@ export interface TurnoData {
     fecha: string; // YYYY-MM-DD
     horaInicio: string; // HH:mm
     profesionalId?: string; // Para control de Staff
+    whatsapp?: string;
+    email?: string;
+    sena?: number;
+    total?: number;
+    status?: 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+    subIds?: string[];
+    tratamientoId?: string;
 }
 
 interface TurnoCardProps {

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles } from "lucide-react";
+import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 
 export function Sidebar() {
@@ -35,6 +35,10 @@ export function Sidebar() {
                 <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <LayoutDashboard className="w-5 h-5 text-[var(--primary)]" />
                     General
+                </Link>
+                <Link href="/admin/turnos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
+                    <Activity className="w-5 h-5 text-[var(--primary)]" />
+                    Turnos
                 </Link>
                 <Link href="/admin/agenda" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <CalendarDays className="w-5 h-5 text-[var(--primary)]" />

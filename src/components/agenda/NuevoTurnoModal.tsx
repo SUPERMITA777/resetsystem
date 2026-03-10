@@ -14,10 +14,11 @@ interface NuevoTurnoModalProps {
     initialHora?: string;
     initialBox?: string;
     initialFecha?: string;
+    initialTratamientoId?: string;
     editTurno?: TurnoData | null;
 }
 
-export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialBox, initialFecha, editTurno }: NuevoTurnoModalProps) {
+export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialBox, initialFecha, initialTratamientoId, editTurno }: NuevoTurnoModalProps) {
     const [cliente, setCliente] = useState('');
     const [telefono, setTelefono] = useState('');
     const [email, setEmail] = useState('');
@@ -43,14 +44,17 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
             loadTratamientos();
             loadClientes();
             if (editTurno) {
-                setCliente(editTurno.clienteAbreviado);
-                setTelefono((editTurno as any).whatsapp || '');
-                setEmail((editTurno as any).email || '');
+                setCliente(editTurno.clienteAbreviado || '');
+                setTelefono(editTurno.whatsapp || '');
+                setEmail(editTurno.email || '');
                 setHora(editTurno.horaInicio.substring(0, 5));
-                setSena((editTurno as any).sena || 0);
-                setStatus((editTurno as any).status || 'RESERVADO');
-                // Multiple subs handling would go here if in DB
-                setSelectedSubs([]); 
+                setSena(editTurno.sena || 0);
+                setTotal(editTurno.total || 0);
+                setStatus(editTurno.status || 'RESERVADO');
+                setSelectedTratamientoId(editTurno.tratamientoId || '');
+                if (editTurno.tratamientoId) {
+                    loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || []);
+                }
             } else {
                 setCliente('');
                 setTelefono('');
@@ -60,9 +64,14 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
                 setTotal(0);
                 setSelectedSubs([]);
                 setStatus('RESERVADO');
+                if (initialTratamientoId) {
+                    handleTratamientoChange(initialTratamientoId);
+                } else {
+                    setSelectedTratamientoId('');
+                }
             }
         }
-    }, [isOpen, editTurno, initialHora]);
+    }, [isOpen, editTurno, initialHora, initialTratamientoId]);
 
     const loadClientes = async () => {
         try {
@@ -127,12 +136,29 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
     const handleTratamientoChange = async (id: string) => {
         setSelectedTratamientoId(id);
         setSubtratamientos([]);
+        setSelectedSubs([]);
+        setTotal(0);
         if (!id) return;
 
         setLoading(true);
         try {
             const data = await serviceManagement.getSubtratamientos(currentTenant, id);
             setSubtratamientos(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadSubAndSync = async (tratId: string, subIds: string[]) => {
+        setLoading(true);
+        try {
+            const data = await serviceManagement.getSubtratamientos(currentTenant, tratId);
+            setSubtratamientos(data);
+            const selected = data.filter(s => subIds.includes(s.id));
+            setSelectedSubs(selected);
+            // Don't update total here if we already set it from editTurno.total
         } catch (error) {
             console.error(error);
         } finally {
@@ -194,6 +220,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
             sena,
             total,
             status,
+            tratamientoId: selectedTratamientoId,
             subIds: selectedSubs.map(s => s.id)
         });
 
@@ -365,8 +392,28 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
                         </div>
                     </div>
                 </div>
+                <div className="pt-2 pb-4 flex items-center justify-between border-t border-gray-100 mt-4">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Duración Total</p>
+                            <p className="text-sm font-black text-blue-600">{selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0)} minutos</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 bg-emerald-50 rounded-lg">
+                            <DollarSign className="w-4 h-4 text-emerald-500" />
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Precio Total</p>
+                            <p className="text-sm font-black text-emerald-600">${total}</p>
+                        </div>
+                    </div>
+                </div>
 
-                <div className="pt-4 flex flex-col gap-3">
+                <div className="flex flex-col gap-3">
                     <Button type="submit" className="w-full h-14 bg-black text-white hover:bg-gray-800 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all">
                         {editTurno ? "Guardar Cambios" : "Agendar Turno"}
                     </Button>

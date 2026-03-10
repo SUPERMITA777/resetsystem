@@ -12,9 +12,12 @@ export interface TurnoDB {
     fecha: string; // formato 'YYYY-MM-DD'
     horaInicio: string; // formato 'HH:mm'
     whatsapp?: string;
+    email?: string;
     sena?: number;
     total?: number;
     status?: 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+    subIds?: string[];
+    tratamientoId?: string;
 }
 
 // Actualizar un turno completo
