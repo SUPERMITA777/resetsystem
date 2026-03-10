@@ -95,18 +95,11 @@ export default function TurnosPage() {
                     start = new Date(start.getTime() + 30 * 60000); // 30 min intervals
                 }
             });
-        } else {
-            // Default range if none specified (9am - 9pm)
-            let start = new Date(`${dateStr}T09:00:00`);
-            const end = new Date(`${dateStr}T21:00:00`);
-            while (start < end) {
-                slots.push(format(start, 'HH:mm'));
-                start = new Date(start.getTime() + 60 * 60000);
-            }
         }
         
-        // IF no slots were generated because of day filter, availableSlots will be empty
-        // which means NO BOOKING allowed today.
+        // Removed the "else" default range logic for strictness.
+        // If no slots generated, it correctly shows "No hay horarios disponibles".
+
         setAvailableSlots([...new Set(slots)].sort());
     };
 

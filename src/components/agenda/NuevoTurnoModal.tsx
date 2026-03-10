@@ -255,9 +255,43 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 </button>
             ) : null}
         >
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6 py-2 overflow-visible">
-                <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-0 overflow-visible">
+                <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Fecha</label>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                                    <Calendar className="w-4 h-4" />
+                                </div>
+                                <input 
+                                    type="date"
+                                    value={fecha}
+                                    onChange={(e) => setFecha(e.target.value)}
+                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Hora</label>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                                    <Clock className="w-4 h-4" />
+                                </div>
+                                <input 
+                                    type="time"
+                                    value={hora}
+                                    onChange={(e) => setHora(e.target.value)}
+                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="relative">
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Cliente</label>
                             <div className="relative">
@@ -302,35 +336,45 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Categoría</label>
-                            <select
-                                required
-                                className="w-full h-12 rounded-2xl border-none bg-gray-50 px-4 text-sm font-bold focus:ring-2 focus:ring-black outline-none appearance-none"
-                                value={selectedTratamientoId}
-                                onChange={(e) => handleTratamientoChange(e.target.value)}
-                            >
-                                <option value="">Seleccionar...</option>
-                                {tratamientos.map(t => (
-                                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                                ))}
-                            </select>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                                    <Tag className="w-4 h-4" />
+                                </div>
+                                <select 
+                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none disabled:opacity-50"
+                                    value={selectedTratamientoId}
+                                    onChange={(e) => handleTratamientoChange(e.target.value)}
+                                    required
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {tratamientos.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
-                        <div>
+                        <div className="space-y-1">
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Añadir Sub-item</label>
-                            <select
-                                disabled={!selectedTratamientoId || loading}
-                                className="w-full h-12 rounded-2xl border-none bg-gray-50 px-4 text-sm font-bold focus:ring-2 focus:ring-black outline-none appearance-none disabled:opacity-50"
-                                value=""
-                                onChange={(e) => handleAddSub(e.target.value)}
-                            >
-                                <option value="">{loading ? "Cargando..." : "Seleccionar para sumar"}</option>
-                                {subtratamientos.map(s => (
-                                    <option key={s.id} value={s.id}>{s.nombre} (${s.precio})</option>
-                                ))}
-                            </select>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                                    <Plus className="w-4 h-4" />
+                                </div>
+                                <select
+                                    disabled={!selectedTratamientoId || loading}
+                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none disabled:opacity-50 cursor-pointer"
+                                    value=""
+                                    onChange={(e) => handleAddSub(e.target.value)}
+                                >
+                                    <option value="">{loading ? "Cargando..." : "Seleccionar..."}</option>
+                                    {subtratamientos.map(s => (
+                                        <option key={s.id} value={s.id}>{s.nombre} (${s.precio})</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -349,50 +393,58 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Seña ($)</label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-                                <Input
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Seña ($)</label>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-emerald-500">
+                                    <DollarSign className="w-4 h-4" />
+                                </div>
+                                <Input 
                                     type="number"
                                     value={sena}
                                     onChange={(e) => setSena(Number(e.target.value))}
-                                    className="pl-10 rounded-2xl bg-emerald-50/30 border-none h-12 font-bold text-emerald-700"
+                                    className="pl-14 h-11 rounded-xl text-sm"
                                 />
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1 text-blue-500">Saldo ($)</label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500" />
-                                <Input
-                                    readOnly
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 ml-2">Saldo ($)</label>
+                            <div className="relative group/field pointer-events-none opacity-60">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-50/30 rounded-lg flex items-center justify-center text-blue-500">
+                                    <DollarSign className="w-4 h-4" />
+                                </div>
+                                <Input 
                                     value={Math.max(0, total - sena)}
-                                    className="pl-10 rounded-2xl bg-blue-50/30 border-none h-12 font-bold text-blue-700"
+                                    readOnly
+                                    className="pl-14 h-11 rounded-xl text-sm font-black text-blue-600 bg-blue-50/30"
                                 />
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Total ($)</label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-900" />
-                                <Input
-                                    readOnly
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Total ($)</label>
+                            <div className="relative group/field pointer-events-none opacity-60">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-100/50 rounded-lg flex items-center justify-center text-gray-400">
+                                    <DollarSign className="w-4 h-4" />
+                                </div>
+                                <Input 
                                     value={total}
-                                    className="pl-10 rounded-2xl bg-gray-200 border-none h-12 font-black text-gray-900"
+                                    readOnly
+                                    className="pl-14 h-11 rounded-xl text-sm font-black bg-gray-100/50"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Estado</label>
-                            <div className="relative">
-                                <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                <select
-                                    className="w-full h-12 rounded-2xl border-none bg-gray-50 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-black outline-none appearance-none"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Estado</label>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                                    <Activity className="w-4 h-4" />
+                                </div>
+                                <select 
+                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none"
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value as any)}
                                 >
@@ -403,47 +455,34 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1 text-black">Hora</label>
-                            <div className="relative">
-                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black" />
-                                <Input
-                                    type="time"
-                                    value={hora}
-                                    onChange={(e) => setHora(e.target.value)}
-                                    required
-                                    className="pl-12 rounded-2xl bg-black/5 border-none h-12 text-black font-bold focus:ring-black"
-                                />
-                            </div>
-                        </div>
                     </div>
                 </div>
-                <div className="pt-2 pb-4 flex items-center justify-between border-t border-gray-100 mt-4">
+                <div className="pt-2 pb-2 flex items-center justify-between border-t border-gray-100 mt-2">
                     <div className="flex items-center gap-2">
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <Clock className="w-4 h-4 text-blue-500" />
+                        <div className="p-1.5 bg-blue-50 rounded-lg">
+                            <Clock className="w-3.5 h-3.5 text-blue-500" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Duración Total</p>
-                            <p className="text-sm font-black text-blue-600">{selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0)} minutos</p>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Duración</p>
+                            <p className="text-xs font-black text-blue-600">{selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0)} min</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="p-2 bg-emerald-50 rounded-lg">
-                            <DollarSign className="w-4 h-4 text-emerald-500" />
+                        <div className="p-1.5 bg-emerald-50 rounded-lg">
+                            <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Precio Total</p>
-                            <p className="text-sm font-black text-emerald-600">${total}</p>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total</p>
+                            <p className="text-xs font-black text-emerald-600">${total}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3">
-                    <Button type="submit" className="w-full h-14 bg-black text-white hover:bg-gray-800 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all">
+                <div className="flex flex-col gap-2">
+                    <Button type="submit" className="w-full h-11 bg-black text-white hover:bg-gray-800 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all active:scale-95">
                         {editTurno ? "Guardar Cambios" : "Agendar Turno"}
                     </Button>
-                    <button type="button" onClick={onClose} className="text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest">
+                    <button type="button" onClick={onClose} className="text-[10px] font-black text-gray-400 hover:text-black uppercase tracking-widest py-1 transition-colors">
                         Cancelar
                     </button>
                 </div>
