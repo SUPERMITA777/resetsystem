@@ -9,9 +9,6 @@ export function Topbar() {
                 <button className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-[var(--secondary)] rounded-lg">
                     <Menu className="w-5 h-5" />
                 </button>
-                <div className="flex-1 sm:w-80">
-                    <GlobalSearch />
-                </div>
             </div>
 
             <div className="flex items-center gap-4">

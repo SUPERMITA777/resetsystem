@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity } from "lucide-react";
+import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
+import { GlobalSearch } from "./GlobalSearch";
 
 export function Sidebar() {
     const [tenantName, setTenantName] = useState("RESET SYSTEM");
@@ -31,11 +32,11 @@ export function Sidebar() {
                 </div>
             </div>
 
+            <div className="w-full px-4 mb-6">
+                <GlobalSearch />
+            </div>
+
             <nav className="flex flex-col gap-2 w-full px-4">
-                <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <LayoutDashboard className="w-5 h-5 text-[var(--primary)]" />
-                    General
-                </Link>
                 <Link href="/admin/turnos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <Activity className="w-5 h-5 text-[var(--primary)]" />
                     Turnos
@@ -56,7 +57,11 @@ export function Sidebar() {
                     <Sparkles className="w-5 h-5 text-[var(--primary)]" />
                     Tratamientos
                 </Link>
-                <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mt-auto mb-4">
+                <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mt-auto">
+                    <FileBarChart className="w-5 h-5 text-[var(--primary)]" />
+                    Reportes
+                </Link>
+                <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mb-4">
                     <Settings className="w-5 h-5 text-[var(--primary)]" />
                     Configuración
                 </Link>

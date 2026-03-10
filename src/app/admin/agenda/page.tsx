@@ -176,15 +176,10 @@ export default function AgendaPage() {
     return (
         <AdminLayout>
             <div className="flex flex-col h-full w-full animate-in fade-in duration-500">
-                {/* Header Section */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8">
-                    <div className="flex items-center gap-6">
-                        <div>
-                            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight font-montserrat">Agenda</h1>
-                            <p className="text-gray-500 mt-1">Planificación y gestión de turnos.</p>
-                        </div>
-
-                        {/* View Switcher */}
+                {/* Compact Control Row */}
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
+                    <div className="flex items-center gap-4">
+                        {/* View Switcher - Compact */}
                         <div className="hidden lg:flex p-1 bg-gray-100 rounded-2xl ml-4">
                             <button
                                 onClick={() => setView('diaria')}

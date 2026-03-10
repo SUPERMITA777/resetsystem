@@ -4,7 +4,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
 import { clienteService, Cliente } from '@/lib/services/clienteService';
-import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar } from 'lucide-react';
+import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar, Plus } from 'lucide-react';
 import { TurnoData } from './TurnoCard';
 
 interface NuevoTurnoModalProps {
