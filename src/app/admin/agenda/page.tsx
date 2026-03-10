@@ -80,6 +80,26 @@ export default function AgendaPage() {
             const loadingToast = toast.loading(modalInitialData.turno ? "Actualizando turno..." : "Guardando turno...");
             const dateString = turnoData.fecha || format(currentDate, 'yyyy-MM-dd');
 
+            // 1. Persistir o actualizar Cliente
+            if (turnoData.whatsapp) {
+                const { clienteService } = await import("@/lib/services/clienteService");
+                const existing = await clienteService.getClienteByTelefono(currentTenant, turnoData.whatsapp);
+                if (!existing) {
+                    await clienteService.createCliente(currentTenant, {
+                        nombre: turnoData.nombre || turnoData.clienteAbreviado,
+                        apellido: turnoData.apellido || '',
+                        telefono: turnoData.whatsapp,
+                        tenantId: currentTenant,
+                        ultimaVisita: dateString
+                    });
+                } else {
+                    await clienteService.updateCliente(currentTenant, existing.id, {
+                        ultimaVisita: dateString
+                    });
+                }
+            }
+
+            // 2. Guardar Turno
             if (modalInitialData.turno) {
                 await updateTurno(currentTenant, modalInitialData.turno.id, {
                     ...turnoData,

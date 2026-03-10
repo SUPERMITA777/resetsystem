@@ -61,6 +61,7 @@ export const serviceManagement = {
     },
 
     async deleteTratamiento(tenantId: string, id: string) {
+        if (!tenantId || !id) throw new Error("ID de tenant o tratamiento faltante");
         const ref = doc(db, "tenants", tenantId, "tratamientos", id);
         await deleteDoc(ref);
     },
@@ -86,6 +87,7 @@ export const serviceManagement = {
     },
 
     async deleteSubtratamiento(tenantId: string, tratamientoId: string, id: string) {
+        if (!tenantId || !tratamientoId || !id) throw new Error("Parámetros faltantes para eliminar subtratamiento");
         const ref = doc(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos", id);
         await deleteDoc(ref);
     },

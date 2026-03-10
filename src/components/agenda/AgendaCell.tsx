@@ -9,7 +9,7 @@ interface AgendaCellProps {
 }
 
 export function AgendaCell({ boxId, hora, children, onClick }: AgendaCellProps) {
-    const id = `${boxId}-${hora}`;
+    const id = `${boxId}|${hora}`;
 
     const { isOver, setNodeRef } = useDroppable({
         id: id,

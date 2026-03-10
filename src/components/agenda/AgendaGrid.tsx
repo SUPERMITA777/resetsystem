@@ -81,9 +81,9 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
         setActiveId(null);
 
         if (over && active.id !== over.id) {
-            // over.id es de la forma "box-1-09:00"
-            const [boxId, hora] = (over.id as string).split('-');
-            const formattedHora = `${hora}:00`;
+            // over.id es de la forma "box-1|09:00"
+            const [boxId, hora] = (over.id as string).split('|');
+            const formattedHora = hora; // Ya viene como HH:mm
 
             const parsedBoxId = `box-${boxId}`;
 

@@ -121,7 +121,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!onSave) return;
 
@@ -130,8 +130,15 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
 
         if (!sub || !trat) return;
 
+        // Limpiar cliente para separar nombre y apellido si es posible
+        const nameParts = cliente.trim().split(' ');
+        const nombre = nameParts[0] || '';
+        const apellido = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
         onSave({
             clienteAbreviado: cliente,
+            nombre,
+            apellido,
             whatsapp: telefono,
             tratamientoAbreviado: sub.nombre,
             duracionMinutos: sub.duracion_minutos,
