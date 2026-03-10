@@ -61,9 +61,29 @@ export default function TurnosPage() {
         }
     };
 
+    const isDateAvailable = (trat: Tratamiento, date: Date) => {
+        if (!trat.rangos_disponibilidad || trat.rangos_disponibilidad.length === 0) return false;
+        const dayOfWeek = date.getDay();
+        return trat.rangos_disponibilidad.some(r => r.dias.includes(dayOfWeek));
+    };
+
     const handleSelectTratamiento = (t: Tratamiento) => {
         setSelectedTratamiento(t);
-        generateSlots(t, selectedDate);
+        
+        // Find first available date starting from today
+        let targetDate = startOfToday();
+        let found = false;
+        for (let i = 0; i < 30; i++) { // Look ahead 30 days
+            const d = addDays(startOfToday(), i);
+            if (isDateAvailable(t, d)) {
+                targetDate = d;
+                found = true;
+                break;
+            }
+        }
+        
+        setSelectedDate(targetDate);
+        generateSlots(t, targetDate);
     };
 
     const generateSlots = async (trat: Tratamiento, date: Date) => {
@@ -185,8 +205,11 @@ export default function TurnosPage() {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest px-2">2. Disponibilidad</h3>
                                         <div className="flex gap-2">
-                                            {[0, 1, 2, 3, 4, 5, 6].map(i => {
+                                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(i => {
                                                 const d = addDays(startOfToday(), i);
+                                                const isAvailable = isDateAvailable(selectedTratamiento, d);
+                                                if (!isAvailable) return null;
+
                                                 const isSelected = isSameDay(d, selectedDate);
                                                 return (
                                                     <button
