@@ -173,79 +173,75 @@ export default function AgendaPage() {
         return "";
     };
 
-    return (
-        <AdminLayout>
-            <div className="flex flex-col h-full w-full animate-in fade-in duration-500">
-                {/* Compact Control Row */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
-                    <div className="flex items-center gap-4">
-                        {/* View Switcher - Compact */}
-                        <div className="hidden lg:flex p-1 bg-gray-100 rounded-2xl ml-4">
-                            <button
-                                onClick={() => setView('diaria')}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${view === 'diaria' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                <LayoutGrid className="w-3.5 h-3.5" />
-                                DIARIA
-                            </button>
-                            <button
-                                onClick={() => setView('semanal')}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${view === 'semanal' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                <CalendarDays className="w-3.5 h-3.5" />
-                                SEMANAL
-                            </button>
-                            <button
-                                onClick={() => setView('mensual')}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${view === 'mensual' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                <CalendarMonth className="w-3.5 h-3.5" />
-                                MENSUAL
-                            </button>
-                        </div>
-                    </div>
+    const topbarControls = (
+        <div className="flex items-center gap-4 w-full justify-end">
+            {/* View Switcher - Compact */}
+            <div className="hidden lg:flex p-1 bg-gray-100 rounded-2xl">
+                <button
+                    onClick={() => setView('diaria')}
+                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${view === 'diaria' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <LayoutGrid className="w-3 h-3" />
+                    DIARIA
+                </button>
+                <button
+                    onClick={() => setView('semanal')}
+                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${view === 'semanal' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <CalendarDays className="w-3 h-3" />
+                    SEMANAL
+                </button>
+                <button
+                    onClick={() => setView('mensual')}
+                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center gap-2 ${view === 'mensual' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <CalendarMonth className="w-3 h-3" />
+                    MENSUAL
+                </button>
+            </div>
 
-                    <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
-                        <Toaster />
-
-                        {/* Selector de Fecha */}
-                        <div className="flex items-center bg-white border border-gray-100 rounded-2xl p-1 shadow-sm">
-                            <button onClick={handlePrev} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
-                                <ChevronLeft className="w-5 h-5 text-gray-400" />
-                            </button>
-                            <div className="px-6 py-1 flex items-center gap-3 font-bold text-gray-800 min-w-[200px] justify-center border-x border-gray-50">
-                                <CalendarIcon className="w-4 h-4 text-black" />
-                                <span className="capitalize text-sm">{getFormattedDate()}</span>
-                            </div>
-                            <button onClick={handleNext} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-xl transition-colors">
-                                <ChevronRight className="w-5 h-5 text-gray-400" />
-                            </button>
-                        </div>
-
-                        <div className="flex items-center gap-3 ml-auto">
-                            <button
-                                onClick={() => setIsSettingsOpen(true)}
-                                className="w-12 h-12 rounded-2xl border border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-black hover:bg-gray-50 transition-all shadow-sm active:scale-90"
-                            >
-                                <Settings className="w-5 h-5" />
-                            </button>
-
-                            <Button
-                                className="shrink-0 bg-black text-white hover:bg-gray-800 h-12 px-8 rounded-2xl shadow-xl shadow-gray-200 font-bold"
-                                onClick={() => {
-                                    setModalInitialData({ fecha: format(currentDate, 'yyyy-MM-dd'), boxId: 'box-1', hora: '09:00', turno: null });
-                                    setIsModalOpen(true);
-                                }}
-                            >
-                                <Plus className="w-5 h-5 mr-2" />
-                                Nuevo Turno
-                            </Button>
-                        </div>
-                    </div>
+            {/* Selector de Fecha */}
+            <div className="flex items-center bg-white border border-gray-100 rounded-2xl p-0.5 shadow-sm">
+                <button onClick={handlePrev} className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-lg transition-colors">
+                    <ChevronLeft className="w-4 h-4 text-gray-400" />
+                </button>
+                <div className="px-4 py-1 flex items-center gap-2 font-black text-gray-800 min-w-[160px] justify-center border-x border-gray-50">
+                    <CalendarIcon className="w-3.5 h-3.5 text-black" />
+                    <span className="capitalize text-[11px] tracking-tight">{getFormattedDate()}</span>
                 </div>
+                <button onClick={handleNext} className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-lg transition-colors">
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                </button>
+            </div>
 
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-10 h-10 rounded-xl border border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-black hover:bg-gray-50 transition-all shadow-sm active:scale-90"
+                >
+                    <Settings className="w-4 h-4" />
+                </button>
+
+                <Button
+                    className="shrink-0 bg-black text-white hover:bg-gray-800 h-10 px-6 rounded-xl shadow-xl shadow-black/5 font-black uppercase tracking-widest text-[10px]"
+                    onClick={() => {
+                        setModalInitialData({ fecha: format(currentDate, 'yyyy-MM-dd'), boxId: 'box-1', hora: '09:00', turno: null });
+                        setIsModalOpen(true);
+                    }}
+                >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nuevo Turno
+                </Button>
+            </div>
+            <Toaster />
+        </div>
+    );
+
+    return (
+        <AdminLayout topbarContent={topbarControls}>
+            <div className="flex flex-col h-full w-full animate-in fade-in duration-500 pt-0">
                 {/* Grid Section */}
-                <div className="flex-1 overflow-hidden relative bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200 border border-gray-50">
+                <div className="flex-1 overflow-hidden relative bg-white rounded-[2rem] shadow-2xl shadow-gray-200 border border-gray-50 -mt-2">
                     {loading ? (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20 backdrop-blur-sm">
                             <div className="flex flex-col items-center gap-4">
