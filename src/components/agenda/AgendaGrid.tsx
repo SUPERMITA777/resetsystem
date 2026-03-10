@@ -14,7 +14,8 @@ import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AgendaCell } from './AgendaCell';
 import { TurnoCard, TurnoData } from './TurnoCard';
 import { useAuth } from '../auth/AuthProvider';
-
+interface AgendaGridProps {
+    boxesCount: number;
     turnos: TurnoData[];
     onTurnoMove: (turnoId: string, newBoxId: string, newHoraInicio: string, newFecha: string) => Promise<void>;
     config: {
