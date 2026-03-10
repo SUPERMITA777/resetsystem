@@ -8,7 +8,7 @@ import { Calendar as CalendarIcon, Clock, User, Tag, Search, Filter, Plus, Chevr
 import { format, addDays, startOfToday, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
-import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, TurnoDB } from "@/lib/services/agendaService";
+import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, deleteTurno, TurnoDB } from "@/lib/services/agendaService";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -18,7 +18,7 @@ export default function TurnosPage() {
     const [selectedTratamiento, setSelectedTratamiento] = useState<Tratamiento | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-    const [occupiedSlots, setOccupiedSlots] = useState<Record<string, boolean>>({});
+    const [occupiedSlots, setOccupiedSlots] = useState<Record<string, string[]>>({});
     
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,12 +72,14 @@ export default function TurnosPage() {
         
         // 1. Fetch occupied slots for this date across all boxes
         const dayTurnos = await getTurnosPorFecha(currentTenant, dateStr);
-        const occupied: Record<string, boolean> = {};
+        const occupied: Record<string, string[]> = {}; // { hora: [boxId, boxId] }
         dayTurnos.forEach(t => {
-            // Mark the slot as occupied
-            occupied[`${t.boxId}|${t.horaInicio}`] = true;
+            if (!occupied[t.horaInicio]) occupied[t.horaInicio] = [];
+            occupied[t.horaInicio].push(t.boxId || 'box-1');
         });
         setOccupiedSlots(occupied);
+        
+        const totalBoxes = 3; // TODO: Get from salon config
 
         // 2. Filter availability by treatment ranges
         if (trat.rangos_disponibilidad && trat.rangos_disponibilidad.length > 0) {
@@ -85,8 +87,8 @@ export default function TurnosPage() {
             const ranges = trat.rangos_disponibilidad.filter(r => r.dias.includes(dayOfWeek));
             
             ranges.forEach(range => {
-                let start = new Date(`${dateStr}T${range.inicio}:00`);
-                const end = new Date(`${dateStr}T${range.fin}:00`);
+                let start = new Date(`${dateStr}T${range.inicio.padStart(5, '0')}:00`);
+                const end = new Date(`${dateStr}T${range.fin.padStart(5, '0')}:00`);
                 
                 while (start < end) {
                     slots.push(format(start, 'HH:mm'));
@@ -107,18 +109,27 @@ export default function TurnosPage() {
 
     const handleSlotClick = (hora: string) => {
         if (!selectedTratamiento) return;
-        
-        // Find first free box for this time
-        // In a real scenario we'd check each box, for now use default or first available from config
         const targetBox = selectedTratamiento.boxId || 'box-1';
-
         setModalData({
             fecha: format(selectedDate, 'yyyy-MM-dd'),
-            hora,
+            hora: hora.padStart(5, '0'),
             boxId: targetBox,
             tratamientoId: selectedTratamiento.id
         });
         setIsModalOpen(true);
+    };
+
+    const handleDeleteTurno = async (id: string) => {
+        try {
+            await deleteTurno(currentTenant, id);
+            toast.success("Turno eliminado");
+            loadAllTurnos();
+            if (selectedTratamiento) {
+                generateSlots(selectedTratamiento, selectedDate);
+            }
+        } catch (error) {
+            toast.error("Error al eliminar el turno");
+        }
     };
 
     return (
@@ -199,17 +210,18 @@ export default function TurnosPage() {
                                         {availableSlots.length > 0 ? (
                                             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                                 {availableSlots.map(hora => {
-                                                    const isOccupied = occupiedSlots[`${selectedTratamiento.boxId || 'box-1'}|${hora}`];
+                                                    // Buscamos si el box específico está ocupado, o si TODOS están ocupados si no hay boxId
+                                                    const takenInBoxes = occupiedSlots[hora] || [];
+                                                    const isOccupied = selectedTratamiento.boxId 
+                                                        ? takenInBoxes.includes(selectedTratamiento.boxId)
+                                                        : takenInBoxes.length >= 3; // Asumiendo 3 boxes por ahora
+
+                                                    if (isOccupied) return null;
                                                     return (
                                                         <button
                                                             key={hora}
-                                                            disabled={isOccupied}
                                                             onClick={() => handleSlotClick(hora)}
-                                                            className={`p-4 rounded-2xl font-black text-sm transition-all border-2 
-                                                                ${isOccupied 
-                                                                    ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed opacity-50' 
-                                                                    : 'bg-white border-gray-100 text-gray-900 hover:border-black hover:scale-105 shadow-sm active:scale-95'
-                                                                }`}
+                                                            className="p-4 rounded-2xl font-black text-sm transition-all border-2 bg-white border-gray-100 text-gray-900 hover:border-black hover:scale-105 shadow-sm active:scale-95"
                                                         >
                                                             {hora}
                                                         </button>
@@ -254,7 +266,14 @@ export default function TurnosPage() {
                         ) : (
                             <div className="grid gap-4">
                                 {allTurnos.map(t => (
-                                    <Card key={t.id} className="p-6 border-none shadow-premium-soft rounded-[2rem] hover:shadow-premium transition-all group">
+                                    <Card 
+                                        key={t.id} 
+                                        className="p-6 border-none shadow-premium-soft rounded-[2rem] hover:shadow-premium transition-all group cursor-pointer"
+                                        onClick={() => {
+                                            setModalData({ turno: t });
+                                            setIsModalOpen(true);
+                                        }}
+                                    >
                                         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                                             <div className="flex items-center gap-6">
                                                 <div className="w-14 h-14 bg-gray-50 rounded-2xl flex flex-col items-center justify-center border border-gray-100 group-hover:bg-black group-hover:text-white transition-colors">
@@ -284,15 +303,6 @@ export default function TurnosPage() {
                                                 >
                                                     {t.status || 'RESERVADO'}
                                                 </div>
-                                                <button 
-                                                    onClick={() => {
-                                                        setModalData({ turno: t });
-                                                        setIsModalOpen(true);
-                                                    }}
-                                                    className="p-3 bg-gray-50 hover:bg-black hover:text-white rounded-xl transition-all shadow-sm"
-                                                >
-                                                    <Plus className="w-5 h-5" />
-                                                </button>
                                             </div>
                                         </div>
                                     </Card>
@@ -310,6 +320,7 @@ export default function TurnosPage() {
                     initialBox={modalData?.boxId}
                     initialTratamientoId={modalData?.tratamientoId}
                     editTurno={modalData?.turno}
+                    onDelete={handleDeleteTurno}
                     onSave={async (data) => {
                         try {
                             if (modalData?.turno) {

@@ -4,13 +4,14 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
 import { clienteService, Cliente } from '@/lib/services/clienteService';
-import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X } from 'lucide-react';
+import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2 } from 'lucide-react';
 import { TurnoData } from './TurnoCard';
 
 interface NuevoTurnoModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave?: (turno: any) => void;
+    onDelete?: (turnoId: string) => void;
     initialHora?: string;
     initialBox?: string;
     initialFecha?: string;
@@ -18,7 +19,7 @@ interface NuevoTurnoModalProps {
     editTurno?: TurnoData | null;
 }
 
-export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialBox, initialFecha, initialTratamientoId, editTurno }: NuevoTurnoModalProps) {
+export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora, initialBox, initialFecha, initialTratamientoId, editTurno }: NuevoTurnoModalProps) {
     const [cliente, setCliente] = useState('');
     const [telefono, setTelefono] = useState('');
     const [email, setEmail] = useState('');
@@ -227,8 +228,30 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, initialHora, initialB
         onClose();
     };
 
+    const handleDelete = () => {
+        if (editTurno && onDelete) {
+            if (window.confirm("¿Estás seguro de que deseas eliminar este turno?")) {
+                onDelete(editTurno.id);
+                onClose();
+            }
+        }
+    };
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editTurno ? "Editar Turno" : "Agendar Nuevo Turno"}>
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose} 
+            title={editTurno ? "Editar Turno" : "Agendar Nuevo Turno"}
+            extraHeader={editTurno ? (
+                <button 
+                    type="button" 
+                    onClick={handleDelete}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                >
+                    <Trash2 className="w-5 h-5" />
+                </button>
+            ) : null}
+        >
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 py-2 overflow-visible">
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -52,7 +52,7 @@ export const serviceManagement = {
     async getTratamientos(tenantId: string): Promise<Tratamiento[]> {
         const ref = collection(db, "tenants", tenantId, "tratamientos");
         const snap = await getDocs(ref);
-        return snap.docs.map(doc => doc.data() as Tratamiento);
+        return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tratamiento));
     },
 
     async updateTratamiento(tenantId: string, id: string, data: Partial<Tratamiento>) {
@@ -81,7 +81,7 @@ export const serviceManagement = {
         if (!tratamientoId) return [];
         const ref = collection(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos");
         const snap = await getDocs(ref);
-        return snap.docs.map(doc => doc.data() as Subtratamiento);
+        return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Subtratamiento));
     },
 
     async updateSubtratamiento(tenantId: string, tratamientoId: string, id: string, data: Partial<Subtratamiento>) {

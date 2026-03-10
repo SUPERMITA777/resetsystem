@@ -66,6 +66,12 @@ export async function updateTurnoPosicion(tenantId: string, turnoId: string, new
     });
 }
 
+// Eliminar un turno
+export async function deleteTurno(tenantId: string, turnoId: string) {
+    const turnoRef = doc(db, `tenants/${tenantId}/agenda`, turnoId);
+    await deleteDoc(turnoRef);
+}
+
 // Obtener todos los turnos para un tenant en un rango de fechas
 export async function getTurnosPorRango(tenantId: string, fechaInicio: string, fechaFin: string): Promise<TurnoDB[]> {
     const q = query(

@@ -6,9 +6,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    extraHeader?: React.ReactNode;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, extraHeader }: ModalProps) {
     if (!isOpen) return null;
 
     return (
@@ -16,12 +17,15 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             <div className="bg-[var(--background)] rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="flex justify-between items-center p-4 border-b border-[var(--secondary)]">
                     <h2 className="text-lg font-semibold">{title}</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-1 rounded-full hover:bg-[var(--secondary)] transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {extraHeader}
+                        <button
+                            onClick={onClose}
+                            className="p-1 rounded-full hover:bg-[var(--secondary)] transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
                 <div className="p-4">
                     {children}
