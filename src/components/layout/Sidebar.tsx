@@ -2,16 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart } from "lucide-react";
+import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { GlobalSearch } from "./GlobalSearch";
 
 export function Sidebar() {
     const [tenantName, setTenantName] = useState("RESET SYSTEM");
 
+    const [tenantId, setTenantId] = useState("resetspa");
+
     useEffect(() => {
-        const tenantId = localStorage.getItem('currentTenant') || 'resetspa';
-        getTenant(tenantId).then(data => {
+        const id = localStorage.getItem('currentTenant') || 'resetspa';
+        setTenantId(id);
+        getTenant(id).then(data => {
             if (data?.nombre_salon) {
                 setTenantName(data.nombre_salon);
             }
@@ -57,6 +60,24 @@ export function Sidebar() {
                     <Sparkles className="w-5 h-5 text-[var(--primary)]" />
                     Tratamientos
                 </Link>
+
+                <div className="pt-4 mt-2 border-t border-[var(--secondary)]">
+                    <p className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Presencia Web</p>
+                    <Link href="/admin/web" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
+                        <Globe className="w-5 h-5 text-[var(--primary)]" />
+                        Configuración Web
+                    </Link>
+                    <a 
+                        href={`/catalogo/${tenantId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-all text-xs font-black uppercase tracking-widest mt-2 group"
+                    >
+                        <ExternalLink className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+                        Ver mi Web
+                    </a>
+                </div>
+
                 <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mt-auto">
                     <FileBarChart className="w-5 h-5 text-[var(--primary)]" />
                     Reportes
