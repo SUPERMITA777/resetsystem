@@ -34,7 +34,7 @@ export default function WebConfigPage() {
                     ].map((item, i) => (
                         <div key={i} className="p-8 bg-white border border-gray-100 rounded-[2.5rem] hover:shadow-2xl hover:shadow-gray-100/50 transition-all group cursor-pointer">
                             <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-black group-hover:text-white transition-colors">
-                                {React.cloneElement(item.icon as React.ReactElement, { className: "w-5 h-5" })}
+                                {React.cloneElement(item.icon as React.ReactElement<{ className: string }>, { className: "w-5 h-5" })}
                             </div>
                             <h3 className="text-lg font-black uppercase tracking-tight mb-2">{item.title}</h3>
                             <p className="text-gray-400 text-xs font-medium leading-relaxed">{item.desc}</p>
