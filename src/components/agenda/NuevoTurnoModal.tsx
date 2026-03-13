@@ -32,7 +32,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [hora, setHora] = useState(initialHora || '09:00');
     const [sena, setSena] = useState<number>(0);
     const [total, setTotal] = useState<number>(0);
-    const [status, setStatus] = useState<'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO'>('RESERVADO');
+    const [status, setStatus] = useState<'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO'>('RESERVADO');
     const [loading, setLoading] = useState(false);
     
     // Autocomplete state
