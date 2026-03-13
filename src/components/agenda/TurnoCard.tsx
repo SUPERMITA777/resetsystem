@@ -14,7 +14,7 @@ export interface TurnoData {
     email?: string;
     sena?: number;
     total?: number;
-    status?: 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+    status?: 'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
     subIds?: string[];
     tratamientoId?: string;
 }
