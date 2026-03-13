@@ -6,6 +6,15 @@ import { Globe, Layout as LayoutIcon, Palette, Image as ImageIcon, MessageSquare
 import { Button } from "@/components/ui/Button";
 
 export default function WebConfigPage() {
+    const [tenantId, setTenantId] = React.useState("resetspa");
+
+    React.useEffect(() => {
+        const id = localStorage.getItem('currentTenant') || 'resetspa';
+        setTenantId(id);
+    }, []);
+
+    const previewUrl = `https://${tenantId}.resetsystem.vercel.app`;
+
     return (
         <AdminLayout>
             <div className="space-y-8 animate-in fade-in duration-500">
@@ -48,7 +57,7 @@ export default function WebConfigPage() {
                     <h2 className="text-2xl font-black uppercase tracking-tighter">Mira cómo luce tu web ahora mismo</h2>
                     <div className="pt-4">
                         <Button 
-                            onClick={() => window.open('/', '_blank')}
+                            onClick={() => window.open(previewUrl, '_blank')}
                             variant="outline" 
                             className="h-14 px-10 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 hover:bg-black hover:text-white transition-all shadow-lg"
                         >
