@@ -15,9 +15,11 @@ export interface TurnoDB {
     email?: string;
     sena?: number;
     total?: number;
-    status?: 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+    status?: 'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
     subIds?: string[];
     tratamientoId?: string;
+    subtratamientoAbreviado?: string;
+    clienteWhatsapp?: string;
 }
 
 // Actualizar un turno completo

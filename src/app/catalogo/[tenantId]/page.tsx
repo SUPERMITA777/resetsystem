@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
-import { Info, Clock, DollarSign, ChevronRight, ImageIcon } from "lucide-react";
+import { PublicBookingModal } from "@/components/booking/PublicBookingModal";
+import { Clock, DollarSign, ChevronRight, ImageIcon, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 
 export default function PublicCatalogPage() {
   const params = useParams();
@@ -14,6 +15,13 @@ export default function PublicCatalogPage() {
   const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
   const [subtratamientos, setSubtratamientos] = useState<Record<string, Subtratamiento[]>>({});
   const [loading, setLoading] = useState(true);
+
+  // Detail overlay state
+  const [detailSub, setDetailSub] = useState<{ sub: Subtratamiento; trat: Tratamiento } | null>(null);
+  const [detailImgIdx, setDetailImgIdx] = useState(0);
+
+  // Booking modal state
+  const [bookingData, setBookingData] = useState<{ sub: Subtratamiento; trat: Tratamiento } | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -68,7 +76,7 @@ export default function PublicCatalogPage() {
                       <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white rounded-full">
                          <span className="text-[10px] font-black uppercase tracking-widest">Servicio Principal</span>
                       </div>
-                      <h2 className="text-4xl font-black uppercase tracking-tighter leading-none tracking-tight">
+                      <h2 className="text-4xl font-black uppercase tracking-tighter leading-none">
                         {tratamiento.nombre}
                       </h2>
                       {tratamiento.descripcion && (
@@ -104,7 +112,7 @@ export default function PublicCatalogPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {subtratamientos[tratamiento.id]?.map((sub) => (
                         <div key={sub.id} className="p-8 bg-gray-50 rounded-[2rem] border border-gray-50 hover:border-black/10 transition-all group/card">
-                          <div className="flex justify-between items-start mb-6">
+                          <div className="flex justify-between items-start mb-4">
                             <h4 className="text-lg font-black uppercase tracking-tight leading-tight max-w-[70%]">
                               {sub.nombre}
                             </h4>
@@ -115,18 +123,31 @@ export default function PublicCatalogPage() {
                           </div>
 
                           {sub.descripcion && (
-                            <p className="text-gray-400 text-sm font-medium mb-6 line-clamp-2 italic">
-                              "{sub.descripcion}"
+                            <p className="text-gray-400 text-sm font-medium mb-4 line-clamp-2 italic">
+                              &ldquo;{sub.descripcion}&rdquo;
                             </p>
                           )}
+
+                          {/* VER MÁS button */}
+                          <div className="flex justify-center mb-4">
+                            <button
+                              onClick={() => { setDetailSub({ sub, trat: tratamiento }); setDetailImgIdx(0); }}
+                              className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black border border-gray-200 hover:border-black px-6 py-2 rounded-full transition-all"
+                            >
+                              Ver Más
+                            </button>
+                          </div>
 
                           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                             <div className="flex items-center gap-2 text-gray-400">
                               <Clock className="w-4 h-4" />
                               <span className="text-xs font-bold">{sub.duracion_minutos} min</span>
                             </div>
-                            <button className="text-[10px] font-black uppercase tracking-widest bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
-                              Reservar
+                            <button 
+                              onClick={() => setBookingData({ sub, trat: tratamiento })}
+                              className="text-[10px] font-black uppercase tracking-widest bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors active:scale-95"
+                            >
+                              Agendar Cita
                             </button>
                           </div>
                         </div>
@@ -145,6 +166,77 @@ export default function PublicCatalogPage() {
       </main>
 
       <PublicFooter />
+
+      {/* Detail Overlay */}
+      {detailSub && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setDetailSub(null)}>
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-2xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setDetailSub(null)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{detailSub.trat.nombre}</p>
+            <h2 className="text-3xl font-black uppercase tracking-tight mb-6">{detailSub.sub.nombre}</h2>
+
+            {/* Photo gallery */}
+            {detailSub.sub.imagenes && detailSub.sub.imagenes.length > 0 && (
+              <div className="relative mb-8 rounded-[2rem] overflow-hidden aspect-video bg-gray-100">
+                <img src={detailSub.sub.imagenes[detailImgIdx]} alt={detailSub.sub.nombre} className="w-full h-full object-cover" />
+                {detailSub.sub.imagenes.length > 1 && (
+                  <>
+                    <button onClick={() => setDetailImgIdx(i => i > 0 ? i - 1 : detailSub.sub.imagenes!.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setDetailImgIdx(i => i < detailSub.sub.imagenes!.length - 1 ? i + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                      <ChevronRightIcon className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {detailSub.sub.imagenes.map((_, i) => (
+                        <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === detailImgIdx ? 'bg-white scale-125' : 'bg-white/50'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Description */}
+            {detailSub.sub.descripcion && (
+              <p className="text-gray-600 font-medium leading-relaxed mb-8">{detailSub.sub.descripcion}</p>
+            )}
+
+            {/* Info row */}
+            <div className="flex items-center gap-6 mb-8 p-6 bg-gray-50 rounded-2xl">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-black">{detailSub.sub.duracion_minutos} minutos</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-black">${detailSub.sub.precio}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setBookingData({ sub: detailSub.sub, trat: detailSub.trat }); setDetailSub(null); }}
+              className="w-full h-14 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all active:scale-95"
+            >
+              Agendar Cita
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Modal */}
+      {bookingData && (
+        <PublicBookingModal
+          isOpen={!!bookingData}
+          onClose={() => setBookingData(null)}
+          tratamiento={bookingData.trat}
+          subtratamiento={bookingData.sub}
+          tenantId={tenantId}
+        />
+      )}
     </div>
   );
 }

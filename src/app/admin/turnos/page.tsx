@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Calendar as CalendarIcon, Clock, User, Tag, Search, Filter, Plus, ChevronRight, CalendarDays, List, CheckCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Tag, Search, Filter, Plus, ChevronRight, CalendarDays, List, CheckCircle2, AlertCircle, Check, X as XIcon, Phone, Edit3 } from "lucide-react";
+import { getTenant } from "@/lib/services/tenantService";
 import { format, addDays, startOfToday, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
@@ -13,7 +14,7 @@ import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function TurnosPage() {
-    const [activeTab, setActiveTab] = useState<'reservar' | 'listado'>('reservar');
+    const [activeTab, setActiveTab] = useState<'reservar' | 'listado' | 'pendientes'>('reservar');
     const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
     const [selectedTratamiento, setSelectedTratamiento] = useState<Tratamiento | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
@@ -28,6 +29,8 @@ export default function TurnosPage() {
     const [allTurnos, setAllTurnos] = useState<TurnoDB[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
+    const [pendientesTurnos, setPendientesTurnos] = useState<TurnoDB[]>([]);
+    const [loadingPendientes, setLoadingPendientes] = useState(false);
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
@@ -35,6 +38,9 @@ export default function TurnosPage() {
         loadTratamientos();
         if (activeTab === 'listado') {
             loadAllTurnos();
+        }
+        if (activeTab === 'pendientes') {
+            loadPendientes();
         }
     }, [activeTab]);
 
@@ -59,6 +65,46 @@ export default function TurnosPage() {
             toast.error("Error al cargar listado");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadPendientes = async () => {
+        setLoadingPendientes(true);
+        try {
+            const start = format(new Date(), 'yyyy-MM-dd');
+            const end = format(addDays(new Date(), 60), 'yyyy-MM-dd');
+            const data = await getTurnosPorRango(currentTenant, start, end);
+            setPendientesTurnos(data.filter(t => t.status === 'PENDIENTE').sort((a,b) => `${a.fecha} ${a.horaInicio}`.localeCompare(`${b.fecha} ${b.horaInicio}`)));
+        } catch (error) {
+            toast.error("Error al cargar pendientes");
+        } finally {
+            setLoadingPendientes(false);
+        }
+    };
+
+    const handleAceptarTurno = async (turno: TurnoDB) => {
+        try {
+            await updateTurno(currentTenant, turno.id, { status: 'CONFIRMADO' });
+            toast.success("Turno aceptado y confirmado");
+            loadPendientes();
+
+            const clienteWa = turno.clienteWhatsapp || turno.whatsapp || '';
+            if (clienteWa) {
+                const msg = encodeURIComponent(`¡Hola! Tu turno fue aceptado y agendado. ¡Te esperamos!`);
+                window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
+            }
+        } catch (error) {
+            toast.error("Error al aceptar turno");
+        }
+    };
+
+    const handleRechazarTurno = async (turno: TurnoDB) => {
+        try {
+            await updateTurno(currentTenant, turno.id, { status: 'CANCELADO' });
+            toast.success("Turno rechazado");
+            loadPendientes();
+        } catch (error) {
+            toast.error("Error al rechazar turno");
         }
     };
 
@@ -192,6 +238,15 @@ export default function TurnosPage() {
                             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'listado' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                         >
                             Listado
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('pendientes')}
+                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all relative ${activeTab === 'pendientes' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Pendientes
+                            {pendientesTurnos.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">{pendientesTurnos.length}</span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -358,6 +413,83 @@ export default function TurnosPage() {
                                         </div>
                                     </Card>
                                 ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'pendientes' && (
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                            <AlertCircle className="w-5 h-5 text-amber-500" />
+                            <p className="text-sm font-bold text-gray-500">Turnos solicitados desde la web que requieren tu acción.</p>
+                        </div>
+
+                        {loadingPendientes ? (
+                            <div className="py-20 flex flex-col items-center gap-4">
+                                <div className="animate-spin w-8 h-8 border-4 border-black border-t-transparent rounded-full" />
+                                <span className="text-xs font-black uppercase tracking-widest text-gray-400">Cargando Pendientes</span>
+                            </div>
+                        ) : pendientesTurnos.length > 0 ? (
+                            <div className="grid gap-4">
+                                {pendientesTurnos.map(t => (
+                                    <Card key={t.id} className="p-6 border-none shadow-premium-soft rounded-[2rem] border-l-4 border-l-amber-400">
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                            <div className="flex items-center gap-6">
+                                                <div className="w-14 h-14 bg-amber-50 rounded-2xl flex flex-col items-center justify-center border border-amber-100">
+                                                    <span className="text-[10px] font-black uppercase leading-none mb-1 text-amber-600">{format(new Date(t.fecha + 'T12:00:00'), 'MMM', { locale: es })}</span>
+                                                    <span className="text-xl font-black leading-none text-amber-700">{format(new Date(t.fecha + 'T12:00:00'), 'dd')}</span>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-black text-gray-900">{t.clienteAbreviado}</h3>
+                                                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                                                        <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                                                            <Clock className="w-3.5 h-3.5" /> {t.horaInicio}
+                                                        </span>
+                                                        <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                                                            <Tag className="w-3.5 h-3.5" /> {t.tratamientoAbreviado}
+                                                        </span>
+                                                        {t.subtratamientoAbreviado && (
+                                                            <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                                                                <ChevronRight className="w-3.5 h-3.5" /> {t.subtratamientoAbreviado}
+                                                            </span>
+                                                        )}
+                                                        {(t.clienteWhatsapp || t.whatsapp) && (
+                                                            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-500">
+                                                                <Phone className="w-3.5 h-3.5" /> {t.clienteWhatsapp || t.whatsapp}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleAceptarTurno(t)}
+                                                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all active:scale-95"
+                                                >
+                                                    <Check className="w-4 h-4" /> Aceptar
+                                                </button>
+                                                <button
+                                                    onClick={() => { setModalData({ turno: t }); setIsModalOpen(true); }}
+                                                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all"
+                                                >
+                                                    <Edit3 className="w-4 h-4" /> Modificar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRechazarTurno(t)}
+                                                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-red-50 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-100 transition-all"
+                                                >
+                                                    <XIcon className="w-4 h-4" /> Rechazar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-20 text-center">
+                                <CheckCircle2 className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay turnos pendientes</p>
                             </div>
                         )}
                     </div>
