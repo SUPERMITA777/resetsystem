@@ -13,7 +13,7 @@ export default function WebConfigPage() {
         setTenantId(id);
     }, []);
 
-    const previewUrl = `https://${tenantId}.resetsystem.vercel.app`;
+    const previewUrl = `/${tenantId}`;
 
     return (
         <AdminLayout>

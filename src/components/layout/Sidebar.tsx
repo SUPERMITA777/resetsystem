@@ -68,7 +68,7 @@ export function Sidebar() {
                         Configuración Web
                     </Link>
                     <a 
-                        href={`https://${tenantId}.resetsystem.vercel.app`} 
+                        href={`/${tenantId}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-all text-xs font-black uppercase tracking-widest mt-2 group"
