@@ -264,8 +264,9 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                 <div key={col.id} className="flex flex-col border-r last:border-0 border-gray-100">
                                     {HORAS.map(hora => {
                                         let turnosEnCelda = turnos.filter(t => {
-                                            if (view === 'diaria') return t.boxId === col.id && t.horaInicio === hora;
-                                            return t.fecha === col.id && t.horaInicio === hora;
+                                            const tHora = (t.horaInicio || '').substring(0, 5);
+                                            if (view === 'diaria') return t.boxId === col.id && tHora === hora;
+                                            return t.fecha === col.id && tHora === hora;
                                         });
 
                                         return (

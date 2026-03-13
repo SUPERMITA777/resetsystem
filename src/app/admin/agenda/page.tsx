@@ -53,7 +53,9 @@ export default function AgendaPage() {
             let turnosDb: TurnoData[] = [];
             if (currentView === 'diaria') {
                 const dateString = format(date, 'yyyy-MM-dd');
+                console.log('[Agenda] Daily view query date:', dateString);
                 turnosDb = await getTurnosPorFecha(currentTenant, dateString);
+                console.log('[Agenda] Daily view turnos found:', turnosDb.length, turnosDb.map(t => ({ id: t.id, fecha: t.fecha, boxId: t.boxId, horaInicio: t.horaInicio })));
             } else if (currentView === 'semanal') {
                 const start = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
                 const end = format(endOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
