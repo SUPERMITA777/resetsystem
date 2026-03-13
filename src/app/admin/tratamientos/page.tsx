@@ -168,6 +168,11 @@ export default function TratamientosPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (!confirm("⚠️ ATENCIÓN: Esto REEMPLAZARÁ todos los tratamientos y subtratamientos existentes con los datos del archivo Excel.\n\n¿Deseas continuar?")) {
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
         setImporting(true);
         const loadingToast = toast.loading("Importando tratamientos...");
 
@@ -187,6 +192,21 @@ export default function TratamientosPage() {
 
             const tratRows: any[] = XLSX.utils.sheet_to_json(tratSheet);
             const subRows: any[] = subSheet ? XLSX.utils.sheet_to_json(subSheet) : [];
+
+            // DELETE all existing treatments and their subtratamientos
+            toast.loading("Eliminando datos existentes...", { id: loadingToast });
+            const existingTrats = await serviceManagement.getTratamientos(currentTenant);
+            for (const t of existingTrats) {
+                // Delete subtratamientos first
+                const existingSubs = await serviceManagement.getSubtratamientos(currentTenant, t.id);
+                for (const s of existingSubs) {
+                    await serviceManagement.deleteSubtratamiento(currentTenant, t.id, s.id);
+                }
+                // Then delete the treatment
+                await serviceManagement.deleteTratamiento(currentTenant, t.id);
+            }
+
+            toast.loading("Creando nuevos datos...", { id: loadingToast });
 
             let tratCount = 0;
             let subCount = 0;

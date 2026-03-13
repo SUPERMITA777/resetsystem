@@ -14,6 +14,7 @@ import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AgendaCell } from './AgendaCell';
 import { TurnoCard, TurnoData } from './TurnoCard';
 import { useAuth } from '../auth/AuthProvider';
+import { Pencil } from 'lucide-react';
 interface AgendaGridProps {
     boxesCount: number;
     turnos: TurnoData[];
@@ -27,12 +28,16 @@ interface AgendaGridProps {
     currentDate: Date;
     onCellClick: (date: string, boxId: string, hora: string) => void;
     onTurnoClick: (turno: TurnoData) => void;
+    boxNames?: Record<string, string>;
+    onBoxNameChange?: (boxId: string, name: string) => void;
 }
 
-export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate, onCellClick, onTurnoClick }: AgendaGridProps) {
+export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate, onCellClick, onTurnoClick, boxNames = {}, onBoxNameChange }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [localTurnos, setLocalTurnos] = useState<TurnoData[]>(turnos);
     const { isStaff, staffId } = useAuth();
+    const [editingBoxId, setEditingBoxId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState('');
 
     // Sync local state with props
     React.useEffect(() => {
@@ -152,14 +157,22 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
 
     // Weekly or Daily view setup
     const columns = view === 'diaria'
-        ? boxes.map((box, i) => ({ id: box, label: `Box ${i + 1}`, date: currentDate }))
+        ? boxes.map((box, i) => ({
+            id: box,
+            label: boxNames[box] || `Box ${i + 1}`,
+            defaultLabel: `Box ${i + 1}`,
+            date: currentDate,
+            isBox: true
+          }))
         : eachDayOfInterval({
             start: startOfWeek(currentDate, { weekStartsOn: 1 }),
             end: endOfWeek(currentDate, { weekStartsOn: 1 })
         }).map(day => ({
             id: format(day, 'yyyy-MM-dd'),
             label: format(day, 'EEEE d', { locale: es }),
-            date: day
+            defaultLabel: format(day, 'EEEE d', { locale: es }),
+            date: day,
+            isBox: false
         }));
 
     return (
@@ -178,13 +191,52 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                     </div>
                     <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
                         {columns.map((col) => (
-                            <div key={col.id} className="p-3 border-r last:border-0 border-gray-100 text-center flex flex-col items-center justify-center gap-1 min-w-0">
-                                <span className={`text-[10px] font-black uppercase tracking-widest truncate w-full ${isToday(col.date) ? 'text-blue-600' : 'text-gray-400'}`}>
-                                    {col.label.split(' ')[0]}
-                                </span>
-                                <span className={`text-lg font-black leading-none ${isToday(col.date) ? 'text-blue-600' : 'text-gray-900'}`}>
-                                    {col.label.split(' ')[1] || (columns.indexOf(col) + 1)}
-                                </span>
+                            <div
+                                key={col.id}
+                                className={`p-3 border-r last:border-0 border-gray-100 text-center flex flex-col items-center justify-center gap-1 min-w-0 ${col.isBox ? 'cursor-pointer group/boxhdr' : ''}`}
+                                onDoubleClick={() => {
+                                    if (col.isBox && onBoxNameChange) {
+                                        setEditingBoxId(col.id);
+                                        setEditingName(col.label);
+                                    }
+                                }}
+                            >
+                                {editingBoxId === col.id ? (
+                                    <input
+                                        type="text"
+                                        value={editingName}
+                                        onChange={(e) => setEditingName(e.target.value)}
+                                        onBlur={() => {
+                                            if (onBoxNameChange && editingName.trim()) {
+                                                onBoxNameChange(col.id, editingName.trim());
+                                            }
+                                            setEditingBoxId(null);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                if (onBoxNameChange && editingName.trim()) {
+                                                    onBoxNameChange(col.id, editingName.trim());
+                                                }
+                                                setEditingBoxId(null);
+                                            }
+                                            if (e.key === 'Escape') setEditingBoxId(null);
+                                        }}
+                                        autoFocus
+                                        className="w-full text-center text-sm font-black uppercase tracking-tight bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-400"
+                                    />
+                                ) : (
+                                    <>
+                                        <span className={`text-[10px] font-black uppercase tracking-widest truncate w-full ${isToday(col.date) ? 'text-blue-600' : 'text-gray-400'}`}>
+                                            {col.label.split(' ')[0]}
+                                        </span>
+                                        <span className={`text-lg font-black leading-none ${isToday(col.date) ? 'text-blue-600' : 'text-gray-900'}`}>
+                                            {col.label.split(' ').slice(1).join(' ') || (columns.indexOf(col) + 1)}
+                                        </span>
+                                        {col.isBox && (
+                                            <Pencil className="w-3 h-3 text-gray-300 opacity-0 group-hover/boxhdr:opacity-100 transition-opacity" />
+                                        )}
+                                    </>
+                                )}
                             </div>
                         ))}
                     </div>

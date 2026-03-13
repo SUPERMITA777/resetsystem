@@ -11,6 +11,7 @@ import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import { AgendaSettingsModal } from "@/components/agenda/AgendaSettingsModal";
 import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
+import { getBoxNames, setBoxName } from "@/lib/services/boxNamesService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -33,6 +34,7 @@ export default function AgendaPage() {
         hora: '09:00',
         turno: null
     });
+    const [boxNames, setBoxNames] = useState<Record<string, string>>({});
 
     // In production, current tenant would come from auth context
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -63,6 +65,15 @@ export default function AgendaPage() {
             }
 
             setTurnos(turnosDb as TurnoData[]);
+
+            // Load box names for the current date (daily view)
+            if (currentView === 'diaria') {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                const names = await getBoxNames(currentTenant, dateStr);
+                setBoxNames(names);
+            } else {
+                setBoxNames({});
+            }
         } catch (error) {
             console.error("Error cargando datos:", error);
             toast.error("Error al cargar la agenda");
@@ -258,6 +269,13 @@ export default function AgendaPage() {
                         config={agendaConfig}
                         view={view}
                         currentDate={currentDate}
+                        boxNames={boxNames}
+                        onBoxNameChange={async (boxId, name) => {
+                            const dateStr = format(currentDate, 'yyyy-MM-dd');
+                            await setBoxName(currentTenant, dateStr, boxId, name);
+                            setBoxNames(prev => ({ ...prev, [boxId]: name }));
+                            toast.success(`Box renombrado a "${name}" para ${dateStr}`);
+                        }}
                         onCellClick={(fecha, boxId, hora) => {
                             setModalInitialData({ fecha, boxId, hora, turno: null });
                             setIsModalOpen(true);

@@ -28,6 +28,9 @@ export default function PublicCatalogPage() {
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Expanded treatments state (for showing all subs)
+  const [expandedTrats, setExpandedTrats] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     async function loadData() {
       if (!tenantId) return;
@@ -145,7 +148,7 @@ export default function PublicCatalogPage() {
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {filteredSubs.map((sub) => (
+                        {(expandedTrats.has(tratamiento.id) ? filteredSubs : filteredSubs.slice(0, 2)).map((sub) => (
                           <div key={sub.id} className="p-8 bg-gray-50 rounded-[2rem] border border-gray-50 hover:border-black/10 transition-all group/card">
                             <div className="flex justify-between items-start mb-4">
                               <h4 className="text-lg font-black uppercase tracking-tight leading-tight max-w-[70%]">
@@ -188,6 +191,28 @@ export default function PublicCatalogPage() {
                           </div>
                         ))}
                       </div>
+
+                      {filteredSubs.length > 2 && (
+                        <div className="mt-6 text-center">
+                          <button
+                            onClick={() => {
+                              setExpandedTrats(prev => {
+                                const next = new Set(prev);
+                                if (next.has(tratamiento.id)) next.delete(tratamiento.id);
+                                else next.add(tratamiento.id);
+                                return next;
+                              });
+                            }}
+                            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black border border-gray-200 hover:border-black px-8 py-2.5 rounded-full transition-all inline-flex items-center gap-2"
+                          >
+                            {expandedTrats.has(tratamiento.id) ? (
+                              <>Mostrar menos</>  
+                            ) : (
+                              <>Ver todos los servicios ({filteredSubs.length})</>  
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
