@@ -4,8 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { serviceManagement, Tratamiento } from "@/lib/services/serviceManagement";
 import { getUsersByTenant, UserProfile } from "@/lib/services/userService";
-import { X, Save, Clock, Box, User, Plus, Trash2, Calendar } from "lucide-react";
+import { X, Save, Clock, Box, User, Plus, Trash2, Calendar, FileText, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import { MultipleImageUploader } from "@/components/ui/MultipleImageUploader";
 
 interface TratamientoModalProps {
     isOpen: boolean;
@@ -17,9 +18,11 @@ interface TratamientoModalProps {
 
 export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantId }: TratamientoModalProps) {
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
+    const [activeTab, setActiveTab] = useState<"general" | "detalles">("general");
     const [formData, setFormData] = useState<Partial<Tratamiento>>({
         nombre: "",
         descripcion: "",
+        imagenes: [],
         habilitado: true,
         boxId: "box-1",
         profesionalId: "",
@@ -48,6 +51,7 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
             setFormData({
                 nombre: "",
                 descripcion: "",
+                imagenes: [],
                 habilitado: true,
                 boxId: "box-1",
                 profesionalId: "",
@@ -134,18 +138,43 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                     </button>
                 </div>
 
+                {/* Tabs */}
+                <div className="px-8 pt-4 flex gap-6 border-b border-gray-100">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("general")}
+                        className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === 'general' ? 'text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        General
+                        {activeTab === 'general' && (
+                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
+                        )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("detalles")}
+                        className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === 'detalles' ? 'text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        Detalles Públicos
+                        {activeTab === 'detalles' && (
+                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
+                        )}
+                    </button>
+                </div>
+
                 <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Nombre</label>
-                            <input
-                                required
-                                value={formData.nombre}
-                                onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
-                                placeholder="Ej: Depilación Laser"
-                            />
-                        </div>
+                    {activeTab === "general" ? (
+                        <div className="space-y-4 animate-in fade-in duration-300">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Nombre</label>
+                                <input
+                                    required
+                                    value={formData.nombre}
+                                    onChange={e => setFormData({ ...formData, nombre: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                    placeholder="Ej: Depilación Laser"
+                                />
+                            </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -280,7 +309,33 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                             </button>
                             <span className="text-xs font-bold text-gray-600">Tratamiento Habilitado</span>
                         </div>
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6 animate-in fade-in duration-300">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1 flex items-center gap-1">
+                                    <FileText className="w-3 h-3" /> Descripción Pública
+                                </label>
+                                <textarea
+                                    value={formData.descripcion || ""}
+                                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none resize-none h-32"
+                                    placeholder="Describe este tratamiento para que los clientes lo vean al momento de reservar..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1 flex items-center gap-1">
+                                    <ImageIcon className="w-3 h-3" /> Galería de Fotos
+                                </label>
+                                <MultipleImageUploader
+                                    tenantId={tenantId}
+                                    existingImages={formData.imagenes || []}
+                                    onImagesChange={urls => setFormData({ ...formData, imagenes: urls })}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="pt-4">
                         <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs">

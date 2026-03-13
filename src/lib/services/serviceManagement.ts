@@ -14,9 +14,11 @@ import {
 export interface Subtratamiento {
     id: string;
     nombre: string;
+    descripcion?: string;
     precio: number;
     duracion_minutos: number;
     imagen_url?: string;
+    imagenes?: string[];
     profesional_asignado?: string; // ID del empleado por defecto
 }
 
@@ -24,6 +26,7 @@ export interface Tratamiento {
     id: string;
     nombre: string;
     descripcion?: string;
+    imagenes?: string[];
     habilitado: boolean;
     boxId?: string; // Box asignado por defecto
     profesionalId?: string; // Profesional asignado por defecto
