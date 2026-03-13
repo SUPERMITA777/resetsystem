@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
+import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
 import { PublicBookingModal } from "@/components/booking/PublicBookingModal";
@@ -15,6 +16,7 @@ export default function PublicCatalogPage() {
   const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
   const [subtratamientos, setSubtratamientos] = useState<Record<string, Subtratamiento[]>>({});
   const [loading, setLoading] = useState(true);
+  const [tenant, setTenant] = useState<TenantData | null>(null);
 
   // Detail overlay state
   const [detailSub, setDetailSub] = useState<{ sub: Subtratamiento; trat: Tratamiento } | null>(null);
@@ -27,6 +29,8 @@ export default function PublicCatalogPage() {
     async function loadData() {
       if (!tenantId) return;
       try {
+        const tenantData = await getTenant(tenantId);
+        if (tenantData) setTenant(tenantData);
         const trats = await serviceManagement.getTratamientos(tenantId);
         const tratsHabilitados = trats.filter(t => t.habilitado);
         setTratamientos(tratsHabilitados);
@@ -56,14 +60,14 @@ export default function PublicCatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      <PublicNavbar />
+      <PublicNavbar salonName={tenant?.nombre_salon} />
 
       <main className="pt-32 pb-20 px-6">
         <div className="max-w-5xl mx-auto space-y-16">
           {/* Header */}
           <div className="text-center space-y-4">
             <h1 className="text-5xl font-black uppercase tracking-tighter">Catálogo de Servicios</h1>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">RESEST SYSTEM | Estética & Bienestar</p>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">{tenant?.nombre_salon || 'Catálogo'} | Estética & Bienestar</p>
           </div>
 
           {/* Catalog items */}
