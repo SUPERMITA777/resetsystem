@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone, ExternalLink } from "lucide-react";
 import { getUsersByTenant, createUserProfile, updateUserProfile, UserProfile, UserRole } from "@/lib/services/userService";
 import Link from "next/link";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import { app } from "@/lib/firebase";
 import toast from "react-hot-toast";
 
 export default function StaffPage() {
@@ -62,6 +64,17 @@ export default function StaffPage() {
             loadProfesionales(tenantId);
         } catch (error) {
             toast.error("Error al guardar");
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!selectedUser?.email) return;
+        try {
+            const auth = getAuth(app);
+            await sendPasswordResetEmail(auth, selectedUser.email);
+            toast.success(`Correo de recuperación enviado a ${selectedUser.email}`);
+        } catch (error) {
+            toast.error("Error al enviar correo de recuperación");
         }
     };
 
@@ -245,11 +258,21 @@ export default function StaffPage() {
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex gap-3">
-                                <Button type="submit" className="flex-1 bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
+                            <div className="pt-4 flex flex-col gap-3">
+                                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
                                     <Save className="w-5 h-5" />
-                                    Guardar Cambios
+                                    Guardar Cambios de Perfil
                                 </Button>
+                                
+                                {selectedUser && (
+                                    <button 
+                                        type="button" 
+                                        onClick={handleResetPassword}
+                                        className="w-full h-14 rounded-2xl border border-gray-100 bg-white text-gray-900 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all text-xs uppercase tracking-widest"
+                                    >
+                                        Restablecer Contraseña (vía Email)
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>
