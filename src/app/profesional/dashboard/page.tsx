@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getTurnosPorProfesional, TurnoDB } from "@/lib/services/agendaService";
+import { getUsersByTenant, UserProfile } from "@/lib/services/userService";
 import { 
     format, 
     startOfMonth, 
@@ -26,7 +27,8 @@ import {
     LogOut,
     CheckCircle2,
     CalendarDays,
-    AlertCircle
+    AlertCircle,
+    Search
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "@/lib/firebase";
@@ -39,6 +41,12 @@ export default function ProfesionalDashboard() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [turnos, setTurnos] = useState<TurnoDB[]>([]);
     const [loading, setLoading] = useState(true);
+    const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
+    const [filteredProfs, setFilteredProfs] = useState<UserProfile[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedProfId, setSelectedProfId] = useState<string | null>(null);
+    const [showSearch, setShowSearch] = useState(false);
+    const [viewMode, setViewMode] = useState<'date' | 'upcoming'>('date');
     const router = useRouter();
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -47,23 +55,43 @@ export default function ProfesionalDashboard() {
         if (!authLoading && !user) {
             router.push("/login");
         }
+        if (user && !authLoading) {
+            loadInitialData();
+        }
     }, [user, authLoading, router]);
 
+    const loadInitialData = async () => {
+        try {
+            const users = await getUsersByTenant(currentTenant);
+            const profs = users.filter(u => u.role === 'staff' || u.role === 'salon_admin');
+            setProfesionales(profs);
+            setFilteredProfs(profs);
+            
+            // Si el usuario logueado es profesional, seleccionarlo por defecto
+            if (staffId) {
+                setSelectedProfId(staffId);
+            }
+        } catch (error) {
+            console.error("Error loading profesionales:", error);
+        }
+    };
+
     useEffect(() => {
-        if (staffId) {
+        if (selectedProfId) {
             loadTurnos();
-        } else if (!authLoading) {
+        } else if (!authLoading && !staffId) {
             setLoading(false);
         }
-    }, [staffId, authLoading, currentMonth]);
+    }, [selectedProfId, authLoading, currentMonth]);
 
     const loadTurnos = async () => {
-        if (!staffId) return;
+        if (!selectedProfId) return;
         setLoading(true);
         try {
             const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-            const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
-            const data = await getTurnosPorProfesional(currentTenant, staffId, start, end);
+            // Cargamos 3 meses para tener visión a futuro
+            const end = format(addMonths(startOfMonth(currentMonth), 3), 'yyyy-MM-dd');
+            const data = await getTurnosPorProfesional(currentTenant, selectedProfId, start, end);
             setTurnos(data);
         } catch (error) {
             console.error(error);
@@ -141,19 +169,78 @@ export default function ProfesionalDashboard() {
 
             <main className="flex-1 p-6 max-w-5xl mx-auto w-full flex flex-col gap-6">
                 
-                {/* User Welcome */}
-                <div className="bg-black rounded-[2rem] p-8 text-white shadow-2xl shadow-black/20 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div>
-                        <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Bienvenido/a</p>
-                        <h2 className="text-3xl font-black uppercase tracking-tight">{user?.displayName || user?.email?.split('@')[0] || 'Profesional'}</h2>
-                        <div className="flex items-center gap-2 mt-4">
-                            <div className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/10">
-                                {turnos.length} Turnos este mes
+                {/* User Welcome & Search */}
+                <div className="bg-black rounded-[2rem] p-8 text-white shadow-2xl shadow-black/20 flex flex-col gap-6">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div>
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Bienvenido/a</p>
+                            <h2 className="text-3xl font-black uppercase tracking-tight">
+                                {profesionales.find(p => p.uid === selectedProfId)?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Profesional'}
+                            </h2>
+                            <div className="flex items-center gap-2 mt-4">
+                                <div className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/10">
+                                    {turnos.length} Turnos este mes
+                                </div>
                             </div>
                         </div>
+                        <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center border border-white/10 backdrop-blur-sm">
+                            <CalendarDays className="w-10 h-10 text-white" />
+                        </div>
                     </div>
-                    <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center border border-white/10 backdrop-blur-sm">
-                        <CalendarDays className="w-10 h-10 text-white" />
+
+                    {/* Search Professional */}
+                    <div className="pt-6 border-t border-white/10">
+                        <div className="relative">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <Search className="w-4 h-4" />
+                            </div>
+                            <input 
+                                type="text"
+                                placeholder="Buscar profesional por nombre o usuario..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSearchTerm(val);
+                                    setFilteredProfs(profesionales.filter(p => 
+                                        p.displayName?.toLowerCase().includes(val.toLowerCase()) || 
+                                        p.email.toLowerCase().includes(val.toLowerCase())
+                                    ));
+                                    setShowSearch(true);
+                                }}
+                                onFocus={() => setShowSearch(true)}
+                                className="w-full h-12 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-gray-600"
+                            />
+                            
+                            {showSearch && searchTerm && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {filteredProfs.length > 0 ? (
+                                        <div className="max-h-60 overflow-y-auto">
+                                            {filteredProfs.map(p => (
+                                                <button
+                                                    key={p.uid}
+                                                    onClick={() => {
+                                                        setSelectedProfId(p.uid);
+                                                        setSearchTerm('');
+                                                        setShowSearch(false);
+                                                    }}
+                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between group transition-colors border-b border-gray-50 last:border-0"
+                                                >
+                                                    <div>
+                                                        <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight">{p.displayName || p.email.split('@')[0]}</p>
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{p.email}</p>
+                                                    </div>
+                                                    <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-black transition-colors" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 text-center">
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No se encontraron profesionales</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -220,12 +307,31 @@ export default function ProfesionalDashboard() {
 
                     {/* Turnos Section */}
                     <div className="lg:col-span-5 space-y-4">
-                        <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 flex flex-col h-full min-h-[400px]">
-                            <div className="p-6 border-b border-gray-50 flex flex-col gap-1">
-                                <h3 className="font-black uppercase tracking-widest text-xs text-gray-400">Turnos Asignados</h3>
-                                <p className="text-xl font-black uppercase tracking-tight text-gray-900">
-                                    {format(selectedDate, "eeee d 'de' MMMM", { locale: es })}
-                                </p>
+                        <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 flex flex-col h-full min-h-[500px]">
+                            <div className="p-6 border-b border-gray-50 flex flex-col gap-4">
+                                <div className="flex bg-gray-50 p-1 rounded-xl w-full">
+                                    <button 
+                                        onClick={() => setViewMode('date')}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all ${viewMode === 'date' ? 'bg-black text-white' : 'text-gray-400'}`}
+                                    >
+                                        Por Día
+                                    </button>
+                                    <button 
+                                        onClick={() => setViewMode('upcoming')}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all ${viewMode === 'upcoming' ? 'bg-black text-white' : 'text-gray-400'}`}
+                                    >
+                                        Próximos
+                                    </button>
+                                </div>
+                                {viewMode === 'date' ? (
+                                    <p className="text-xl font-black uppercase tracking-tight text-gray-900">
+                                        {format(selectedDate, "eeee d 'de' MMMM", { locale: es })}
+                                    </p>
+                                ) : (
+                                    <p className="text-xl font-black uppercase tracking-tight text-gray-900">
+                                        Agenda a Futuro
+                                    </p>
+                                )}
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
@@ -233,16 +339,21 @@ export default function ProfesionalDashboard() {
                                     <div className="flex-1 flex items-center justify-center py-10">
                                         <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
                                     </div>
-                                ) : selectedDateTurnos.length === 0 ? (
+                                ) : (viewMode === 'date' ? selectedDateTurnos : turnos.filter(t => t.fecha >= format(new Date(), 'yyyy-MM-dd')).sort((a,b) => `${a.fecha} ${a.horaInicio}`.localeCompare(`${b.fecha} ${b.horaInicio}`)).slice(0, 20)).length === 0 ? (
                                     <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
                                         <CalendarIcon className="w-10 h-10 text-gray-200 mb-3" />
-                                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">No hay turnos para este día</p>
+                                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">No hay turnos para mostrar</p>
                                     </div>
                                 ) : (
-                                    selectedDateTurnos.map((t) => (
+                                    (viewMode === 'date' ? selectedDateTurnos : turnos.filter(t => t.fecha >= format(new Date(), 'yyyy-MM-dd')).sort((a,b) => `${a.fecha} ${a.horaInicio}`.localeCompare(`${b.fecha} ${b.horaInicio}`)).slice(0, 20)).map((t) => (
                                         <div key={t.id} className="bg-gray-50/50 p-5 rounded-3xl border border-gray-100 hover:border-black/10 hover:shadow-lg transition-all group">
                                             <div className="flex justify-between items-start mb-3">
                                                 <div className="flex items-center gap-2">
+                                                    {viewMode === 'upcoming' && (
+                                                        <span className="text-[10px] font-black bg-black text-white px-2 py-0.5 rounded-md uppercase tracking-tighter mr-2">
+                                                            {format(new Date(t.fecha + 'T12:00:00'), 'dd/MM')}
+                                                        </span>
+                                                    )}
                                                     <Clock className="w-3.5 h-3.5 text-blue-500" />
                                                     <span className="text-sm font-black text-gray-900">{t.horaInicio.substring(0, 5)}</span>
                                                 </div>
