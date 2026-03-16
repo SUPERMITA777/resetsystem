@@ -306,6 +306,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             isOpen={isOpen} 
             onClose={onClose} 
             title={editTurno ? "Editar Turno" : "Agendar Nuevo Turno"}
+            maxWidth="max-w-3xl"
             extraHeader={editTurno ? (
                 <button 
                     type="button" 
@@ -470,9 +471,6 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Ajuste ($)</label>
                             <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                                    <Plus className="w-4 h-4" />
-                                </div>
                                 <Input 
                                     type="number"
                                     value={ajustePrecio}
@@ -484,16 +482,13 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                                         setTotal(subTotal + val);
                                     }}
                                     placeholder="+/-"
-                                    className="pl-14 h-11 rounded-xl text-sm"
+                                    className="h-11 rounded-xl text-sm font-bold"
                                 />
                             </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Seña ($)</label>
                             <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-emerald-500">
-                                    <DollarSign className="w-4 h-4" />
-                                </div>
                                 <Input 
                                     type="number"
                                     value={sena}
@@ -504,33 +499,17 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                                             setStatus('CONFIRMADO');
                                         }
                                     }}
-                                    className="pl-14 h-11 rounded-xl text-sm"
+                                    className="h-11 rounded-xl text-sm font-bold text-emerald-600"
                                 />
                             </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 ml-2">Saldo ($)</label>
                             <div className="relative group/field pointer-events-none opacity-60">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-50/30 rounded-lg flex items-center justify-center text-blue-500">
-                                    <DollarSign className="w-4 h-4" />
-                                </div>
                                 <Input 
                                     value={Math.max(0, total - sena)}
                                     readOnly
-                                    className="pl-14 h-11 rounded-xl text-sm font-black text-blue-600 bg-blue-50/30"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Total ($)</label>
-                            <div className="relative group/field pointer-events-none opacity-60">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-100/50 rounded-lg flex items-center justify-center text-gray-400">
-                                    <DollarSign className="w-4 h-4" />
-                                </div>
-                                <Input 
-                                    value={total}
-                                    readOnly
-                                    className="pl-14 h-11 rounded-xl text-sm font-black bg-gray-100/50"
+                                    className="h-11 rounded-xl text-sm font-black text-blue-600 bg-blue-50/30"
                                 />
                             </div>
                         </div>
@@ -567,6 +546,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                                     <option value="RESERVADO">RESERVADO</option>
                                     <option value="CONFIRMADO">CONFIRMADO</option>
                                     <option value="COMPLETADO">COMPLETADO</option>
+                                    <option value="CANCELADO">CANCELADO</option>
                                 </select>
                             </div>
                         </div>
