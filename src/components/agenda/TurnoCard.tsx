@@ -30,6 +30,13 @@ export interface TurnoData {
     metodoPagoSaldo?: 'EFECTIVO' | 'TRANSFERENCIA';
     pagoSaldo?: number;
     saldoPagado?: boolean;
+    historialPagos?: Array<{
+        monto: number;
+        metodo: 'EFECTIVO' | 'TRANSFERENCIA';
+        tipo: 'SEÑA' | 'SALDO';
+        fecha: string;
+        timestamp: number;
+    }>;
 }
 
 interface TurnoCardProps {

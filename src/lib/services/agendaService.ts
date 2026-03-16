@@ -2,10 +2,20 @@ import { db } from "../firebase";
 import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 
 // Tipo de dato en Firestore
+export interface PagoRecord {
+    monto: number;
+    metodo: 'EFECTIVO' | 'TRANSFERENCIA';
+    tipo: 'SEÑA' | 'SALDO';
+    fecha: string; // ISO Argentina
+    timestamp: number;
+}
+
 export interface TurnoDB {
     id: string; // Document ID
     tenantId: string;
     clienteAbreviado: string;
+    nombre?: string;
+    apellido?: string;
     tratamientoAbreviado: string;
     duracionMinutos: number;
     boxId: string; // ej: 'box-1'
@@ -13,13 +23,14 @@ export interface TurnoDB {
     horaInicio: string; // formato 'HH:mm'
     whatsapp?: string;
     email?: string;
+    pagoSaldo?: number;
+    saldoPagado?: boolean;
+    historialPagos?: PagoRecord[];
     sena?: number;
     total?: number;
     status?: 'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
     subIds?: string[];
     tratamientoId?: string;
-    subtratamientoAbreviado?: string;
-    clienteWhatsapp?: string;
     profesionalId?: string;
     profesionalNombre?: string;
     ajustePrecio?: number;
@@ -30,6 +41,8 @@ export interface TurnoDB {
         precio: number;
         duracion: number;
     }>;
+    metodoPagoSena?: 'EFECTIVO' | 'TRANSFERENCIA';
+    metodoPagoSaldo?: 'EFECTIVO' | 'TRANSFERENCIA';
 }
 
 // Actualizar un turno completo

@@ -44,6 +44,10 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [metodoPagoSaldo, setMetodoPagoSaldo] = useState<'EFECTIVO' | 'TRANSFERENCIA'>('EFECTIVO');
     const [pagoSaldo, setPagoSaldo] = useState(0);
     const [saldoPagado, setSaldoPagado] = useState(false);
+    const [historialPagos, setHistorialPagos] = useState<any[]>([]);
+
+    const [initialSena, setInitialSena] = useState(0);
+    const [initialPagoSaldo, setInitialPagoSaldo] = useState(0);
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
     const [selectedProfesionalId, setSelectedProfesionalId] = useState('');
     const [loading, setLoading] = useState(false);
@@ -73,6 +77,9 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setMetodoPagoSaldo(editTurno.metodoPagoSaldo || 'EFECTIVO');
                 setPagoSaldo(editTurno.pagoSaldo || 0);
                 setSaldoPagado(editTurno.saldoPagado || false);
+                setHistorialPagos(editTurno.historialPagos || []);
+                setInitialSena(editTurno.sena || 0);
+                setInitialPagoSaldo(editTurno.pagoSaldo || 0);
                 setStatus(editTurno.status || 'RESERVADO');
                 setFecha(editTurno.fecha || '');
                 setSelectedTratamientoId(editTurno.tratamientoId || '');
@@ -94,6 +101,9 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setMetodoPagoSaldo('EFECTIVO');
                 setPagoSaldo(0);
                 setSaldoPagado(false);
+                setHistorialPagos([]);
+                setInitialSena(0);
+                setInitialPagoSaldo(0);
                 setSelectedSubs([]);
                 setStatus('RESERVADO');
                 if (initialTratamientoId) {
@@ -121,6 +131,24 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         }
         return () => window.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
+
+    const getArgentinaTimeData = () => {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('sv-SE', { // sv-SE gives yyyy-mm-dd
+            timeZone: 'America/Argentina/Buenos_Aires',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const getPart = (type: string) => parts.find(p => p.type === type)?.value;
+        const fechaStr = `${getPart('year')}-${getPart('month')}-${getPart('day')} ${getPart('hour')}:${getPart('minute')}:${getPart('second')}`;
+        
+        return {
+            fecha: fechaStr,
+            timestamp: now.getTime()
+        };
+    };
 
     const loadProfesionales = async () => {
         try {
@@ -256,6 +284,29 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             duracion: s.duracion_minutos
         }));
 
+        let newHistorial = [...historialPagos];
+        const argData = getArgentinaTimeData();
+
+        if (sena > initialSena) {
+            newHistorial.push({
+                monto: sena - initialSena,
+                metodo: metodoPagoSena,
+                tipo: 'SEÑA',
+                fecha: argData.fecha,
+                timestamp: argData.timestamp
+            });
+        }
+
+        if (pagoSaldo > initialPagoSaldo) {
+            newHistorial.push({
+                monto: pagoSaldo - initialPagoSaldo,
+                metodo: metodoPagoSaldo,
+                tipo: 'SALDO',
+                fecha: argData.fecha,
+                timestamp: argData.timestamp
+            });
+        }
+
         onSave({
             clienteAbreviado: cliente,
             nombre,
@@ -280,7 +331,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             metodoPagoSena,
             metodoPagoSaldo,
             pagoSaldo,
-            saldoPagado
+            saldoPagado,
+            historialPagos: newHistorial
         });
 
         onClose();
