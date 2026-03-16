@@ -136,7 +136,11 @@ export default function StaffPage() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {profesionales.map((p) => (
-                                        <tr key={p.uid} className="hover:bg-gray-50/50 transition-colors group">
+                                        <tr 
+                                            key={p.uid} 
+                                            onClick={() => openEdit(p)}
+                                            className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                                        >
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-xl flex items-center justify-center text-[var(--primary)] font-black uppercase text-xs">
@@ -160,9 +164,9 @@ export default function StaffPage() {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <button onClick={() => openEdit(p)} className="p-2 hover:bg-white rounded-lg transition-all text-gray-400 hover:text-black shadow-sm group-hover:shadow-md border border-transparent hover:border-gray-100">
+                                                <div className="p-2 hover:bg-white rounded-lg transition-all text-gray-400 hover:text-black shadow-sm group-hover:shadow-md border border-transparent hover:border-gray-100 inline-block">
                                                     <Settings className="w-4 h-4" />
-                                                </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -191,6 +195,23 @@ export default function StaffPage() {
 
                         <form onSubmit={handleSave} className="p-8 space-y-6">
                             <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Email (Acceso)</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input
+                                            required
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            disabled={!!selectedUser}
+                                            className={`w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none ${!!selectedUser ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            placeholder="ejemplo@reset.com"
+                                        />
+                                    </div>
+                                    {selectedUser && <p className="text-[9px] text-gray-400 mt-1 px-1">El email no puede modificarse una vez creado por seguridad.</p>}
+                                </div>
+
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Nombre Completo</label>
                                     <div className="relative">

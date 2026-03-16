@@ -9,17 +9,19 @@ import { doc, getDoc } from "firebase/firestore";
 interface AuthContextType {
     user: User | null;
     isStaff: boolean;
+    role: string | null;
     staffId: string | null;
     loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, isStaff: false, staffId: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ user: null, isStaff: false, role: null, staffId: null, loading: true });
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isStaff, setIsStaff] = useState<boolean>(false);
+    const [role, setRole] = useState<string | null>(null);
     const [staffId, setStaffId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -34,17 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         const profile = snap.data();
                         const isUserStaff = profile.role === 'staff' || profile.role === 'salon_admin';
                         setIsStaff(isUserStaff);
+                        setRole(profile.role || null);
                         setStaffId(isUserStaff ? firebaseUser.uid : null);
                     } else {
                         setIsStaff(false);
+                        setRole(null);
                         setStaffId(null);
                     }
                 } catch (e) {
                     setIsStaff(false);
+                    setRole(null);
                     setStaffId(null);
                 }
             } else {
                 setIsStaff(false);
+                setRole(null);
                 setStaffId(null);
             }
             setUser(firebaseUser);
@@ -55,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, isStaff, staffId, loading }}>
+        <AuthContext.Provider value={{ user, isStaff, role, staffId, loading }}>
             {children}
         </AuthContext.Provider>
     );

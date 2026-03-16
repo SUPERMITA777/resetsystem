@@ -36,7 +36,7 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function ProfesionalDashboard() {
-    const { user, staffId, loading: authLoading } = useAuth();
+    const { user, staffId, role, loading: authLoading } = useAuth();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [turnos, setTurnos] = useState<TurnoDB[]>([]);
@@ -175,60 +175,62 @@ export default function ProfesionalDashboard() {
                         </div>
                     </div>
 
-                    {/* Search Professional */}
-                    <div className="pt-6 border-t border-white/10">
-                        <div className="relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                                <Search className="w-4 h-4" />
-                            </div>
-                            <input 
-                                type="text"
-                                placeholder="Buscar profesional por nombre o usuario..."
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setSearchTerm(val);
-                                    setFilteredProfs(profesionales.filter(p => 
-                                        p.displayName?.toLowerCase().includes(val.toLowerCase()) || 
-                                        p.email.toLowerCase().includes(val.toLowerCase())
-                                    ));
-                                    setShowSearch(true);
-                                }}
-                                onFocus={() => setShowSearch(true)}
-                                className="w-full h-12 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-gray-600"
-                            />
-                            
-                            {showSearch && searchTerm && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {filteredProfs.length > 0 ? (
-                                        <div className="max-h-60 overflow-y-auto">
-                                            {filteredProfs.map(p => (
-                                                <button
-                                                    key={p.uid}
-                                                    onClick={() => {
-                                                        setSelectedProfId(p.uid);
-                                                        setSearchTerm('');
-                                                        setShowSearch(false);
-                                                    }}
-                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between group transition-colors border-b border-gray-50 last:border-0"
-                                                >
-                                                    <div>
-                                                        <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight">{p.displayName || p.email.split('@')[0]}</p>
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{p.email}</p>
-                                                    </div>
-                                                    <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-black transition-colors" />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-4 text-center">
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No se encontraron profesionales</p>
-                                        </div>
-                                    )}
+                    {/* Search Professional - Only for admins/superadmins */}
+                    {(role === 'salon_admin' || role === 'superadmin') && (
+                        <div className="pt-6 border-t border-white/10">
+                            <div className="relative">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <Search className="w-4 h-4" />
                                 </div>
-                            )}
+                                <input 
+                                    type="text"
+                                    placeholder="Buscar profesional por nombre o usuario..."
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSearchTerm(val);
+                                        setFilteredProfs(profesionales.filter(p => 
+                                            p.displayName?.toLowerCase().includes(val.toLowerCase()) || 
+                                            p.email.toLowerCase().includes(val.toLowerCase())
+                                        ));
+                                        setShowSearch(true);
+                                    }}
+                                    onFocus={() => setShowSearch(true)}
+                                    className="w-full h-12 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-gray-600"
+                                />
+                                
+                                {showSearch && searchTerm && (
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {filteredProfs.length > 0 ? (
+                                            <div className="max-h-60 overflow-y-auto">
+                                                {filteredProfs.map(p => (
+                                                    <button
+                                                        key={p.uid}
+                                                        onClick={() => {
+                                                            setSelectedProfId(p.uid);
+                                                            setSearchTerm('');
+                                                            setShowSearch(false);
+                                                        }}
+                                                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between group transition-colors border-b border-gray-50 last:border-0"
+                                                    >
+                                                        <div>
+                                                            <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight">{p.displayName || p.email.split('@')[0]}</p>
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{p.email}</p>
+                                                        </div>
+                                                        <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-black transition-colors" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 text-center">
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No se encontraron profesionales</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
