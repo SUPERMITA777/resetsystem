@@ -31,6 +31,8 @@ export interface TurnoDB {
     status?: 'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
     subIds?: string[];
     tratamientoId?: string;
+    subtratamientoAbreviado?: string;
+    clienteWhatsapp?: string;
     profesionalId?: string;
     profesionalNombre?: string;
     ajustePrecio?: number;

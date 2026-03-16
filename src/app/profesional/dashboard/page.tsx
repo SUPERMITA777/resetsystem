@@ -25,7 +25,8 @@ import {
     ChevronRight, 
     LogOut,
     CheckCircle2,
-    CalendarDays
+    CalendarDays,
+    AlertCircle
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "@/lib/firebase";
@@ -51,8 +52,10 @@ export default function ProfesionalDashboard() {
     useEffect(() => {
         if (staffId) {
             loadTurnos();
+        } else if (!authLoading) {
+            setLoading(false);
         }
-    }, [staffId, currentMonth]);
+    }, [staffId, authLoading, currentMonth]);
 
     const loadTurnos = async () => {
         if (!staffId) return;
@@ -76,10 +79,26 @@ export default function ProfesionalDashboard() {
         router.push("/login");
     };
 
-    if (authLoading || loading && turnos.length === 0) {
+    if (authLoading || (loading && !turnos.length && staffId)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (!authLoading && !staffId) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
+                <AlertCircle className="w-12 h-12 text-amber-500 mb-4" />
+                <h2 className="text-xl font-black uppercase tracking-tight mb-2">Acceso No Autorizado</h2>
+                <p className="text-gray-500 max-w-md">Tu cuenta no está vinculada a un perfil de profesional. Contacta al administrador del salón.</p>
+                <button 
+                    onClick={handleLogout}
+                    className="mt-6 px-6 py-2 bg-black text-white rounded-xl font-bold uppercase tracking-widest text-xs"
+                >
+                    Cerrar Sesión
+                </button>
             </div>
         );
     }
