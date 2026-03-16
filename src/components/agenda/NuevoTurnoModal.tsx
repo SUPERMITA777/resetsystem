@@ -38,6 +38,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [sena, setSena] = useState<number>(0);
     const [total, setTotal] = useState<number>(0);
     const [status, setStatus] = useState<'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO'>('RESERVADO');
+    const [ajustePrecio, setAjustePrecio] = useState<number>(0);
+    const [motivoSaldo, setMotivoSaldo] = useState('');
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
     const [selectedProfesionalId, setSelectedProfesionalId] = useState('');
     const [loading, setLoading] = useState(false);
@@ -61,6 +63,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setHora(editTurno.horaInicio.substring(0, 5));
                 setSena(editTurno.sena || 0);
                 setTotal(editTurno.total || 0);
+                setAjustePrecio(editTurno.ajustePrecio || 0);
+                setMotivoSaldo(editTurno.motivoSaldo || '');
                 setStatus(editTurno.status || 'RESERVADO');
                 setFecha(editTurno.fecha || '');
                 setSelectedTratamientoId(editTurno.tratamientoId || '');
@@ -76,6 +80,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setHora(initialHora || '09:00');
                 setSena(0);
                 setTotal(0);
+                setAjustePrecio(0);
+                setMotivoSaldo('');
                 setSelectedSubs([]);
                 setStatus('RESERVADO');
                 if (initialTratamientoId) {
@@ -87,6 +93,17 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             }
         }
     }, [isOpen, editTurno, initialHora, initialTratamientoId]);
+
+    // Tecla ESC para cerrar modal sin guardar
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        if (isOpen) {
+            window.addEventListener('keydown', handleEsc);
+        }
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [isOpen, onClose]);
 
     const loadProfesionales = async () => {
         try {
@@ -111,39 +128,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         try {
             const data = await serviceManagement.getTratamientos(currentTenant);
             
-            const filtered = data.filter(t => {
-                if (!t.habilitado) return false;
-                if (initialBox && t.boxId && t.boxId !== initialBox) return false;
-                if (t.rangos_disponibilidad && t.rangos_disponibilidad.length > 0) {
-                    const selectedDate = initialFecha ? new Date(initialFecha + 'T12:00:00') : new Date();
-                    const dateStr = initialFecha || format(selectedDate, 'yyyy-MM-dd');
-                    const dayOfWeek = selectedDate.getDay();
-
-                    const isAvailable = t.rangos_disponibilidad.some(rango => {
-                        // Check day of week
-                        if (!rango.dias.includes(dayOfWeek)) return false;
-                        
-                        // Check date range if present
-                        if (rango.fecha_inicio && dateStr < rango.fecha_inicio) return false;
-                        if (rango.fecha_fin && dateStr > rango.fecha_fin) return false;
-
-                        // Check time if it's for a specific slot
-                        if (initialHora) {
-                            const [h_ini, m_ini] = rango.inicio.split(':').map(Number);
-                            const [h_fin, m_fin] = rango.fin.split(':').map(Number);
-                            const [h_sel, m_sel] = initialHora.split(':').map(Number);
-                            const startMinutes = h_ini * 60 + m_ini;
-                            const endMinutes = h_fin * 60 + m_fin;
-                            const selectedMinutes = h_sel * 60 + m_sel;
-                            return selectedMinutes >= startMinutes && selectedMinutes < endMinutes;
-                        }
-                        return true;
-                    });
-                    if (!isAvailable) return false;
-                }
-                return true;
-            });
-            setTratamientos(filtered);
+            setTratamientos(data.filter(t => t.habilitado));
         } catch (error) {
             console.error(error);
         }
@@ -174,12 +159,13 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         setSelectedTratamientoId(id);
         setSubtratamientos([]);
         setSelectedSubs([]);
-        setTotal(0);
+        setTotal(0 + ajustePrecio);
         if (!id) return;
 
         setLoading(true);
         try {
             const data = await serviceManagement.getSubtratamientos(currentTenant, id);
+            // Permitimos todos los sub-tratamientos según pedido del usuario
             setSubtratamientos(data);
         } catch (error) {
             console.error(error);
@@ -220,8 +206,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     };
 
     const updateTotals = (subs: Subtratamiento[]) => {
-        const newTotal = subs.reduce((acc, s) => acc + s.precio, 0);
-        setTotal(newTotal);
+        const subTotal = subs.reduce((acc, s) => acc + s.precio, 0);
+        setTotal(subTotal + ajustePrecio);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -245,6 +231,14 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         
         const prof = profesionales.find(p => p.uid === selectedProfesionalId);
 
+        // Snapshot de tratamientos
+        const subtratamientosSnap = selectedSubs.map(s => ({
+            id: s.id,
+            nombre: s.nombre,
+            precio: s.precio,
+            duracion: s.duracion_minutos
+        }));
+
         onSave({
             clienteAbreviado: cliente,
             nombre,
@@ -262,7 +256,10 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             tratamientoId: selectedTratamientoId,
             subIds: selectedSubs.map(s => s.id),
             profesionalId: selectedProfesionalId,
-            profesionalNombre: prof ? prof.displayName || prof.email : ''
+            profesionalNombre: prof ? prof.displayName || prof.email : '',
+            ajustePrecio,
+            motivoSaldo: (status === 'COMPLETADO' && total - sena > 0) ? motivoSaldo : '',
+            subtratamientosSnap
         });
 
         onClose();
@@ -282,12 +279,14 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         }
 
         const subNames = selectedSubs.map(s => s.nombre).join(', ');
+        const trat = tratamientos.find(t => t.id === selectedTratamientoId);
         const fechaFormateada = fecha ? format(new Date(fecha + 'T12:00:00'), "EEEE d 'de' MMMM", { locale: es }) : '';
         
         const message = template
             .replace(/%fecha%/g, fechaFormateada)
             .replace(/%hora%/g, hora)
-            .replace(/%tratamiento%/g, subNames || 'Tratamiento');
+            .replace(/%tratamiento%/g, trat?.nombre || 'Tratamiento')
+            .replace(/%subtratamiento%/g, subNames || '');
 
         const waUrl = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(waUrl, '_blank');
@@ -412,7 +411,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Categoría</label>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Tratamiento</label>
                             <div className="relative group/field">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
                                     <Tag className="w-4 h-4" />
@@ -432,7 +431,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                         </div>
 
                         <div className="space-y-1">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Añadir Sub-item</label>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Añadir Sub-tratamiento</label>
                             <div className="relative group/field">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
                                     <Plus className="w-4 h-4" />
@@ -467,7 +466,28 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Ajuste ($)</label>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                                    <Plus className="w-4 h-4" />
+                                </div>
+                                <Input 
+                                    type="number"
+                                    value={ajustePrecio}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setAjustePrecio(val);
+                                        // Recalculate total with the new adjustment
+                                        const subTotal = selectedSubs.reduce((acc, s) => acc + s.precio, 0);
+                                        setTotal(subTotal + val);
+                                    }}
+                                    placeholder="+/-"
+                                    className="pl-14 h-11 rounded-xl text-sm"
+                                />
+                            </div>
+                        </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Seña ($)</label>
                             <div className="relative group/field">
@@ -477,7 +497,13 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                                 <Input 
                                     type="number"
                                     value={sena}
-                                    onChange={(e) => setSena(Number(e.target.value))}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setSena(val);
+                                        if (val > 1 && status === 'RESERVADO') {
+                                            setStatus('CONFIRMADO');
+                                        }
+                                    }}
                                     className="pl-14 h-11 rounded-xl text-sm"
                                 />
                             </div>
@@ -509,6 +535,22 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                             </div>
                         </div>
                     </div>
+
+                    {status === 'COMPLETADO' && (total - sena > 0) && (
+                        <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl space-y-2 animate-in slide-in-from-top-2 duration-300">
+                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
+                                <Bell className="w-3 h-3" />
+                                Saldo Pendiente: Justificar Motivo
+                            </p>
+                            <textarea
+                                value={motivoSaldo}
+                                onChange={(e) => setMotivoSaldo(e.target.value)}
+                                className="w-full bg-white border-none rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-orange-400 outline-none transition-all resize-none h-16"
+                                placeholder="Ej: Se abona en la próxima sesión, Transferencia pendiente..."
+                                required
+                            />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1">

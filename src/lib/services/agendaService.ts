@@ -22,6 +22,14 @@ export interface TurnoDB {
     clienteWhatsapp?: string;
     profesionalId?: string;
     profesionalNombre?: string;
+    ajustePrecio?: number;
+    motivoSaldo?: string;
+    subtratamientosSnap?: Array<{
+        id: string;
+        nombre: string;
+        precio: number;
+        duracion: number;
+    }>;
 }
 
 // Actualizar un turno completo

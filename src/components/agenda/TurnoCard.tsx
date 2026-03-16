@@ -18,6 +18,14 @@ export interface TurnoData {
     tratamientoId?: string;
     profesionalId?: string;
     profesionalNombre?: string;
+    ajustePrecio?: number;
+    motivoSaldo?: string;
+    subtratamientosSnap?: Array<{
+        id: string;
+        nombre: string;
+        precio: number;
+        duracion: number;
+    }>;
 }
 
 interface TurnoCardProps {
@@ -44,9 +52,10 @@ export function TurnoCard({ turno, disabled = false, interval, onClick }: TurnoC
     const heightPx = (turno.duracionMinutos / intervalToUse) * CELL_HEIGHT;
 
     const statusColors = {
-        RESERVADO: 'bg-blue-500',
+        PENDIENTE: 'bg-amber-400',
+        RESERVADO: 'bg-orange-500',
         CONFIRMADO: 'bg-emerald-500',
-        COMPLETADO: 'bg-gray-400',
+        COMPLETADO: 'bg-blue-500',
         CANCELADO: 'bg-red-500'
     };
 

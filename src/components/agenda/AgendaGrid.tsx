@@ -134,15 +134,26 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                     {format(day, 'd')}
                                 </span>
                                 <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px]">
-                                    {dayTurnos.slice(0, 3).map(t => (
-                                        <div 
-                                            key={t.id} 
-                                            onClick={() => onTurnoClick(t)}
-                                            className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md truncate font-medium border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                                        >
-                                            {t.horaInicio.substring(0, 5)} {t.clienteAbreviado}
-                                        </div>
-                                    ))}
+                                    {dayTurnos.slice(0, 3).map(t => {
+                                        const statusColors = {
+                                            PENDIENTE: 'bg-amber-50 text-amber-700 border-amber-200',
+                                            RESERVADO: 'bg-orange-50 text-orange-700 border-orange-200',
+                                            CONFIRMADO: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            COMPLETADO: 'bg-blue-50 text-blue-700 border-blue-200',
+                                            CANCELADO: 'bg-red-50 text-red-700 border-red-200'
+                                        };
+                                        const colorClass = statusColors[t.status as keyof typeof statusColors] || statusColors.RESERVADO;
+                                        
+                                        return (
+                                            <div 
+                                                key={t.id} 
+                                                onClick={() => onTurnoClick(t)}
+                                                className={`text-[9px] px-1.5 py-0.5 rounded-md truncate font-medium border cursor-pointer transition-colors ${colorClass}`}
+                                            >
+                                                {t.horaInicio.substring(0, 5)} {t.clienteAbreviado}
+                                            </div>
+                                        );
+                                    })}
                                     {dayTurnos.length > 3 && (
                                         <span className="text-[9px] text-gray-400 font-bold ml-1">+{dayTurnos.length - 3} más</span>
                                     )}

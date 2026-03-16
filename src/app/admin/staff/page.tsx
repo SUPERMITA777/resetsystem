@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
-import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone } from "lucide-react";
+import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone, ExternalLink } from "lucide-react";
 import { getUsersByTenant, createUserProfile, updateUserProfile, UserProfile, UserRole } from "@/lib/services/userService";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
 export default function StaffPage() {
@@ -84,10 +85,16 @@ export default function StaffPage() {
                         <h1 className="text-3xl font-black text-[var(--foreground)] uppercase tracking-tight">Profesionales</h1>
                         <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Gestión de staff y roles</p>
                     </div>
-                    <Button onClick={() => { setSelectedUser(null); setFormData({ email: "", displayName: "", role: "staff", whatsapp: "", status: "active" }); setIsModalOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-2xl px-6 py-6 font-bold uppercase tracking-widest text-xs shadow-xl shadow-black/10 transition-all flex items-center gap-2">
-                        <Plus className="w-5 h-5" />
-                        Nuevo Profesional
-                    </Button>
+                    <div className="flex gap-2">
+                        <Link href="/profesional/dashboard" className="h-14 px-6 rounded-2xl border border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-black hover:bg-gray-50 transition-all shadow-sm font-bold text-xs uppercase tracking-widest gap-2">
+                            <ExternalLink className="w-4 h-4" />
+                            Ver Panel Profesionales
+                        </Link>
+                        <Button onClick={() => { setSelectedUser(null); setFormData({ email: "", displayName: "", role: "staff", whatsapp: "", status: "active" }); setIsModalOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-2xl px-6 py-6 font-bold uppercase tracking-widest text-xs shadow-xl shadow-black/10 transition-all flex items-center gap-2">
+                            <Plus className="w-5 h-5" />
+                            Nuevo Profesional
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="bg-white rounded-[2rem] shadow-2xl shadow-black/5 border border-gray-100 flex-1 overflow-hidden flex flex-col">

@@ -107,6 +107,7 @@ export function AgendaSettingsModal({ isOpen, onClose, currentConfig, onSave }: 
                                     <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%fecha%</span>
                                     <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%hora%</span>
                                     <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%tratamiento%</span>
+                                    <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%subtratamiento%</span>
                                 </div>
                             </div>
                         </div>
