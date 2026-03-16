@@ -40,6 +40,10 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [status, setStatus] = useState<'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO'>('RESERVADO');
     const [ajustePrecio, setAjustePrecio] = useState<number>(0);
     const [motivoSaldo, setMotivoSaldo] = useState('');
+    const [metodoPagoSena, setMetodoPagoSena] = useState<'EFECTIVO' | 'TRANSFERENCIA'>('EFECTIVO');
+    const [metodoPagoSaldo, setMetodoPagoSaldo] = useState<'EFECTIVO' | 'TRANSFERENCIA'>('EFECTIVO');
+    const [pagoSaldo, setPagoSaldo] = useState(0);
+    const [saldoPagado, setSaldoPagado] = useState(false);
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
     const [selectedProfesionalId, setSelectedProfesionalId] = useState('');
     const [loading, setLoading] = useState(false);
@@ -65,6 +69,10 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setTotal(editTurno.total || 0);
                 setAjustePrecio(editTurno.ajustePrecio || 0);
                 setMotivoSaldo(editTurno.motivoSaldo || '');
+                setMetodoPagoSena(editTurno.metodoPagoSena || 'EFECTIVO');
+                setMetodoPagoSaldo(editTurno.metodoPagoSaldo || 'EFECTIVO');
+                setPagoSaldo(editTurno.pagoSaldo || 0);
+                setSaldoPagado(editTurno.saldoPagado || false);
                 setStatus(editTurno.status || 'RESERVADO');
                 setFecha(editTurno.fecha || '');
                 setSelectedTratamientoId(editTurno.tratamientoId || '');
@@ -82,6 +90,10 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setTotal(0);
                 setAjustePrecio(0);
                 setMotivoSaldo('');
+                setMetodoPagoSena('EFECTIVO');
+                setMetodoPagoSaldo('EFECTIVO');
+                setPagoSaldo(0);
+                setSaldoPagado(false);
                 setSelectedSubs([]);
                 setStatus('RESERVADO');
                 if (initialTratamientoId) {
@@ -98,6 +110,11 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
+            if (e.key === 'Enter') {
+                if (document.activeElement?.tagName !== 'TEXTAREA') {
+                    handleSubmit(e as any);
+                }
+            }
         };
         if (isOpen) {
             window.addEventListener('keydown', handleEsc);
@@ -258,8 +275,12 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             profesionalId: selectedProfesionalId,
             profesionalNombre: prof ? prof.displayName || prof.email : '',
             ajustePrecio,
-            motivoSaldo: (status === 'COMPLETADO' && total - sena > 0) ? motivoSaldo : '',
-            subtratamientosSnap
+            motivoSaldo: (status === 'COMPLETADO' && total - sena - pagoSaldo > 0) ? motivoSaldo : '',
+            subtratamientosSnap,
+            metodoPagoSena,
+            metodoPagoSaldo,
+            pagoSaldo,
+            saldoPagado
         });
 
         onClose();
@@ -467,55 +488,115 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                         <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Ajuste ($)</label>
-                            <div className="relative group/field">
-                                <Input 
-                                    type="number"
-                                    value={ajustePrecio}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value);
-                                        setAjustePrecio(val);
-                                        // Recalculate total with the new adjustment
-                                        const subTotal = selectedSubs.reduce((acc, s) => acc + s.precio, 0);
-                                        setTotal(subTotal + val);
-                                    }}
-                                    placeholder="+/-"
-                                    className="h-11 rounded-xl text-sm font-bold"
-                                />
-                            </div>
+                            <Input 
+                                type="number"
+                                value={ajustePrecio}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value) || 0;
+                                    setAjustePrecio(val);
+                                    const subTotal = selectedSubs.reduce((acc, s) => acc + s.precio, 0);
+                                    setTotal(subTotal + val);
+                                }}
+                                placeholder="+/-"
+                                className="h-11 rounded-xl text-sm font-bold bg-white"
+                            />
                         </div>
+
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Seña ($)</label>
-                            <div className="relative group/field">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-600 ml-2">Seña ($)</label>
+                            <div className="flex flex-col gap-1">
                                 <Input 
                                     type="number"
                                     value={sena}
                                     onChange={(e) => {
-                                        const val = Number(e.target.value);
+                                        const val = Number(e.target.value) || 0;
                                         setSena(val);
                                         if (val > 1 && status === 'RESERVADO') {
                                             setStatus('CONFIRMADO');
                                         }
                                     }}
-                                    className="h-11 rounded-xl text-sm font-bold text-emerald-600"
+                                    className="h-11 rounded-xl text-sm font-bold text-emerald-600 bg-white"
                                 />
+                                <div className="flex gap-1">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setMetodoPagoSena('EFECTIVO')}
+                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSena === 'EFECTIVO' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                    >
+                                        EFEC
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setMetodoPagoSena('TRANSFERENCIA')}
+                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSena === 'TRANSFERENCIA' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                    >
+                                        TRANSF
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 ml-2">Saldo ($)</label>
-                            <div className="relative group/field pointer-events-none opacity-60">
-                                <Input 
-                                    value={Math.max(0, total - sena)}
-                                    readOnly
-                                    className="h-11 rounded-xl text-sm font-black text-blue-600 bg-blue-50/30"
-                                />
+                            <div className="flex justify-between items-center pr-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 ml-2">Abona Saldo ($)</label>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saldoPagado}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setSaldoPagado(checked);
+                                            if (checked) setPagoSaldo(total - sena);
+                                        }}
+                                        className="w-3 h-3 rounded"
+                                    />
+                                    <span className="text-[8px] font-black text-gray-400 uppercase">Todo</span>
+                                </label>
                             </div>
+                            <div className="flex flex-col gap-1">
+                                <Input 
+                                    type="number"
+                                    value={pagoSaldo}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value) || 0;
+                                        setPagoSaldo(val);
+                                        setSaldoPagado(val > 0 && val === (total - sena));
+                                    }}
+                                    className="h-11 rounded-xl text-sm font-bold text-blue-600 bg-white"
+                                />
+                                <div className="flex gap-1">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setMetodoPagoSaldo('EFECTIVO')}
+                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSaldo === 'EFECTIVO' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                    >
+                                        EFEC
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setMetodoPagoSaldo('TRANSFERENCIA')}
+                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSaldo === 'TRANSFERENCIA' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                    >
+                                        TRANSF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Saldo Final ($)</label>
+                            <Input 
+                                value={Math.max(0, total - sena - pagoSaldo)}
+                                readOnly
+                                className="h-11 rounded-xl text-sm font-black text-gray-600 bg-gray-100/50 pointer-events-none"
+                            />
                         </div>
                     </div>
 
-                    {status === 'COMPLETADO' && (total - sena > 0) && (
+                    {status === 'COMPLETADO' && (total - sena - pagoSaldo > 0) && (
                         <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl space-y-2 animate-in slide-in-from-top-2 duration-300">
                             <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
                                 <Bell className="w-3 h-3" />

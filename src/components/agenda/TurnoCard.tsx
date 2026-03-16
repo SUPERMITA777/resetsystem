@@ -26,6 +26,10 @@ export interface TurnoData {
         precio: number;
         duracion: number;
     }>;
+    metodoPagoSena?: 'EFECTIVO' | 'TRANSFERENCIA';
+    metodoPagoSaldo?: 'EFECTIVO' | 'TRANSFERENCIA';
+    pagoSaldo?: number;
+    saldoPagado?: boolean;
 }
 
 interface TurnoCardProps {
