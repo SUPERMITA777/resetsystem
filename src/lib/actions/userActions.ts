@@ -1,6 +1,6 @@
 "use server";
 
-import { adminAuth, adminDb } from "../firebase-admin";
+import { getAdminAuth, getAdminDb } from "../firebase-admin";
 import { revalidatePath } from "next/cache";
 
 export async function createAuthUser(data: {
@@ -11,15 +11,18 @@ export async function createAuthUser(data: {
     tenantId: string;
 }) {
     try {
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+
         // 1. Create in Firebase Auth
-        const userRecord = await adminAuth.createUser({
+        const userRecord = await auth.createUser({
             email: data.email,
             password: data.password,
             displayName: data.displayName,
         });
 
         // 2. Create in Firestore
-        await adminDb.collection("users").doc(userRecord.uid).set({
+        await db.collection("users").doc(userRecord.uid).set({
             uid: userRecord.uid,
             email: data.email,
             displayName: data.displayName,
@@ -47,13 +50,16 @@ export async function updateAuthUser(uid: string, data: {
     whatsapp?: string;
 }) {
     try {
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+
         // 1. Update Auth
         const authUpdates: any = {};
         if (data.displayName) authUpdates.displayName = data.displayName;
         if (data.password) authUpdates.password = data.password;
 
         if (Object.keys(authUpdates).length > 0) {
-            await adminAuth.updateUser(uid, authUpdates);
+            await auth.updateUser(uid, authUpdates);
         }
 
         // 2. Update Firestore
@@ -64,7 +70,7 @@ export async function updateAuthUser(uid: string, data: {
             delete firestoreUpdates.password;
         }
 
-        await adminDb.collection("users").doc(uid).update(firestoreUpdates);
+        await db.collection("users").doc(uid).update(firestoreUpdates);
 
         revalidatePath("/admin/settings");
         revalidatePath("/admin/staff");
@@ -77,11 +83,14 @@ export async function updateAuthUser(uid: string, data: {
 
 export async function deleteAuthUser(uid: string) {
     try {
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+
         // 1. Delete from Auth
-        await adminAuth.deleteUser(uid);
+        await auth.deleteUser(uid);
 
         // 2. Delete from Firestore
-        await adminDb.collection("users").doc(uid).delete();
+        await db.collection("users").doc(uid).delete();
 
         revalidatePath("/admin/settings");
         revalidatePath("/admin/staff");
