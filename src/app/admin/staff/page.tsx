@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
-import { Plus, User, Mail, Shield, Trash2, X, Save, Settings } from "lucide-react";
+import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone } from "lucide-react";
 import { getUsersByTenant, createUserProfile, updateUserProfile, UserProfile, UserRole } from "@/lib/services/userService";
 import toast from "react-hot-toast";
 
@@ -18,6 +18,7 @@ export default function StaffPage() {
         email: "",
         displayName: "",
         role: "staff" as UserRole,
+        whatsapp: "",
         status: "active" as "active" | "inactive"
     });
 
@@ -69,6 +70,7 @@ export default function StaffPage() {
             email: user.email,
             displayName: user.displayName || "",
             role: user.role,
+            whatsapp: user.whatsapp || "",
             status: user.status
         });
         setIsModalOpen(true);
@@ -82,7 +84,7 @@ export default function StaffPage() {
                         <h1 className="text-3xl font-black text-[var(--foreground)] uppercase tracking-tight">Profesionales</h1>
                         <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Gestión de staff y roles</p>
                     </div>
-                    <Button onClick={() => { setSelectedUser(null); setFormData({ email: "", displayName: "", role: "staff", status: "active" }); setIsModalOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-2xl px-6 py-6 font-bold uppercase tracking-widest text-xs shadow-xl shadow-black/10 transition-all flex items-center gap-2">
+                    <Button onClick={() => { setSelectedUser(null); setFormData({ email: "", displayName: "", role: "staff", whatsapp: "", status: "active" }); setIsModalOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-2xl px-6 py-6 font-bold uppercase tracking-widest text-xs shadow-xl shadow-black/10 transition-all flex items-center gap-2">
                         <Plus className="w-5 h-5" />
                         Nuevo Profesional
                     </Button>
@@ -184,17 +186,26 @@ export default function StaffPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Email / Usuario</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                                        <input
-                                            required
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
-                                            placeholder="email@ejemplo.com"
-                                        />
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">WhatsApp</label>
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                            <input
+                                                value={formData.whatsapp}
+                                                onChange={e => setFormData({ ...formData, whatsapp: e.target.value })}
+                                                className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                                placeholder="Ej: 54911..."
+                                            />
+                                        </div>
+                                        {formData.whatsapp && (
+                                            <button 
+                                                type="button"
+                                                onClick={() => window.open(`https://wa.me/${formData.whatsapp.replace(/\D/g, '')}`, '_blank')}
+                                                className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                                            >
+                                                <MessageSquare className="w-6 h-6" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 

@@ -298,6 +298,7 @@ export default function AgendaPage() {
                 initialBox={modalInitialData.boxId}
                 initialHora={modalInitialData.hora}
                 editTurno={modalInitialData.turno}
+                agendaConfig={agendaConfig}
             />
 
             <AgendaSettingsModal

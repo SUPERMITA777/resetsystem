@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
 import { clienteService, Cliente } from '@/lib/services/clienteService';
 import { getUsersByTenant, UserProfile } from '@/lib/services/userService';
-import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar, Plus, UserPlus } from 'lucide-react';
+import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar, Plus, UserPlus, MessageSquare, Bell } from 'lucide-react';
 import { TurnoData } from './TurnoCard';
+import { getTenant } from '@/lib/services/tenantService';
+import toast from 'react-hot-toast';
 
 interface NuevoTurnoModalProps {
     isOpen: boolean;
@@ -19,9 +22,10 @@ interface NuevoTurnoModalProps {
     initialFecha?: string;
     initialTratamientoId?: string;
     editTurno?: TurnoData | null;
+    agendaConfig?: any;
 }
 
-export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora, initialBox, initialFecha, initialTratamientoId, editTurno }: NuevoTurnoModalProps) {
+export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora, initialBox, initialFecha, initialTratamientoId, editTurno, agendaConfig }: NuevoTurnoModalProps) {
     const [cliente, setCliente] = useState('');
     const [telefono, setTelefono] = useState('');
     const [email, setEmail] = useState('');
@@ -264,6 +268,31 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         onClose();
     };
 
+    const handleSendReminder = async () => {
+        if (!telefono) {
+            toast.error("El cliente no tiene teléfono asignado");
+            return;
+        }
+
+        let template = agendaConfig?.reminder_message;
+        
+        if (!template) {
+            // Default template if none is configured
+            template = "Hola! te recordamos que el turno del dia %fecha% a las %hora% para %tratamiento%. En caso de no poder asistir avisar con antelación mínima de 24 hs, de lo contrario se perderá la seña. La tolerancia es de 15 minutos. Dirección: VELES SARSFIELD 59, entre AVENIDA SAN MARTIN y 25 DE MAYO.";
+        }
+
+        const subNames = selectedSubs.map(s => s.nombre).join(', ');
+        const fechaFormateada = fecha ? format(new Date(fecha + 'T12:00:00'), "EEEE d 'de' MMMM", { locale: es }) : '';
+        
+        const message = template
+            .replace(/%fecha%/g, fechaFormateada)
+            .replace(/%hora%/g, hora)
+            .replace(/%tratamiento%/g, subNames || 'Tratamiento');
+
+        const waUrl = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
+    };
+
     const handleDelete = () => {
         if (editTurno && onDelete) {
             if (window.confirm("¿Estás seguro de que deseas eliminar este turno?")) {
@@ -356,15 +385,27 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                             )}
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">WhatsApp</label>
-                            <div className="relative">
-                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input
-                                    placeholder="Ej: +54 9 11..."
-                                    value={telefono}
-                                    onChange={(e) => setTelefono(e.target.value)}
-                                    className="pl-12 rounded-2xl bg-gray-50 border-none h-12 font-bold"
-                                />
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">WhatsApp Cliente</label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Input
+                                        placeholder="Ej: 54911..."
+                                        value={telefono}
+                                        onChange={(e) => setTelefono(e.target.value)}
+                                        className="pl-12 rounded-2xl bg-gray-50 border-none h-12 font-bold"
+                                    />
+                                </div>
+                                {telefono && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => window.open(`https://wa.me/${telefono.replace(/\D/g, '')}`, '_blank')}
+                                        className="w-12 h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 shrink-0"
+                                        title="Chatear con cliente"
+                                    >
+                                        <MessageSquare className="w-5 h-5" />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -530,9 +571,21 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <Button type="submit" className="w-full h-11 bg-black text-white hover:bg-gray-800 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all active:scale-95">
-                        {editTurno ? "Guardar Cambios" : "Agendar Turno"}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button type="submit" className="flex-1 h-11 bg-black text-white hover:bg-gray-800 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all active:scale-95">
+                            {editTurno ? "Guardar Cambios" : "Agendar Turno"}
+                        </Button>
+                        {editTurno && (
+                            <button 
+                                type="button" 
+                                onClick={handleSendReminder}
+                                className="px-4 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all flex items-center gap-2"
+                            >
+                                <Bell className="w-4 h-4" />
+                                Recordatorio
+                            </button>
+                        )}
+                    </div>
                     <button type="button" onClick={onClose} className="text-[10px] font-black text-gray-400 hover:text-black uppercase tracking-widest py-1 transition-colors">
                         Cancelar
                     </button>

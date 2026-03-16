@@ -21,6 +21,7 @@ export interface UserProfile {
     role: UserRole;
     tenantId: string | null;
     status: 'active' | 'inactive';
+    whatsapp?: string;
     createdAt: any;
 }
 

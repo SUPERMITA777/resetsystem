@@ -14,6 +14,7 @@ export interface TenantData {
         intervalo: 10 | 15 | 30 | 60;
         horario_inicio: string; // "HH:mm"
         horario_fin: string;    // "HH:mm"
+        reminder_message?: string;
     };
     datos_contacto?: {
         direccion?: string;

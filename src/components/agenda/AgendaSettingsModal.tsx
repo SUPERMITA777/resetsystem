@@ -13,6 +13,7 @@ interface AgendaSettingsModalProps {
         intervalo: 10 | 15 | 30 | 60;
         horario_inicio: string;
         horario_fin: string;
+        reminder_message?: string;
     };
     onSave: (config: any) => Promise<void>;
 }
@@ -90,6 +91,23 @@ export function AgendaSettingsModal({ isOpen, onClose, currentConfig, onSave }: 
                                     onChange={(e) => setConfig({ ...config, horario_fin: e.target.value })}
                                     className="rounded-xl border-gray-200 h-12"
                                 />
+                            </div>
+                        </div>
+                        <div className="pt-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Mensaje de Recordatorio</label>
+                            <textarea
+                                value={config.reminder_message || ""}
+                                onChange={(e) => setConfig({ ...config, reminder_message: e.target.value })}
+                                className="w-full h-32 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-black outline-none transition-all resize-none"
+                                placeholder="Escribe el mensaje de recordatorio aquí..."
+                            />
+                            <div className="mt-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Variables disponibles:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%fecha%</span>
+                                    <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%hora%</span>
+                                    <span className="text-[10px] font-bold text-blue-500 bg-white px-1.5 py-0.5 rounded border border-blue-100">%tratamiento%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
