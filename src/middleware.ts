@@ -15,7 +15,8 @@ export function middleware(request: NextRequest) {
     'login',
     'register',
     'catalogo', // We keep the original route accessible just in case
-    'salon'     // Avoid conflicts if there are other salon routes
+    'salon',     // Avoid conflicts if there are other salon routes
+    'profesional' // Dashboard for staff
   ];
 
   // Logic: if pathname is "/something" and "something" is NOT in reservedPaths

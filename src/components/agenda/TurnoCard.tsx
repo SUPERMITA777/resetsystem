@@ -9,7 +9,6 @@ export interface TurnoData {
     boxId: string;
     fecha: string; // YYYY-MM-DD
     horaInicio: string; // HH:mm
-    profesionalId?: string; // Para control de Staff
     whatsapp?: string;
     email?: string;
     sena?: number;
@@ -17,6 +16,8 @@ export interface TurnoData {
     status?: 'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
     subIds?: string[];
     tratamientoId?: string;
+    profesionalId?: string;
+    profesionalNombre?: string;
 }
 
 interface TurnoCardProps {
@@ -69,6 +70,11 @@ export function TurnoCard({ turno, disabled = false, interval, onClick }: TurnoC
                 <div className="truncate leading-tight mt-1 opacity-90 font-bold flex items-center gap-1">
                     <span className="w-1 h-1 rounded-full bg-white/50" />
                     {turno.tratamientoAbreviado}
+                </div>
+            )}
+            {heightPx >= 40 && turno.profesionalNombre && (
+                <div className="truncate leading-tight mt-0.5 opacity-70 font-black flex items-center gap-1 italic">
+                    @{turno.profesionalNombre.split(' ')[0]}
                 </div>
             )}
         </div>

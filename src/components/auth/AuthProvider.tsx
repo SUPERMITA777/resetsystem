@@ -27,20 +27,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const auth = getAuth(app);
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // En producción, primero verificaríamos en 'users' globales para saber 
-                // a qué tenant pertenece. Por ahora chequeamos 'empleados' en 'resetspa' directamente.
-                const staffDocRef = doc(db, 'tenants/resetspa/empleados', firebaseUser.uid);
+                const userDocRef = doc(db, 'users', firebaseUser.uid);
                 try {
-                    const snap = await getDoc(staffDocRef);
+                    const snap = await getDoc(userDocRef);
                     if (snap.exists()) {
-                        setIsStaff(true);
-                        setStaffId(snap.id);
+                        const profile = snap.data();
+                        const isUserStaff = profile.role === 'staff' || profile.role === 'salon_admin';
+                        setIsStaff(isUserStaff);
+                        setStaffId(isUserStaff ? firebaseUser.uid : null);
                     } else {
                         setIsStaff(false);
                         setStaffId(null);
                     }
                 } catch (e) {
-                    // Fallback para admin
                     setIsStaff(false);
                     setStaffId(null);
                 }

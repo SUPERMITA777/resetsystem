@@ -20,6 +20,8 @@ export interface TurnoDB {
     tratamientoId?: string;
     subtratamientoAbreviado?: string;
     clienteWhatsapp?: string;
+    profesionalId?: string;
+    profesionalNombre?: string;
 }
 
 // Actualizar un turno completo
@@ -78,6 +80,24 @@ export async function deleteTurno(tenantId: string, turnoId: string) {
 export async function getTurnosPorRango(tenantId: string, fechaInicio: string, fechaFin: string): Promise<TurnoDB[]> {
     const q = query(
         collection(db, `tenants/${tenantId}/agenda`),
+        where("fecha", ">=", fechaInicio),
+        where("fecha", "<=", fechaFin)
+    );
+    const querySnapshot = await getDocs(q);
+
+    const turnos: TurnoDB[] = [];
+    querySnapshot.forEach((doc) => {
+        turnos.push({ id: doc.id, ...doc.data() } as TurnoDB);
+    });
+
+    return turnos;
+}
+
+// Obtener turnos por profesional
+export async function getTurnosPorProfesional(tenantId: string, profesionalId: string, fechaInicio: string, fechaFin: string): Promise<TurnoDB[]> {
+    const q = query(
+        collection(db, `tenants/${tenantId}/agenda`),
+        where("profesionalId", "==", profesionalId),
         where("fecha", ">=", fechaInicio),
         where("fecha", "<=", fechaFin)
     );

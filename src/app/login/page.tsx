@@ -38,6 +38,11 @@ export default function LoginPage() {
             // Role based redirect
             if (profile?.role === 'superadmin') {
                 router.push("/superadmin");
+            } else if (profile?.role === 'staff') {
+                if (profile?.tenantId) {
+                    localStorage.setItem('currentTenant', profile.tenantId);
+                }
+                router.push("/profesional/dashboard");
             } else {
                 if (profile?.tenantId) {
                     localStorage.setItem('currentTenant', profile.tenantId);

@@ -5,7 +5,8 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
 import { clienteService, Cliente } from '@/lib/services/clienteService';
-import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar, Plus } from 'lucide-react';
+import { getUsersByTenant, UserProfile } from '@/lib/services/userService';
+import { Clock, Tag, Box, User, Phone, DollarSign, Activity, X, Trash2, Calendar, Plus, UserPlus } from 'lucide-react';
 import { TurnoData } from './TurnoCard';
 
 interface NuevoTurnoModalProps {
@@ -33,6 +34,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [sena, setSena] = useState<number>(0);
     const [total, setTotal] = useState<number>(0);
     const [status, setStatus] = useState<'PENDIENTE' | 'RESERVADO' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO'>('RESERVADO');
+    const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
+    const [selectedProfesionalId, setSelectedProfesionalId] = useState('');
     const [loading, setLoading] = useState(false);
     
     // Autocomplete state
@@ -46,6 +49,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         if (isOpen) {
             loadTratamientos();
             loadClientes();
+            loadProfesionales();
             if (editTurno) {
                 setCliente(editTurno.clienteAbreviado || '');
                 setTelefono(editTurno.whatsapp || '');
@@ -56,6 +60,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 setStatus(editTurno.status || 'RESERVADO');
                 setFecha(editTurno.fecha || '');
                 setSelectedTratamientoId(editTurno.tratamientoId || '');
+                setSelectedProfesionalId(editTurno.profesionalId || '');
                 if (editTurno.tratamientoId) {
                     loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || []);
                 }
@@ -74,9 +79,20 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                 } else {
                     setSelectedTratamientoId('');
                 }
+                setSelectedProfesionalId('');
             }
         }
     }, [isOpen, editTurno, initialHora, initialTratamientoId]);
+
+    const loadProfesionales = async () => {
+        try {
+            const users = await getUsersByTenant(currentTenant);
+            const staff = users.filter(u => u.role === 'staff' || u.role === 'salon_admin');
+            setProfesionales(staff);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const loadClientes = async () => {
         try {
@@ -222,6 +238,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
 
         const totalDuration = selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0);
         const subNames = selectedSubs.map(s => s.nombre).join(', ');
+        
+        const prof = profesionales.find(p => p.uid === selectedProfesionalId);
 
         onSave({
             clienteAbreviado: cliente,
@@ -238,7 +256,9 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             total,
             status,
             tratamientoId: selectedTratamientoId,
-            subIds: selectedSubs.map(s => s.id)
+            subIds: selectedSubs.map(s => s.id),
+            profesionalId: selectedProfesionalId,
+            profesionalNombre: prof ? prof.displayName || prof.email : ''
         });
 
         onClose();
@@ -464,7 +484,25 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                                     <option value="RESERVADO">RESERVADO</option>
                                     <option value="CONFIRMADO">CONFIRMADO</option>
                                     <option value="COMPLETADO">COMPLETADO</option>
-                                    <option value="CANCELADO">CANCELADO</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Asignar Profesional</label>
+                            <div className="relative group/field">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                                    <UserPlus className="w-4 h-4" />
+                                </div>
+                                <select 
+                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none"
+                                    value={selectedProfesionalId}
+                                    onChange={(e) => setSelectedProfesionalId(e.target.value)}
+                                >
+                                    <option value="">Cualquiera / Sin asignar</option>
+                                    {profesionales.map(p => (
+                                        <option key={p.uid} value={p.uid}>{p.displayName || p.email}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
