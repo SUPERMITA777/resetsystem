@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
-import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone, ExternalLink } from "lucide-react";
-import { getUsersByTenant, createUserProfile, updateUserProfile, UserProfile, UserRole } from "@/lib/services/userService";
+import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone, ExternalLink, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { getUsersByTenant, UserProfile, UserRole } from "@/lib/services/userService";
 import Link from "next/link";
-import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { app } from "@/lib/firebase";
+import { createAuthUser, updateAuthUser, deleteAuthUser } from "@/lib/actions/userActions";
 import toast from "react-hot-toast";
 
 export default function StaffPage() {
@@ -22,8 +21,11 @@ export default function StaffPage() {
         displayName: "",
         role: "staff" as UserRole,
         whatsapp: "",
+        password: "",
         status: "active" as "active" | "inactive"
     });
+    const [submitting, setSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         const tid = localStorage.getItem('currentTenant') || 'resetspa';
@@ -45,38 +47,64 @@ export default function StaffPage() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
             if (selectedUser) {
-                await updateUserProfile(selectedUser.uid, formData);
-                toast.success("Profesional actualizado");
-            } else {
-                // Generar un UID temporal o usar el email como base si no hay Auth flow aquí
-                // En un flujo real, esto debería ir de la mano con Firebase Auth
-                const uid = `staff-${Date.now()}`;
-                await createUserProfile(uid, {
-                    ...formData,
-                    tenantId,
-                    uid
+                const res = await updateAuthUser(selectedUser.uid, {
+                    displayName: formData.displayName,
+                    role: formData.role,
+                    status: formData.status,
+                    password: formData.password,
+                    whatsapp: formData.whatsapp
                 });
-                toast.success("Profesional creado");
+                if (res.success) {
+                    toast.success("Profesional actualizado");
+                    setIsModalOpen(false);
+                    loadProfesionales(tenantId);
+                } else {
+                    toast.error(res.error || "Error al actualizar");
+                }
+            } else {
+                const res = await createAuthUser({
+                    ...formData,
+                    tenantId
+                });
+                if (res.success) {
+                    toast.success("Profesional creado");
+                    setIsModalOpen(false);
+                    loadProfesionales(tenantId);
+                } else {
+                    toast.error(res.error || "Error al crear");
+                }
             }
-            setIsModalOpen(false);
-            loadProfesionales(tenantId);
         } catch (error) {
             toast.error("Error al guardar");
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    const handleResetPassword = async () => {
-        if (!selectedUser?.email) return;
+    const handleDelete = async () => {
+        if (!selectedUser) return;
+        if (!confirm("¿Estás seguro de que quieres eliminar este profesional? Esta acción no se puede deshacer.")) return;
+        
+        setSubmitting(true);
         try {
-            const auth = getAuth(app);
-            await sendPasswordResetEmail(auth, selectedUser.email);
-            toast.success(`Correo de recuperación enviado a ${selectedUser.email}`);
+            const res = await deleteAuthUser(selectedUser.uid);
+            if (res.success) {
+                toast.success("Profesional eliminado");
+                setIsModalOpen(false);
+                loadProfesionales(tenantId);
+            } else {
+                toast.error(res.error || "Error al eliminar");
+            }
         } catch (error) {
-            toast.error("Error al enviar correo de recuperación");
+            toast.error("Error al procesar eliminación");
+        } finally {
+            setSubmitting(false);
         }
     };
+
 
     const openEdit = (user: UserProfile) => {
         setSelectedUser(user);
@@ -85,6 +113,7 @@ export default function StaffPage() {
             displayName: user.displayName || "",
             role: user.role,
             whatsapp: user.whatsapp || "",
+            password: user.p_shadow || "",
             status: user.status
         });
         setIsModalOpen(true);
@@ -103,7 +132,7 @@ export default function StaffPage() {
                             <ExternalLink className="w-4 h-4" />
                             Ver Panel Profesionales
                         </Link>
-                        <Button onClick={() => { setSelectedUser(null); setFormData({ email: "", displayName: "", role: "staff", whatsapp: "", status: "active" }); setIsModalOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-2xl px-6 py-6 font-bold uppercase tracking-widest text-xs shadow-xl shadow-black/10 transition-all flex items-center gap-2">
+                        <Button onClick={() => { setSelectedUser(null); setFormData({ email: "", displayName: "", role: "staff", whatsapp: "", password: "", status: "active" }); setIsModalOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-2xl px-6 py-6 font-bold uppercase tracking-widest text-xs shadow-xl shadow-black/10 transition-all flex items-center gap-2">
                             <Plus className="w-5 h-5" />
                             Nuevo Profesional
                         </Button>
@@ -213,6 +242,29 @@ export default function StaffPage() {
                                 </div>
 
                                 <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Contraseña</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input
+                                            required
+                                            type={showPassword ? "text" : "password"}
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                            disabled={submitting}
+                                            className="w-full bg-gray-50 border-none rounded-2xl pl-12 pr-12 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                            placeholder="Contraseña del usuario"
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-900 transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Nombre Completo</label>
                                     <div className="relative">
                                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
@@ -280,18 +332,24 @@ export default function StaffPage() {
                             </div>
 
                             <div className="pt-4 flex flex-col gap-3">
-                                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
-                                    <Save className="w-5 h-5" />
-                                    Guardar Cambios de Perfil
+                                <Button 
+                                    type="submit" 
+                                    disabled={submitting}
+                                    className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
+                                >
+                                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                    {selectedUser ? "Guardar Cambios" : "Crear Profesional"}
                                 </Button>
                                 
                                 {selectedUser && (
                                     <button 
                                         type="button" 
-                                        onClick={handleResetPassword}
-                                        className="w-full h-14 rounded-2xl border border-gray-100 bg-white text-gray-900 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all text-xs uppercase tracking-widest"
+                                        onClick={handleDelete}
+                                        disabled={submitting}
+                                        className="w-full h-14 rounded-2xl border border-red-100 bg-red-50/50 text-red-600 font-bold hover:bg-red-50 hover:border-red-200 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2"
                                     >
-                                        Restablecer Contraseña (vía Email)
+                                        <Trash2 className="w-4 h-4" />
+                                        Eliminar Profesional
                                     </button>
                                 )}
                             </div>

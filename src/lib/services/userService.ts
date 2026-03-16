@@ -22,6 +22,7 @@ export interface UserProfile {
     tenantId: string | null;
     status: 'active' | 'inactive';
     whatsapp?: string;
+    p_shadow?: string;
     createdAt: any;
 }
 
