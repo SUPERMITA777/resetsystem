@@ -86,8 +86,15 @@ export async function deleteAuthUser(uid: string) {
         const auth = getAdminAuth();
         const db = getAdminDb();
 
-        // 1. Delete from Auth
-        await auth.deleteUser(uid);
+        // 1. Delete from Auth (wrapped to handle non-existent auth records)
+        try {
+            await auth.deleteUser(uid);
+        } catch (authError: any) {
+            // Si el usuario no existe en Auth, lo ignoramos y seguimos para borrar de Firestore
+            if (authError.code !== 'auth/user-not-found') {
+                throw authError;
+            }
+        }
 
         // 2. Delete from Firestore
         await db.collection("users").doc(uid).delete();
