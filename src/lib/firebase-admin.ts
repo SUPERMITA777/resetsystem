@@ -18,10 +18,11 @@ function initializeAdmin(): admin.app.App {
     }
 
     // Clean up private key
-    privateKey = privateKey.replace(/\\n/g, '\n');
+    privateKey = privateKey.trim();
     if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
         privateKey = privateKey.substring(1, privateKey.length - 1);
     }
+    privateKey = privateKey.replace(/\\n/g, '\n');
 
     try {
         return admin.initializeApp({
