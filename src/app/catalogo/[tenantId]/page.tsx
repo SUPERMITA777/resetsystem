@@ -35,23 +35,33 @@ export default function PublicCatalogPage() {
     async function loadData() {
       if (!tenantId) return;
       try {
-        const tenantData = await getTenant(tenantId);
+        const [tenantData, trats] = await Promise.all([
+          getTenant(tenantId),
+          serviceManagement.getTratamientos(tenantId)
+        ]);
+
         if (tenantData) setTenant(tenantData);
-        const trats = await serviceManagement.getTratamientos(tenantId);
+        
         const tratsHabilitados = trats
           .filter(t => t.habilitado)
           .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
         setTratamientos(tratsHabilitados);
+        setLoading(false); // Move this up so shell can render
+        
+        // Fetch subtratamientos in parallel in background
+        const subsResults = await Promise.all(
+          tratsHabilitados.map(t => serviceManagement.getSubtratamientos(tenantId, t.id))
+        );
         
         const subsMap: Record<string, Subtratamiento[]> = {};
-        for (const t of tratsHabilitados) {
-          const subs = await serviceManagement.getSubtratamientos(tenantId, t.id);
-          subsMap[t.id] = subs;
-        }
+        tratsHabilitados.forEach((t, i) => {
+          subsMap[t.id] = subsResults[i];
+        });
+        
         setSubtratamientos(subsMap);
       } catch (error) {
         console.error("Error loading catalog:", error);
-      } finally {
         setLoading(false);
       }
     }
@@ -84,13 +94,25 @@ export default function PublicCatalogPage() {
     );
   };
 
-  if (loading) {
+  if (loading && !tenant) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="w-12 h-12 border-t-2 border-[var(--primary)] rounded-full animate-spin" />
       </div>
     );
   }
+
+  const SkeletonCard = () => (
+    <div className="p-10 bg-white/40 rounded-[3rem] border border-black/5 animate-pulse">
+      <div className="h-8 bg-black/5 rounded-lg w-2/3 mb-6" />
+      <div className="h-4 bg-black/5 rounded-lg w-full mb-3" />
+      <div className="h-4 bg-black/5 rounded-lg w-4/5 mb-8" />
+      <div className="flex justify-between items-center pt-8 border-t border-black/5">
+        <div className="h-4 bg-black/5 rounded-lg w-20" />
+        <div className="h-10 bg-black/5 rounded-full w-24" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-sans">
@@ -152,45 +174,59 @@ export default function PublicCatalogPage() {
                     <div className="glass rounded-[4rem] p-10 md:p-16 ring-1 ring-black/5 mt-8">
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {(expandedTrats.has(tratamiento.id) ? filteredSubs : filteredSubs.slice(0, 2)).map((sub) => (
-                          <div key={sub.id} className="p-10 bg-white/40 rounded-[3rem] border border-black/5 hover:border-[var(--primary)]/20 hover:shadow-2xl hover:shadow-[var(--primary)]/5 transition-all duration-700 group/card">
-                            <div className="flex justify-between items-start mb-6">
-                              <h4 className="text-2xl font-serif italic tracking-tight leading-tight max-w-[70%] group-hover/card:text-[var(--primary)] transition-colors">
-                                {sub.nombre}
-                              </h4>
-                              <div className="text-xl font-serif italic text-[var(--primary)]">
-                                ${sub.precio}
-                              </div>
-                            </div>
+                        {subtratamientos[tratamiento.id] !== undefined ? (
+                          filteredSubs.length > 0 ? (
+                            (expandedTrats.has(tratamiento.id) ? filteredSubs : filteredSubs.slice(0, 2)).map((sub) => (
+                              <div key={sub.id} className="p-10 bg-white/40 rounded-[3rem] border border-black/5 hover:border-[var(--primary)]/20 hover:shadow-2xl hover:shadow-[var(--primary)]/5 transition-all duration-700 group/card">
+                                <div className="flex justify-between items-start mb-6">
+                                  <h4 className="text-2xl font-serif italic tracking-tight leading-tight max-w-[70%] group-hover/card:text-[var(--primary)] transition-colors">
+                                    {sub.nombre}
+                                  </h4>
+                                  <div className="text-xl font-serif italic text-[var(--primary)]">
+                                    ${sub.precio}
+                                  </div>
+                                </div>
 
-                            {sub.descripcion && (
-                              <p className="text-[var(--foreground)]/40 text-sm font-medium mb-8 line-clamp-2 italic leading-relaxed">
-                                &ldquo;{sub.descripcion}&rdquo;
-                              </p>
-                            )}
+                                {sub.descripcion && (
+                                  <p className="text-[var(--foreground)]/40 text-sm font-medium mb-8 line-clamp-2 italic leading-relaxed">
+                                    &ldquo;{sub.descripcion}&rdquo;
+                                  </p>
+                                )}
 
-                            <div className="flex items-center justify-between pt-8 border-t border-black/5">
-                              <div className="flex items-center gap-3 text-[var(--foreground)]/30">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">{sub.duracion_minutos} min</span>
+                                <div className="flex items-center justify-between pt-8 border-t border-black/5">
+                                  <div className="flex items-center gap-3 text-[var(--foreground)]/30">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">{sub.duracion_minutos} min</span>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <button
+                                      onClick={() => { setDetailSub({ sub, trat: tratamiento }); setDetailImgIdx(0); }}
+                                      className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-all px-2 py-1"
+                                    >
+                                      Detalles
+                                    </button>
+                                    <button 
+                                      onClick={() => setBookingData({ sub, trat: tratamiento })}
+                                      className="btn-elegant !py-2.5 !px-6 !text-[9px]"
+                                    >
+                                      Reservar
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <button
-                                  onClick={() => { setDetailSub({ sub, trat: tratamiento }); setDetailImgIdx(0); }}
-                                  className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-all px-2 py-1"
-                                >
-                                  Detalles
-                                </button>
-                                <button 
-                                  onClick={() => setBookingData({ sub, trat: tratamiento })}
-                                  className="btn-elegant !py-2.5 !px-6 !text-[9px]"
-                                >
-                                  Reservar
-                                </button>
-                              </div>
+                            ))
+                          ) : (
+                            <div className="col-span-1 md:col-span-2 py-12 text-center border border-dashed border-black/5 rounded-[3rem]">
+                               <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-20">No hay variaciones disponibles</p>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        ) : (
+                          // Skeletons while background loading
+                          <>
+                            <SkeletonCard />
+                            <SkeletonCard />
+                          </>
+                        )}
                       </div>
 
                       {filteredSubs.length > 2 && (

@@ -44,7 +44,7 @@ export function PublicFooter({ logoUrl }: { logoUrl?: string }) {
              <div className="relative">
                 <input type="text" placeholder="Email Address" className="w-full bg-white border border-black/5 rounded-full px-4 py-3 text-[10px] outline-none focus:border-[var(--primary)]/30 transition-all font-sans" />
                 <button className="absolute right-2 top-1.5 bg-[var(--foreground)] text-white p-1.5 rounded-full hover:bg-[var(--primary)] transition-colors">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="9 5l7 7-7 7" /></svg>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
              </div>
            </div>
