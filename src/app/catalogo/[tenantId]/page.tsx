@@ -7,7 +7,7 @@ import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
 import { PublicBookingModal } from "@/components/booking/PublicBookingModal";
-import { Clock, DollarSign, ChevronRight, ImageIcon, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Clock, DollarSign, ChevronRight, ImageIcon, X, ChevronLeft, ChevronRight as ChevronRightIcon, Sparkles } from "lucide-react";
 
 export default function PublicCatalogPage() {
   const params = useParams();
@@ -84,116 +84,128 @@ export default function PublicCatalogPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin w-10 h-10 border-4 border-black border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="w-12 h-12 border-t-2 border-[var(--primary)] rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      <PublicNavbar salonName={tenant?.nombre_salon} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-sans">
+      <PublicNavbar 
+        salonName={tenant?.nombre_salon} 
+        logoUrl={tenant?.logo_url}
+        searchTerm={searchTerm} 
+        onSearchChange={setSearchTerm} 
+      />
 
-      <main className="pt-32 pb-20 px-6">
-        <div className="max-w-5xl mx-auto space-y-16">
+      <main className="pt-40 pb-32 px-6">
+        <div className="max-w-6xl mx-auto space-y-24">
           {/* Header */}
-          <div className="text-center space-y-4">
-            <h1 className="text-5xl font-black uppercase tracking-tighter">Catálogo de Servicios</h1>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">{tenant?.nombre_salon || 'Catálogo'} | Estética &amp; Bienestar</p>
+          <div className="text-center space-y-6">
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 glass rounded-full ring-1 ring-black/5">
+              <Sparkles className="w-3 h-3 text-[var(--primary)]" />
+              <span className="text-[9px] font-semibold uppercase tracking-[0.3em] opacity-60">Menú de Cortesía</span>
+            </div>
+            <h1 className="text-6xl font-serif italic tracking-tight">Catálogo de <span className="not-italic text-[var(--primary)]">Servicios</span></h1>
+            <div className="h-px w-20 bg-[var(--primary)] mx-auto opacity-20" />
+            <p className="text-[var(--foreground)]/40 font-semibold uppercase tracking-[0.3em] text-[10px]">{tenant?.nombre_salon || 'Catálogo'} | High Aesthetics</p>
           </div>
 
           {/* Catalog items */}
-          <div className="space-y-24">
+          <div className="space-y-32">
             {filteredTratamientos.length > 0 ? (
               filteredTratamientos.map((tratamiento) => {
                 const filteredSubs = getFilteredSubs(tratamiento.id);
                 return (
-                  <div key={tratamiento.id} className="space-y-10 group">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                      <div className="space-y-6">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-black text-white rounded-full">
-                           <span className="text-[10px] font-black uppercase tracking-widest">Servicio Principal</span>
+                  <div key={tratamiento.id} className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                      <div className="space-y-8 order-2 lg:order-1">
+                        <div className="flex items-center gap-4">
+                           <div className="h-px w-8 bg-[var(--primary)] opacity-30" />
+                           <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-[var(--primary)]">Colección Principal</span>
                         </div>
-                        <h2 className="text-4xl font-black uppercase tracking-tighter leading-none">
+                        <h2 className="text-5xl font-serif italic leading-none">
                           {tratamiento.nombre}
                         </h2>
                         {tratamiento.descripcion && (
-                          <p className="text-gray-500 font-medium leading-relaxed">
+                          <p className="text-[var(--foreground)]/50 font-medium leading-relaxed max-w-sm">
                             {tratamiento.descripcion}
                           </p>
                         )}
                       </div>
 
                       {/* Image Gallery */}
-                      <div className="relative aspect-video rounded-[3rem] overflow-hidden bg-gray-100 border border-gray-100 shadow-2xl">
+                      <div className="relative aspect-[16/10] rounded-[4rem] overflow-hidden bg-[var(--secondary)]/10 border border-black/5 shadow-2xl order-1 lg:order-2 group">
                          {tratamiento.imagenes && tratamiento.imagenes.length > 0 ? (
                             <img 
                               src={tratamiento.imagenes[0]} 
                               alt={tratamiento.nombre} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" 
                             />
                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-2">
-                              <ImageIcon className="w-10 h-10 opacity-20" />
-                              <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Sin fotos disponibles</span>
+                            <div className="w-full h-full flex flex-col items-center justify-center text-[var(--foreground)]/10 gap-3">
+                              <ImageIcon className="w-12 h-12 opacity-20" />
+                              <span className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-30">Galería en Preparación</span>
                             </div>
                          )}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                       </div>
                     </div>
 
                     {/* Sub-items (Subtratamientos) */}
-                    <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-xl shadow-gray-200/50 border border-gray-100">
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-8 px-2 flex items-center gap-2">
-                         <ChevronRight className="w-3 h-3 text-black" /> Opciones Disponibles
-                      </h3>
+                    <div className="glass rounded-[4rem] p-10 md:p-16 ring-1 ring-black/5">
+                      <div className="flex items-center justify-between mb-12">
+                         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--foreground)]/40 flex items-center gap-3">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" /> Variaciones Disponibles
+                         </h3>
+                         <div className="h-px flex-1 bg-black/5 mx-8" />
+                      </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {(expandedTrats.has(tratamiento.id) ? filteredSubs : filteredSubs.slice(0, 2)).map((sub) => (
-                          <div key={sub.id} className="p-8 bg-gray-50 rounded-[2rem] border border-gray-50 hover:border-black/10 transition-all group/card">
-                            <div className="flex justify-between items-start mb-4">
-                              <h4 className="text-lg font-black uppercase tracking-tight leading-tight max-w-[70%]">
+                          <div key={sub.id} className="p-10 bg-white/40 rounded-[3rem] border border-black/5 hover:border-[var(--primary)]/20 hover:shadow-2xl hover:shadow-[var(--primary)]/5 transition-all duration-700 group/card">
+                            <div className="flex justify-between items-start mb-6">
+                              <h4 className="text-2xl font-serif italic tracking-tight leading-tight max-w-[70%] group-hover/card:text-[var(--primary)] transition-colors">
                                 {sub.nombre}
                               </h4>
-                              <div className="flex items-center gap-1 text-black bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">
-                                <DollarSign className="w-3.5 h-3.5" />
-                                <span className="text-sm font-black">{sub.precio}</span>
+                              <div className="text-xl font-serif italic text-[var(--primary)]">
+                                ${sub.precio}
                               </div>
                             </div>
 
                             {sub.descripcion && (
-                              <p className="text-gray-400 text-sm font-medium mb-4 line-clamp-2 italic">
+                              <p className="text-[var(--foreground)]/40 text-sm font-medium mb-8 line-clamp-2 italic leading-relaxed">
                                 &ldquo;{sub.descripcion}&rdquo;
                               </p>
                             )}
 
-                            {/* VER MÁS button */}
-                            <div className="flex justify-center mb-4">
-                              <button
-                                onClick={() => { setDetailSub({ sub, trat: tratamiento }); setDetailImgIdx(0); }}
-                                className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black border border-gray-200 hover:border-black px-6 py-2 rounded-full transition-all"
-                              >
-                                Ver Más
-                              </button>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                              <div className="flex items-center gap-2 text-gray-400">
-                                <Clock className="w-4 h-4" />
-                                <span className="text-xs font-bold">{sub.duracion_minutos} min</span>
+                            <div className="flex items-center justify-between pt-8 border-t border-black/5">
+                              <div className="flex items-center gap-3 text-[var(--foreground)]/30">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">{sub.duracion_minutos} min</span>
                               </div>
-                              <button 
-                                onClick={() => setBookingData({ sub, trat: tratamiento })}
-                                className="text-[10px] font-black uppercase tracking-widest bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors active:scale-95"
-                              >
-                                Agendar Cita
-                              </button>
+                              <div className="flex items-center gap-4">
+                                <button
+                                  onClick={() => { setDetailSub({ sub, trat: tratamiento }); setDetailImgIdx(0); }}
+                                  className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-all px-2 py-1"
+                                >
+                                  Detalles
+                                </button>
+                                <button 
+                                  onClick={() => setBookingData({ sub, trat: tratamiento })}
+                                  className="btn-elegant !py-2.5 !px-6 !text-[9px]"
+                                >
+                                  Reservar
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
 
                       {filteredSubs.length > 2 && (
-                        <div className="mt-6 text-center">
+                        <div className="mt-12 text-center">
                           <button
                             onClick={() => {
                               setExpandedTrats(prev => {
@@ -203,12 +215,12 @@ export default function PublicCatalogPage() {
                                 return next;
                               });
                             }}
-                            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black border border-gray-200 hover:border-black px-8 py-2.5 rounded-full transition-all inline-flex items-center gap-2"
+                            className="btn-outline-elegant !py-3 !px-10 !text-[9px]"
                           >
                             {expandedTrats.has(tratamiento.id) ? (
-                              <>Mostrar menos</>  
+                              <>Ver menos</>  
                             ) : (
-                              <>Ver todos los servicios ({filteredSubs.length})</>  
+                              <>Descubrir más ({filteredSubs.length})</>  
                             )}
                           </button>
                         </div>
@@ -218,9 +230,9 @@ export default function PublicCatalogPage() {
                 );
               })
             ) : (
-              <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-gray-200">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">
-                  {searchTerm ? `No se encontraron servicios para "${searchTerm}"` : 'No hay servicios disponibles en este momento'}
+              <div className="text-center py-32 glass rounded-[4rem] border-dashed border-black/10">
+                <p className="text-[var(--foreground)]/30 font-bold uppercase tracking-[0.3em] text-[10px]">
+                  {searchTerm ? `No se encontraron resultados para "${searchTerm}"` : 'Colección no disponible temporalmente'}
                 </p>
               </div>
             )}
@@ -228,34 +240,37 @@ export default function PublicCatalogPage() {
         </div>
       </main>
 
-      <PublicFooter />
+      <PublicFooter logoUrl={tenant?.logo_url} />
 
       {/* Detail Overlay */}
       {detailSub && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setDetailSub(null)}>
-          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-2xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setDetailSub(null)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-              <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-[var(--dusk)]/60 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setDetailSub(null)}>
+          <div className="bg-[var(--background)] rounded-[4rem] p-10 md:p-16 w-full max-w-3xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-500 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setDetailSub(null)} className="absolute top-10 right-10 w-12 h-12 rounded-full border border-black/5 flex items-center justify-center hover:bg-black/5 transition-colors">
+              <X className="w-5 h-5 opacity-40" />
             </button>
 
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{detailSub.trat.nombre}</p>
-            <h2 className="text-3xl font-black uppercase tracking-tight mb-6">{detailSub.sub.nombre}</h2>
+            <div className="flex items-center gap-4 mb-2">
+               <div className="h-px w-8 bg-[var(--primary)] opacity-30" />
+               <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--primary)]">{detailSub.trat.nombre}</p>
+            </div>
+            <h2 className="text-5xl font-serif italic mb-10 tracking-tight">{detailSub.sub.nombre}</h2>
 
             {/* Photo gallery */}
             {detailSub.sub.imagenes && detailSub.sub.imagenes.length > 0 && (
-              <div className="relative mb-8 rounded-[2rem] overflow-hidden aspect-video bg-gray-100">
+              <div className="relative mb-12 rounded-[3rem] overflow-hidden aspect-video bg-[var(--secondary)]/10 shadow-xl group">
                 <img src={detailSub.sub.imagenes[detailImgIdx]} alt={detailSub.sub.nombre} className="w-full h-full object-cover" />
                 {detailSub.sub.imagenes.length > 1 && (
                   <>
-                    <button onClick={() => setDetailImgIdx(i => i > 0 ? i - 1 : detailSub.sub.imagenes!.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                    <button onClick={() => setDetailImgIdx(i => i > 0 ? i - 1 : detailSub.sub.imagenes!.length - 1)} className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass flex items-center justify-center hover:bg-white transition-colors shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <button onClick={() => setDetailImgIdx(i => i < detailSub.sub.imagenes!.length - 1 ? i + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                    <button onClick={() => setDetailImgIdx(i => i < detailSub.sub.imagenes!.length - 1 ? i + 1 : 0)} className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass flex items-center justify-center hover:bg-white transition-colors shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       <ChevronRightIcon className="w-5 h-5" />
                     </button>
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
                       {detailSub.sub.imagenes.map((_, i) => (
-                        <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === detailImgIdx ? 'bg-white scale-125' : 'bg-white/50'}`} />
+                        <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === detailImgIdx ? 'w-8 bg-white' : 'w-2 bg-white/30'}`} />
                       ))}
                     </div>
                   </>
@@ -265,26 +280,33 @@ export default function PublicCatalogPage() {
 
             {/* Description */}
             {detailSub.sub.descripcion && (
-              <p className="text-gray-600 font-medium leading-relaxed mb-8">{detailSub.sub.descripcion}</p>
+              <p className="text-[var(--foreground)]/60 font-medium leading-[1.8] mb-12 text-lg italic pr-8">{detailSub.sub.descripcion}</p>
             )}
 
             {/* Info row */}
-            <div className="flex items-center gap-6 mb-8 p-6 bg-gray-50 rounded-2xl">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-gray-400" />
-                <span className="text-sm font-black">{detailSub.sub.duracion_minutos} minutos</span>
+            <div className="flex flex-wrap items-center gap-12 mb-12 p-10 bg-[var(--secondary)]/10 rounded-[2.5rem] border border-black/5">
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-30">Duración</p>
+                <div className="flex items-center gap-3">
+                  <Clock className="w-4 h-4 text-[var(--primary)]" />
+                  <span className="text-lg font-serif italic tracking-tight">{detailSub.sub.duracion_minutos} minutos</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-gray-400" />
-                <span className="text-sm font-black">${detailSub.sub.precio}</span>
+              <div className="h-10 w-px bg-black/5 mx-4" />
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-30">Inversión</p>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-4 h-4 text-[var(--primary)]" />
+                  <span className="text-lg font-serif italic tracking-tight">${detailSub.sub.precio}</span>
+                </div>
               </div>
             </div>
 
             <button
               onClick={() => { setBookingData({ sub: detailSub.sub, trat: detailSub.trat }); setDetailSub(null); }}
-              className="w-full h-14 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all active:scale-95"
+              className="btn-elegant w-full !h-16 !text-xs !tracking-[0.4em]"
             >
-              Agendar Cita
+              Confirmar Reserva
             </button>
           </div>
         </div>

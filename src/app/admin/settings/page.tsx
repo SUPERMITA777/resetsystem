@@ -5,8 +5,9 @@ import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { UsersManagementTab } from "@/components/admin/settings/UsersManagementTab";
-import { Store, Users, Save, Phone } from "lucide-react";
+import { Store, Users, Save, Phone, Image as ImageIcon } from "lucide-react";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
+import { LogoUploader } from "@/components/ui/LogoUploader";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function SettingsPage() {
@@ -23,6 +24,7 @@ export default function SettingsPage() {
     const [telefono, setTelefono] = useState('');
     const [instagram, setInstagram] = useState('');
     const [descripcion, setDescripcion] = useState('');
+    const [logoUrl, setLogoUrl] = useState('');
 
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
@@ -43,6 +45,7 @@ export default function SettingsPage() {
                 setTelefono(data.datos_contacto?.telefono || '');
                 setInstagram(data.datos_contacto?.instagram || '');
                 setDescripcion(data.datos_contacto?.descripcion || '');
+                setLogoUrl(data.logo_url || '');
             }
         } catch (error) {
             toast.error("Error al cargar configuración");
@@ -58,6 +61,7 @@ export default function SettingsPage() {
                 nombre_salon: nombreSalon,
                 config_boxes: configBoxes,
                 tema_visual: temaVisual,
+                logo_url: logoUrl,
                 datos_contacto: {
                     whatsapp,
                     direccion,
@@ -116,8 +120,24 @@ export default function SettingsPage() {
                                 <span className="text-xs font-black uppercase tracking-widest text-gray-400">Cargando Configuración</span>
                             </div>
                         ) : (
-                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
+                            <div className="p-8 space-y-12">
+                                {/* Logo Section */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start border-b border-gray-50 pb-12">
+                                    <div className="space-y-1">
+                                        <h3 className="text-lg font-bold text-gray-900">Logo del Salón</h3>
+                                        <p className="text-sm text-gray-500 italic">Este logo aparecerá en la página pública, tickets y comunicaciones.</p>
+                                    </div>
+                                    <div className="md:col-span-2 max-w-md">
+                                        <LogoUploader 
+                                            tenantId={tenantId} 
+                                            currentLogo={logoUrl} 
+                                            onLogoChange={setLogoUrl} 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-6">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2 leading-none">Nombre del Salón</label>
                                         <Input
@@ -231,9 +251,10 @@ export default function SettingsPage() {
                                     </Button>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                ) : (
+                        </div>
+                    )}
+                </div>
+            ) : (
                     <div className="animate-in slide-in-from-bottom-4 duration-500">
                         <UsersManagementTab tenantId={tenantId} />
                     </div>

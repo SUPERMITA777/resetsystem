@@ -1,27 +1,35 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 @theme {
   /* Fonts */
-  --font-sans: var(--font-inter), "Inter", "Helvetica Neue", sans-serif;
-  --font-heading: var(--font-montserrat), "Montserrat", sans-serif;
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Montserrat", sans-serif;
+  --font-heading: var(--font-serif);
 
-  /* Theme Nude & Rose Gold */
-  --color-nude-bg: #FFFBF7;
-  --color-nude-primary: #D4A373;
-  --color-nude-secondary: #FAEDCD;
-  --color-nude-text: #4A3B32;
+  /* New Elegant Palette */
+  --color-luxury-gold: #D4AF37;
+  --color-rose-gold: #B76E79;
+  --color-cream: #FFFDF9;
+  --color-dusk: #2D2424;
+  --color-silk: #F8F3ED;
 
-  /* Theme Minimalist Lavender */
-  --color-lavender-bg: #F8F7FF;
-  --color-lavender-primary: #B8B8FF;
-  --color-lavender-secondary: #E0E0FF;
-  --color-lavender-text: #2D2D44;
+  /* Theme Nude & Rose Gold (Refined) */
+  --color-nude-bg: var(--color-cream);
+  --color-nude-primary: var(--color-rose-gold);
+  --color-nude-secondary: var(--color-silk);
+  --color-nude-text: var(--color-dusk);
 
-  /* Theme Sage & Cream */
-  --color-sage-bg: #F9F7F2;
-  --color-sage-primary: #A3B18A;
-  --color-sage-secondary: #DAD7CD;
-  --color-sage-text: #344E41;
+  /* Theme Minimalist Lavender (Refined) */
+  --color-lavender-bg: #FAF9FF;
+  --color-lavender-primary: #A7A7DB;
+  --color-lavender-secondary: #EBEBFF;
+  --color-lavender-text: #3D3D5C;
+
+  /* Theme Sage & Cream (Refined) */
+  --color-sage-bg: #FAF9F6;
+  --color-sage-primary: #8DA18D;
+  --color-sage-secondary: #E1E6E1;
+  --color-sage-text: #2C362C;
 }
 
 @layer base {
@@ -30,9 +38,9 @@
     --foreground: var(--color-nude-text);
     --primary: var(--color-nude-primary);
     --secondary: var(--color-nude-secondary);
+    --accent: var(--color-luxury-gold);
   }
 
-  /* Tenant themes applied dynamically by adding a class to body/html or dynamically setting variables */
   .theme-nude {
     --background: var(--color-nude-bg);
     --foreground: var(--color-nude-text);
@@ -57,12 +65,34 @@
 
 @layer base {
   * {
-    @apply border-gray-200;
+    @apply border-black/5;
   }
   body {
-    @apply bg-[var(--background)] text-[var(--foreground)] antialiased font-sans transition-colors duration-300;
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased font-sans transition-colors duration-500 selection:bg-[var(--primary)] selection:text-white;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-tight;
+    @apply font-heading tracking-tight font-light;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/40 backdrop-blur-xl border border-white/20 shadow-sm;
+  }
+  
+  .fine-line {
+    @apply border-b border-black/5;
+  }
+  
+  .text-luxury {
+    @apply font-serif italic;
+  }
+  
+  .btn-elegant {
+    @apply inline-flex items-center justify-center px-8 py-4 bg-[var(--foreground)] text-[var(--background)] rounded-full text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-[var(--foreground)]/10;
+  }
+
+  .btn-outline-elegant {
+    @apply inline-flex items-center justify-center px-8 py-4 border border-[var(--foreground)]/20 text-[var(--foreground)] rounded-full text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-500 hover:border-[var(--foreground)] hover:bg-[var(--foreground)]/5;
   }
 }

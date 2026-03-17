@@ -7,6 +7,7 @@ export interface TenantData {
     huso_horario_global: string;
     config_boxes: number;
     tema_visual: "nude" | "lavender" | "sage";
+    logo_url?: string;
     status: 'active' | 'paused' | 'deleted';
     activeUntil?: any; // Firestore Timestamp
     createdAt?: any;  // Firestore Timestamp
