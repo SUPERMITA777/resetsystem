@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 @theme {
@@ -39,6 +41,7 @@
     --primary: var(--color-nude-primary);
     --secondary: var(--color-nude-secondary);
     --accent: var(--color-luxury-gold);
+    --border-soft: rgba(0, 0, 0, 0.05);
   }
 
   .theme-nude {
@@ -64,9 +67,6 @@
 }
 
 @layer base {
-  * {
-    @apply border-black/5;
-  }
   body {
     @apply bg-[var(--background)] text-[var(--foreground)] antialiased font-sans transition-colors duration-500 selection:bg-[var(--primary)] selection:text-white;
   }
@@ -77,11 +77,14 @@
 
 @layer components {
   .glass {
-    @apply bg-white/40 backdrop-blur-xl border border-white/20 shadow-sm;
+    background-color: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   
   .fine-line {
-    @apply border-b border-black/5;
+    border-bottom: 1px solid var(--border-soft);
   }
   
   .text-luxury {
@@ -89,10 +92,18 @@
   }
   
   .btn-elegant {
-    @apply inline-flex items-center justify-center px-8 py-4 bg-[var(--foreground)] text-[var(--background)] rounded-full text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-[var(--foreground)]/10;
+    @apply inline-flex items-center justify-center px-8 py-4 bg-[var(--foreground)] text-[var(--background)] rounded-full text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-500 hover:scale-[1.02] active:scale-[0.98];
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
   }
 
   .btn-outline-elegant {
-    @apply inline-flex items-center justify-center px-8 py-4 border border-[var(--foreground)]/20 text-[var(--foreground)] rounded-full text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-500 hover:border-[var(--foreground)] hover:bg-[var(--foreground)]/5;
+    @apply inline-flex items-center justify-center px-8 py-4 rounded-full text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-500;
+    border: 1px solid rgba(var(--foreground-rgb, 0, 0, 0), 0.2);
+    color: var(--foreground);
+  }
+  
+  .btn-outline-elegant:hover {
+    border-color: var(--foreground);
+    background-color: rgba(var(--foreground-rgb, 0, 0, 0), 0.05);
   }
 }
