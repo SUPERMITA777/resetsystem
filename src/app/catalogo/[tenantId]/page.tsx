@@ -104,8 +104,10 @@ export default function PublicCatalogPage() {
       <main className="pt-40 pb-32 px-6">
         <div className="max-w-6xl mx-auto space-y-24">
           {/* Header */}
-          <div className="text-center space-y-6">
-            <h1 className="text-6xl font-serif italic tracking-tight pt-12">Catálogo de <span className="not-italic text-[var(--primary)]">Servicios</span></h1>
+          <div className="text-center space-y-4">
+            <h1 className="text-6xl font-serif italic tracking-tight pt-8 uppercase">
+               <span className="not-italic text-[var(--primary)]">Tratamientos</span>
+            </h1>
             <div className="h-px w-20 bg-[var(--primary)] mx-auto opacity-20" />
           </div>
 
@@ -117,11 +119,7 @@ export default function PublicCatalogPage() {
                 return (
                   <div key={tratamiento.id} className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                      <div className="space-y-8 order-2 lg:order-1">
-                        <div className="flex items-center gap-4">
-                           <div className="h-px w-8 bg-[var(--primary)] opacity-30" />
-                           <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-[var(--primary)]">Colección Principal</span>
-                        </div>
+                      <div className="space-y-6 order-2 lg:order-1">
                         <h2 className="text-5xl font-serif italic leading-none">
                           {tratamiento.nombre}
                         </h2>
@@ -151,13 +149,7 @@ export default function PublicCatalogPage() {
                     </div>
 
                     {/* Sub-items (Subtratamientos) */}
-                    <div className="glass rounded-[4rem] p-10 md:p-16 ring-1 ring-black/5">
-                      <div className="flex items-center justify-between mb-12">
-                         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--foreground)]/40 flex items-center gap-3">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" /> Variaciones Disponibles
-                         </h3>
-                         <div className="h-px flex-1 bg-black/5 mx-8" />
-                      </div>
+                    <div className="glass rounded-[4rem] p-10 md:p-16 ring-1 ring-black/5 mt-8">
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {(expandedTrats.has(tratamiento.id) ? filteredSubs : filteredSubs.slice(0, 2)).map((sub) => (
