@@ -28,6 +28,7 @@ export interface Tratamiento {
     descripcion?: string;
     imagenes?: string[];
     habilitado: boolean;
+    order?: number;
     boxId?: string; // Box asignado por defecto
     profesionalId?: string; // Profesional asignado por defecto
     rangos_disponibilidad?: {

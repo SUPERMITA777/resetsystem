@@ -38,7 +38,9 @@ export default function PublicCatalogPage() {
         const tenantData = await getTenant(tenantId);
         if (tenantData) setTenant(tenantData);
         const trats = await serviceManagement.getTratamientos(tenantId);
-        const tratsHabilitados = trats.filter(t => t.habilitado);
+        const tratsHabilitados = trats
+          .filter(t => t.habilitado)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
         setTratamientos(tratsHabilitados);
         
         const subsMap: Record<string, Subtratamiento[]> = {};
@@ -103,13 +105,8 @@ export default function PublicCatalogPage() {
         <div className="max-w-6xl mx-auto space-y-24">
           {/* Header */}
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center gap-3 px-4 py-1.5 glass rounded-full ring-1 ring-black/5">
-              <Sparkles className="w-3 h-3 text-[var(--primary)]" />
-              <span className="text-[9px] font-semibold uppercase tracking-[0.3em] opacity-60">Menú de Cortesía</span>
-            </div>
-            <h1 className="text-6xl font-serif italic tracking-tight">Catálogo de <span className="not-italic text-[var(--primary)]">Servicios</span></h1>
+            <h1 className="text-6xl font-serif italic tracking-tight pt-12">Catálogo de <span className="not-italic text-[var(--primary)]">Servicios</span></h1>
             <div className="h-px w-20 bg-[var(--primary)] mx-auto opacity-20" />
-            <p className="text-[var(--foreground)]/40 font-semibold uppercase tracking-[0.3em] text-[10px]">{tenant?.nombre_salon || 'Catálogo'} | High Aesthetics</p>
           </div>
 
           {/* Catalog items */}

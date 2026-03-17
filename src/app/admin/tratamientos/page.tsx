@@ -8,6 +8,8 @@ import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Clock, Tag, Box, User, Dow
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
 import { TratamientoModal } from "../../../components/admin/treatments/TratamientoModal";
 import { SubtratamientoModal } from "../../../components/admin/treatments/SubtratamientoModal";
+import { ReorderTratamientosModal } from "../../../components/admin/treatments/ReorderTratamientosModal";
+import { ArrowUpDown } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from "xlsx";
 
@@ -21,6 +23,7 @@ export default function TratamientosPage() {
     const [selectedSubtratamiento, setSelectedSubtratamiento] = useState<Subtratamiento | null>(null);
     const [subItems, setSubItems] = useState<Record<string, Subtratamiento[]>>({});
     const [importing, setImporting] = useState(false);
+    const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -29,7 +32,9 @@ export default function TratamientosPage() {
         setLoading(true);
         try {
             const data = await serviceManagement.getTratamientos(currentTenant);
-            setTratamientos(data);
+            // Sort by order
+            const sortedData = [...data].sort((a, b) => (a.order || 0) - (b.order || 0));
+            setTratamientos(sortedData);
 
             const subs: Record<string, Subtratamiento[]> = {};
             for (const t of data) {
@@ -282,6 +287,16 @@ export default function TratamientosPage() {
                         <p className="text-gray-500 mt-1">Gestiona tus servicios, boxes y profesionales.</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Order */}
+                        <Button
+                            onClick={() => setIsReorderModalOpen(true)}
+                            variant="ghost"
+                            className="text-xs font-black uppercase tracking-widest border border-gray-200 hover:border-black rounded-xl px-4 transition-all"
+                        >
+                            <ArrowUpDown className="w-4 h-4 mr-1.5" />
+                            Ordenar
+                        </Button>
+
                         {/* Export */}
                         <Button
                             onClick={handleExport}
@@ -471,6 +486,7 @@ export default function TratamientosPage() {
                     onSave={loadData}
                     tratamiento={selectedTratamiento}
                     tenantId={currentTenant}
+                    nextOrder={tratamientos.length}
                 />
             )}
 
@@ -481,6 +497,16 @@ export default function TratamientosPage() {
                     onSave={loadData}
                     tratamientoId={selectedTratamiento.id}
                     subtratamiento={selectedSubtratamiento}
+                    tenantId={currentTenant}
+                />
+            )}
+
+            {isReorderModalOpen && (
+                <ReorderTratamientosModal
+                    isOpen={isReorderModalOpen}
+                    onClose={() => setIsReorderModalOpen(false)}
+                    onSave={loadData}
+                    tratamientos={tratamientos}
                     tenantId={currentTenant}
                 />
             )}

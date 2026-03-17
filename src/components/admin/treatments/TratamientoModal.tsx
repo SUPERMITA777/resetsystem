@@ -14,9 +14,10 @@ interface TratamientoModalProps {
     onSave: () => void;
     tratamiento: Tratamiento | null;
     tenantId: string;
+    nextOrder?: number;
 }
 
-export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantId }: TratamientoModalProps) {
+export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantId, nextOrder }: TratamientoModalProps) {
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
     const [activeTab, setActiveTab] = useState<"general" | "detalles">("general");
     const [formData, setFormData] = useState<Partial<Tratamiento>>({
@@ -85,7 +86,10 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                 await serviceManagement.updateTratamiento(tenantId, tratamiento.id, cleanData);
                 toast.success("Tratamiento actualizado");
             } else {
-                await serviceManagement.createTratamiento(tenantId, cleanData as Omit<Tratamiento, "id">);
+                await serviceManagement.createTratamiento(tenantId, { 
+                    ...cleanData, 
+                    order: nextOrder || 0 
+                } as Omit<Tratamiento, "id">);
                 toast.success("Tratamiento creado");
             }
             onSave();
