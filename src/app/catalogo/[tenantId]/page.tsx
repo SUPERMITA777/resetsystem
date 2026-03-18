@@ -123,23 +123,23 @@ export default function PublicCatalogPage() {
         onSearchChange={setSearchTerm} 
       />
 
-      <main className="pt-40 pb-32 px-6">
-        <div className="max-w-6xl mx-auto space-y-24">
+      <main className="pt-20 md:pt-44 pb-16 md:pb-32 px-4 md:px-6">
+        <div className="max-w-6xl mx-auto space-y-12 md:space-y-24">
           {/* Header */}
-          <div className="text-center space-y-4">
-            <h1 className="text-6xl font-serif italic tracking-tight pt-8 uppercase">
+          <div className="text-center space-y-3 pt-4">
+            <h1 className="text-4xl md:text-6xl font-serif italic tracking-tight uppercase">
                <span className="not-italic text-[var(--primary)]">Tratamientos</span>
             </h1>
-            <div className="h-px w-20 bg-[var(--primary)] mx-auto opacity-20" />
+            <div className="h-px w-16 bg-[var(--primary)] mx-auto opacity-20" />
           </div>
 
           {/* Catalog items */}
-          <div className="space-y-32">
+          <div className="space-y-16 md:space-y-32">
             {filteredTratamientos.length > 0 ? (
               filteredTratamientos.map((tratamiento) => {
                 const filteredSubs = getFilteredSubs(tratamiento.id);
                 return (
-                  <div key={tratamiento.id} className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                  <div key={tratamiento.id} className="space-y-6 md:space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                       <div className="space-y-6 order-2 lg:order-1">
                         <h2 className="text-5xl font-serif italic leading-none">
@@ -168,46 +168,44 @@ export default function PublicCatalogPage() {
                          )}
                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                       </div>
-                    </div>
-
-                    {/* Sub-items (Subtratamientos) */}
-                    <div className="glass rounded-[4rem] p-10 md:p-16 ring-1 ring-black/5 mt-8">
+                    </div>                    {/* Sub-items (Subtratamientos) */}
+                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl md:rounded-[3.5rem] p-5 md:p-10 lg:p-16 ring-1 ring-black/5 mt-4 md:mt-8">
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                         {subtratamientos[tratamiento.id] !== undefined ? (
                           filteredSubs.length > 0 ? (
                             (expandedTrats.has(tratamiento.id) ? filteredSubs : filteredSubs.slice(0, 2)).map((sub) => (
-                              <div key={sub.id} className="p-10 bg-white/40 rounded-[3rem] border border-black/5 hover:border-[var(--primary)]/20 hover:shadow-2xl hover:shadow-[var(--primary)]/5 transition-all duration-700 group/card">
-                                <div className="flex justify-between items-start mb-6">
-                                  <h4 className="text-2xl font-serif italic tracking-tight leading-tight max-w-[70%] group-hover/card:text-[var(--primary)] transition-colors">
+                              <div key={sub.id} className="p-5 md:p-8 bg-white/70 rounded-2xl md:rounded-[2.5rem] border border-black/5 hover:border-[var(--primary)]/20 hover:shadow-xl hover:shadow-[var(--primary)]/5 transition-all duration-500 group/card">
+                                <div className="flex justify-between items-start mb-3 md:mb-5">
+                                  <h4 className="text-lg md:text-2xl font-serif italic tracking-tight leading-tight max-w-[65%] group-hover/card:text-[var(--primary)] transition-colors">
                                     {sub.nombre}
                                   </h4>
-                                  <div className="text-xl font-serif italic text-[var(--primary)]">
+                                  <div className="text-base md:text-xl font-serif italic text-[var(--primary)] font-semibold">
                                     ${sub.precio}
                                   </div>
                                 </div>
 
                                 {sub.descripcion && (
-                                  <p className="text-[var(--foreground)]/40 text-sm font-medium mb-8 line-clamp-2 italic leading-relaxed">
+                                  <p className="text-[var(--foreground)]/40 text-xs md:text-sm font-medium mb-4 md:mb-6 line-clamp-2 italic leading-relaxed">
                                     &ldquo;{sub.descripcion}&rdquo;
                                   </p>
                                 )}
 
-                                <div className="flex items-center justify-between pt-8 border-t border-black/5">
-                                  <div className="flex items-center gap-3 text-[var(--foreground)]/30">
-                                    <Clock className="w-3.5 h-3.5" />
+                                <div className="flex items-center justify-between pt-4 border-t border-black/5">
+                                  <div className="flex items-center gap-2 text-[var(--foreground)]/30">
+                                    <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest">{sub.duracion_minutos} min</span>
                                   </div>
-                                  <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2 md:gap-3">
                                     <button
                                       onClick={() => { setDetailSub({ sub, trat: tratamiento }); setDetailImgIdx(0); }}
-                                      className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-all px-2 py-1"
+                                      className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-all px-2 py-1.5 border border-black/10 rounded-full hover:border-[var(--primary)]/40"
                                     >
                                       Detalles
                                     </button>
                                     <button 
                                       onClick={() => setBookingData({ sub, trat: tratamiento })}
-                                      className="btn-elegant !py-2.5 !px-6 !text-[9px]"
+                                      className="inline-flex items-center justify-center px-4 md:px-6 py-2 md:py-2.5 bg-[var(--primary)] text-white rounded-full text-[9px] font-semibold uppercase tracking-[0.15em] transition-all duration-300 hover:opacity-90 active:scale-95 shadow-md shadow-[var(--primary)]/20"
                                     >
                                       Reservar
                                     </button>
@@ -230,7 +228,7 @@ export default function PublicCatalogPage() {
                       </div>
 
                       {filteredSubs.length > 2 && (
-                        <div className="mt-12 text-center">
+                        <div className="mt-6 md:mt-10 text-center">
                           <button
                             onClick={() => {
                               setExpandedTrats(prev => {
