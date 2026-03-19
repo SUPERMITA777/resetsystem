@@ -82,7 +82,7 @@ export function Sidebar() {
                     </a>
                 </div>
 
-                <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mt-auto">
+                <Link href="/admin/reportes" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mt-auto">
                     <FileBarChart className="w-5 h-5 text-[var(--primary)]" />
                     Reportes
                 </Link>
