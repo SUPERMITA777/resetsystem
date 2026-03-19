@@ -5,7 +5,7 @@ import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import {
     CalendarDays, ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
     Calendar as CalendarIcon, Banknote, CreditCard, Plus, Trash2,
-    Activity, BarChart3, RefreshCw, Wallet, ArrowUpCircle, ArrowDownCircle, Scale
+    Activity, BarChart3, RefreshCw, Wallet, ArrowUpCircle, ArrowDownCircle, Scale, Tag
 } from "lucide-react";
 import { format, addDays, subDays, startOfMonth, endOfMonth, addMonths, subMonths, parse } from "date-fns";
 import { es } from "date-fns/locale";
@@ -60,30 +60,81 @@ function MetodoRow({ label, icon: Icon, monto, color }: { label: string; icon: R
 }
 
 // ──────────────────────────────────────────────
-// Turno row in the list
+// Turno row in the list – with seña/saldo detail
 // ──────────────────────────────────────────────
+function PaymentTag({ label, monto, metodo, color }: { label: string; monto: number; metodo?: string; color: string }) {
+    return (
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide ${color}`}>
+            {metodo === "EFECTIVO" ? <Banknote className="w-3 h-3" /> : metodo === "TRANSFERENCIA" ? <CreditCard className="w-3 h-3" /> : null}
+            <span>{label}: {formatCurrency(monto)}</span>
+        </div>
+    );
+}
+
 function TurnoRow({ turno }: { turno: TurnoDB }) {
-    const pagado = turno.historialPagos
-        ? turno.historialPagos.reduce((s, p) => s + p.monto, 0)
+    // Build payment breakdown
+    const hasSena = (turno.sena ?? 0) > 0;
+    const hasSaldo = (turno.pagoSaldo ?? 0) > 0;
+    const hasHistorial = turno.historialPagos && turno.historialPagos.length > 0;
+    const hasDescuento = !!turno.motivoSaldo || ((turno.ajustePrecio ?? 0) !== 0);
+
+    const totalPagado = hasHistorial
+        ? turno.historialPagos!.reduce((s, p) => s + p.monto, 0)
         : (turno.sena ?? 0) + (turno.pagoSaldo ?? 0);
 
     return (
-        <div className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0 group">
-            <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex flex-col items-center justify-center">
-                    <span className="text-[9px] font-black text-gray-400 uppercase leading-none">{format(new Date(turno.fecha + "T12:00:00"), "MMM", { locale: es })}</span>
-                    <span className="text-sm font-black text-gray-800 leading-none">{format(new Date(turno.fecha + "T12:00:00"), "dd")}</span>
+        <div className="py-3 border-b border-gray-50 last:border-0">
+            <div className="flex items-start justify-between gap-4">
+                {/* Left: date + client info */}
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[9px] font-black text-gray-400 uppercase leading-none">{format(new Date(turno.fecha + "T12:00:00"), "MMM", { locale: es })}</span>
+                        <span className="text-sm font-black text-gray-800 leading-none">{format(new Date(turno.fecha + "T12:00:00"), "dd")}</span>
+                    </div>
+                    <div>
+                        <p className="font-bold text-sm text-gray-900">{turno.clienteAbreviado}</p>
+                        <p className="text-xs text-gray-400 font-medium">{turno.horaInicio} · {turno.tratamientoAbreviado}</p>
+                        {/* Payment tags */}
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {hasHistorial ? (
+                                turno.historialPagos!.map((p, i) => (
+                                    <PaymentTag
+                                        key={i}
+                                        label={p.tipo === "SEÑA" ? "Seña" : "Saldo"}
+                                        monto={p.monto}
+                                        metodo={p.metodo}
+                                        color={p.tipo === "SEÑA" ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-700"}
+                                    />
+                                ))
+                            ) : (
+                                <>
+                                    {hasSena && (
+                                        <PaymentTag label="Seña" monto={turno.sena!} metodo={turno.metodoPagoSena} color="bg-blue-50 text-blue-600" />
+                                    )}
+                                    {hasSaldo && (
+                                        <PaymentTag label="Saldo" monto={turno.pagoSaldo!} metodo={turno.metodoPagoSaldo} color="bg-emerald-50 text-emerald-700" />
+                                    )}
+                                </>
+                            )}
+                            {/* Discount reason */}
+                            {hasDescuento && (
+                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-50 text-orange-600">
+                                    <Tag className="w-3 h-3" />
+                                    {turno.motivoSaldo
+                                        ? turno.motivoSaldo
+                                        : `Ajuste ${turno.ajustePrecio! > 0 ? '+' : ''}${formatCurrency(turno.ajustePrecio!)}`}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <p className="font-bold text-sm text-gray-900">{turno.clienteAbreviado}</p>
-                    <p className="text-xs text-gray-400 font-medium">{turno.horaInicio} · {turno.tratamientoAbreviado}</p>
+                {/* Right: total */}
+                <div className="text-right shrink-0">
+                    {totalPagado > 0
+                        ? <span className="font-black text-emerald-600">{formatCurrency(totalPagado)}</span>
+                        : <span className="text-xs text-gray-300 font-medium">Sin pago</span>
+                    }
                 </div>
-            </div>
-            <div className="text-right">
-                {pagado > 0
-                    ? <span className="font-black text-emerald-600">{formatCurrency(pagado)}</span>
-                    : <span className="text-xs text-gray-300 font-medium">Sin pago registrado</span>
-                }
             </div>
         </div>
     );
@@ -468,13 +519,13 @@ export default function ReportesPage() {
                                     </div>
                                 </div>
 
-                                {/* Turnos */}
+                                {/* Detalles del Día */}
                                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <Activity className="w-4 h-4 text-blue-500" />
                                         <h2 className="text-sm font-black uppercase tracking-widest text-gray-700">
-                                            Turnos del Día
-                                            <span className="ml-2 text-gray-300 font-bold">({diaTurnos.length})</span>
+                                            Detalles del Día
+                                            <span className="ml-2 text-gray-300 font-bold">({diaTurnos.length} turnos)</span>
                                         </h2>
                                     </div>
                                     {diaTurnos.length > 0 ? (
@@ -624,13 +675,13 @@ export default function ReportesPage() {
                                     )}
                                 </div>
 
-                                {/* Turnos del mes */}
+                                {/* Detalles del Período */}
                                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <Activity className="w-4 h-4 text-blue-500" />
                                         <h2 className="text-sm font-black uppercase tracking-widest text-gray-700">
-                                            Turnos del Período
-                                            <span className="ml-2 text-gray-300 font-bold">({mesTurnos.length})</span>
+                                            Detalles del Período
+                                            <span className="ml-2 text-gray-300 font-bold">({mesTurnos.length} turnos)</span>
                                         </h2>
                                     </div>
                                     {mesTurnos.length > 0 ? (
