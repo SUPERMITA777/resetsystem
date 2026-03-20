@@ -69,7 +69,7 @@ export default function SuperadminDashboard() {
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
                     <h1 className="text-lg font-bold text-gray-800">Gestión de Tenants</h1>
                     <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500 font-medium">Reset System Global v1.0</span>
+                        <span className="text-sm text-gray-500 font-medium">RESET HOME SPA WEB Global v1.0</span>
                         <div className="w-8 h-8 rounded-full bg-gray-200" />
                     </div>
                 </header>

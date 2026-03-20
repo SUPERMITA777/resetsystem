@@ -14,8 +14,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "RESET SYSTEM | Salon Management",
-  description: "Smart booking and management for modern salons and spas.",
+  title: "RESET HOME SPA WEB",
+  description: "¡TU MEJOR VERSIÓN!",
 };
 
 export default function RootLayout({

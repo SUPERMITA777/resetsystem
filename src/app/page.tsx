@@ -81,11 +81,11 @@ export default function Home() {
                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-[var(--secondary)]/10" />
                  <div className="relative text-center space-y-12 w-full">
                     <div className="w-48 h-24 mx-auto relative transition-transform duration-1000 group-hover:scale-110">
-                      <img src={tenant?.logo_url || "/logo.png"} alt={tenant?.nombre_salon || "RESET SYSTEM"} className="w-full h-full object-contain" />
+                      <img src={tenant?.logo_url || "/logo.png"} alt={tenant?.nombre_salon || "RESET HOME SPA WEB"} className="w-full h-full object-contain" />
                     </div>
                     <div className="space-y-4">
                       <div className="h-px w-12 bg-[var(--primary)] mx-auto opacity-30" />
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.4em] opacity-40 italic">Luxury Experience</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.4em] opacity-40 italic">¡TU MEJOR VERSIÓN!</p>
                     </div>
                  </div>
               </div>
@@ -196,7 +196,7 @@ export default function Home() {
               </h2>
               <div className="h-px w-24 bg-[var(--primary)] mx-auto opacity-30" />
               <p className="text-white/40 text-lg font-medium max-w-2xl mx-auto uppercase tracking-widest text-xs">
-                Únete a la elite de los salones que ya transforman el mañana con RESET SYSTEM.
+                Únete a la elite de los salones que ya transforman el mañana con RESET HOME SPA WEB.
               </p>
               <div className="pt-8">
                 <Link href="/login?tab=register">
@@ -209,6 +209,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+
       </main>
 
       <PublicFooter logoUrl={tenant?.logo_url} />

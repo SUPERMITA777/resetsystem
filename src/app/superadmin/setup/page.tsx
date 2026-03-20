@@ -10,7 +10,7 @@ export default function SetupPage() {
                 <div className="mx-auto bg-white w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mb-4">
                     <Sparkles className="w-8 h-8 text-[#9381FF]" />
                 </div>
-                <h1 className="text-2xl font-bold font-montserrat text-gray-900">Bienvenido a RESET SYSTEM</h1>
+                <h1 className="text-2xl font-bold font-montserrat text-gray-900">Bienvenido a RESET HOME SPA WEB</h1>
                 <p className="text-gray-500 mt-2">Vamos a dejar tu sistema listo para recibir clientes en menos de 2 minutos.</p>
             </div>
 

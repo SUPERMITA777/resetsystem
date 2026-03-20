@@ -11,7 +11,7 @@ interface PublicNavbarProps {
 }
 
 export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange }: PublicNavbarProps) {
-  const displayName = salonName || "RESET SYSTEM";
+  const displayName = salonName || "RESET HOME SPA WEB";
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
