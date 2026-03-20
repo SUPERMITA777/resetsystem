@@ -11,10 +11,14 @@ export default function AdminTarotPage() {
     const [readings, setReadings] = useState<TarotReading[]>([]);
     const [loading, setLoading] = useState(true);
     const [tenantId, setTenantId] = useState("");
+    const [publicUrl, setPublicUrl] = useState("");
 
     useEffect(() => {
         const id = localStorage.getItem('currentTenant') || 'resetspa';
         setTenantId(id);
+        if (typeof window !== "undefined") {
+            setPublicUrl(`${window.location.protocol}//${window.location.host}/tarot/${id}`);
+        }
         loadReadings(id);
     }, []);
 
@@ -29,8 +33,6 @@ export default function AdminTarotPage() {
             setLoading(false);
         }
     };
-
-    const publicUrl = `${window.location.protocol}//${window.location.host}/tarot/${tenantId}`;
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
