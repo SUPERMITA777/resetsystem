@@ -12,7 +12,6 @@ import {
     getParticipantes, resetParticipante,
 } from "@/lib/services/promoWebService";
 
-const TENANT_ID = "resetspa";
 
 type Tab = "premios" | "ganadores";
 
@@ -34,6 +33,7 @@ const emptyForm = (): PremioForm => ({
 });
 
 export default function PromosWebPage() {
+    const TENANT_ID = typeof window !== "undefined" ? localStorage.getItem("currentTenant") || "resetspa" : "resetspa";
     const [tab, setTab] = useState<Tab>("premios");
     const [promos, setPromos] = useState<PromoWeb[]>([]);
     const [selectedPromo, setSelectedPromo] = useState<PromoWeb | null>(null);

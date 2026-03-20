@@ -54,7 +54,7 @@ export default function PromoClientView({ tenantId, promoId, initialPromo, initi
     }, [stage]);
 
     const promoNombre = initialPromo.nombre;
-    const whatsappNegocio = initialPromo.whatsapp_negocio;
+    const whatsappNegocio = initialTenant?.datos_contacto?.whatsapp || initialPromo.whatsapp_negocio;
     const salonNombre = initialTenant?.nombre_salon || "";
     const logoUrl = initialTenant?.logo_url || null;
     const instagram = initialTenant?.datos_contacto?.instagram || null;
