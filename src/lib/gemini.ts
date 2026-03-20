@@ -15,22 +15,23 @@ export async function generateInterpretacion(prompt: string) {
         const response = await result.response;
         return response.text();
     } catch (error: any) {
-        console.error("Gemini Error:", error);
+        console.error("Gemini Flash Error:", error);
+        const errorMessage = error.message || String(error);
         
         // If 404 or model not found, try fallback to gemini-pro
-        if (error.message?.includes("404") || error.message?.includes("not found")) {
+        if (errorMessage.includes("404") || errorMessage.includes("not found")) {
             console.log("Intentando fallback con gemini-pro...");
             try {
                 const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
                 const result = await fallbackModel.generateContent(prompt);
                 const response = await result.response;
                 return response.text();
-            } catch (fallbackError) {
+            } catch (fallbackError: any) {
                 console.error("Fallback Error:", fallbackError);
-                throw new Error("No se pudo conectar con el Oráculo IA. Por favor, verifica tu API Key.");
+                throw new Error(`Error en Oráculo (Fallback): ${fallbackError.message || fallbackError}`);
             }
         }
         
-        throw error;
+        throw new Error(`Error en Oráculo IA: ${errorMessage}`);
     }
 }
