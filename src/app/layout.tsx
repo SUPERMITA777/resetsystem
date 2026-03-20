@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: "¡TU MEJOR VERSIÓN!",
 };
 
+import { Toaster } from "react-hot-toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,6 +30,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${montserrat.variable} antialiased`}>
         <AuthProvider>
           {children}
+          <Toaster position="top-right" />
         </AuthProvider>
       </body>
     </html>
