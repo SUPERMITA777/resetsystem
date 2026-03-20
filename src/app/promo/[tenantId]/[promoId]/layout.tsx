@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { getTenant } from "@/lib/services/tenantService";
 
 type Props = {
-  params: { tenantId: string; promoId: string };
+  params: Promise<{ tenantId: string; promoId: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tenantId } = params;
+  const { tenantId } = await params;
   const tenant = await getTenant(tenantId);
 
   const title = "RESET HOME SPA WEB";
