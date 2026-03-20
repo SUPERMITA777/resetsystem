@@ -41,6 +41,18 @@ export default function PromoClientView({ tenantId, promoId, initialPromo, initi
     const [confettiShown, setConfettiShown] = useState(false);
     const [dots, setDots] = useState(".");
 
+    // Sound effect URL
+    const CELEBRATION_SOUND = "https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3";
+
+    // Play celebration sound
+    useEffect(() => {
+        if (stage === "prize") {
+            const audio = new Audio(CELEBRATION_SOUND);
+            audio.volume = 0.5;
+            audio.play().catch(err => console.warn("Audio playback failed:", err));
+        }
+    }, [stage]);
+
     const promoNombre = initialPromo.nombre;
     const whatsappNegocio = initialPromo.whatsapp_negocio;
     const salonNombre = initialTenant?.nombre_salon || "";
