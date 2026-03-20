@@ -3,7 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
-export const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+export const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+// Using v1 as a more stable alternative if needed, but the SDK should handle names better now.
 
 export async function generateInterpretacion(prompt: string) {
     if (!apiKey) {
