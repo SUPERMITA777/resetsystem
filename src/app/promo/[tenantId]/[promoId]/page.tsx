@@ -203,13 +203,13 @@ export default function PromoPage() {
                     z-index: 1;
                 }
                 .logo-ring {
-                    width: 88px;
-                    height: 88px;
+                    width: 120px;
+                    height: 120px;
                     border-radius: 50%;
                     padding: 4px;
                     background: linear-gradient(135deg, #ff6fa2, #b4005d);
                     box-shadow: 0 0 0 4px rgba(255,111,162,0.2), 0 8px 24px rgba(180,0,93,0.18);
-                    margin-bottom: 4px;
+                    margin-bottom: 8px;
                 }
                 .logo-inner {
                     width: 100%;
@@ -230,24 +230,16 @@ export default function PromoPage() {
                 .logo-placeholder {
                     font-family: 'Epilogue', sans-serif;
                     font-weight: 900;
-                    font-size: 1.8rem;
+                    font-size: 2.22rem;
                     background: linear-gradient(135deg, #b4005d, #ff6fa2);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                     background-clip: text;
                     letter-spacing: -0.04em;
                 }
-                .salon-name {
-                    font-family: 'Epilogue', sans-serif;
-                    font-weight: 900;
-                    font-size: 1.3rem;
-                    letter-spacing: 0.12em;
-                    text-transform: uppercase;
-                    color: #302e30;
-                }
                 .salon-tagline {
-                    font-size: 0.78rem;
-                    font-weight: 600;
+                    font-size: 0.85rem;
+                    font-weight: 700;
                     color: #923f5f;
                     letter-spacing: 0.02em;
                 }
@@ -498,10 +490,7 @@ export default function PromoPage() {
                             )}
                         </div>
                     </div>
-                    {salonNombre && (
-                        <span className="salon-name">{salonNombre}</span>
-                    )}
-                    <span className="salon-tagline">Tu momento de cuidado y bienestar ✨</span>
+                    <span className="salon-tagline">¡Tu mejor versión! ✨</span>
                 </div>
 
                 {/* ── Main Card ──────────────────────────────────── */}
