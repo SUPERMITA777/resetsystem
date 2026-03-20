@@ -75,6 +75,10 @@ export function Sidebar() {
                         <Gift className="w-5 h-5 text-[var(--primary)]" />
                         Promos Web
                     </Link>
+                    <Link href="/admin/tarot" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
+                        <Sparkles className="w-5 h-5 text-[var(--primary)]" />
+                        Tarot Web
+                    </Link>
                     <a 
                         href={`/${tenantId}`} 
                         target="_blank" 

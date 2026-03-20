@@ -1,5 +1,5 @@
 import { db } from "../firebase";
-import { collection, doc, getDoc, getDocs, setDoc, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc, query, orderBy, Timestamp, where, limit } from "firebase/firestore";
 
 export interface TarotCard {
     id: string;
@@ -50,6 +50,17 @@ export const tarotService = {
         const ref = doc(collection(db, READINGS_COLLECTION));
         await setDoc(ref, reading);
         return ref.id;
+    },
+
+    async getReadingsByTenant(tenantId: string): Promise<TarotReading[]> {
+        const q = query(
+            collection(db, READINGS_COLLECTION), 
+            where("tenantId", "==", tenantId),
+            orderBy("createdAt", "desc"),
+            limit(50)
+        );
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as TarotReading));
     },
 
     async seedCards(cards: TarotCard[]): Promise<void> {

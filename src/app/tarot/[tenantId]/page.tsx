@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { tarotService, TarotCard } from "@/lib/services/tarotService";
+import { tarotService, TarotCard, TarotReading } from "@/lib/services/tarotService";
 import { getTarotReading } from "@/lib/actions/tarotActions";
 import { Loader2, Sparkles, Send, RotateCcw, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+import { Timestamp } from "firebase/firestore";
 
 type SpreadType = 1 | 3 | 5;
 type Stage = "setup" | "shuffle" | "pick" | "reveal" | "reading";
@@ -75,6 +76,7 @@ export default function TarotPublicPage() {
                         ["Pasado", "Presente", "Futuro", "Desafío", "Resultado"][i];
             
             return {
+                id: card.id,
                 nombre: card.nombre,
                 invertida: d.invertida,
                 posicion: pos,
@@ -85,6 +87,21 @@ export default function TarotPublicPage() {
         const res = await getTarotReading(name, question, selected);
         if (res.success) {
             setReading(res.text || "");
+            
+            // Save to Firestore
+            try {
+                await tarotService.saveReading({
+                    tenantId,
+                    usuario: name,
+                    pregunta: question,
+                    cartas: selected,
+                    interpretacion: res.text || "",
+                    createdAt: Timestamp.now()
+                });
+            } catch (err) {
+                console.error("Error saving reading:", err);
+                // Don't toast error here, user already got their reading
+            }
         } else {
             toast.error(res.error || "Algo salió mal con la conexión mística");
             setStage("reveal");
