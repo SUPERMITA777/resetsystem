@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tenantId } = await params;
   const tenant = await getTenant(tenantId);
 
-  const title = "RESET HOME SPA WEB";
-  const description = "¡TU MEJOR VERSIÓN!";
+  const title = tenant?.nombre_salon ? `${tenant.nombre_salon} | Promo Especial` : "Promo Especial";
+  const description = "¡Participá y ganá en nuestro sorteo exclusivo! ✨";
   const logo = tenant?.logo_url;
 
   return {
