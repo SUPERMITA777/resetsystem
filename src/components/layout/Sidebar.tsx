@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag } from "lucide-react";
+import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { GlobalSearch } from "./GlobalSearch";
 
@@ -70,6 +70,10 @@ export function Sidebar() {
                     <Link href="/admin/web" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                         <Globe className="w-5 h-5 text-[var(--primary)]" />
                         Configuración Web
+                    </Link>
+                    <Link href="/admin/promos-web" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
+                        <Gift className="w-5 h-5 text-[var(--primary)]" />
+                        Promos Web
                     </Link>
                     <a 
                         href={`/${tenantId}`} 
