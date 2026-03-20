@@ -175,7 +175,7 @@ export default function PromoPage() {
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    padding: 24px 16px;
+                    padding: 20px 16px;
                     position: relative;
                     overflow: hidden;
                     gap: 0;
@@ -198,18 +198,18 @@ export default function PromoPage() {
                     flex-direction: column;
                     align-items: center;
                     gap: 6px;
-                    margin-bottom: 20px;
+                    margin-bottom: 24px;
                     position: relative;
                     z-index: 1;
                 }
                 .logo-ring {
-                    width: 160px;
+                    width: 130px;
                     height: auto;
-                    min-height: 100px;
+                    min-height: 80px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin-bottom: 12px;
+                    margin-bottom: 8px;
                     background: transparent;
                     box-shadow: none;
                 }
@@ -224,7 +224,7 @@ export default function PromoPage() {
                 .logo-inner img {
                     width: 100%;
                     height: auto;
-                    max-height: 140px;
+                    max-height: 110px;
                     object-fit: contain;
                 }
                 .logo-placeholder {
@@ -250,7 +250,7 @@ export default function PromoPage() {
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
                     border-radius: 32px;
-                    padding: 40px 32px;
+                    padding: 32px 24px;
                     width: 100%;
                     max-width: 420px;
                     box-shadow: 0 24px 64px rgba(180, 0, 93, 0.12), 0 4px 16px rgba(0,0,0,0.05);
@@ -477,29 +477,28 @@ export default function PromoPage() {
                     </div>
                 ))}
 
-                {/* ── Brand Header ───────────────────────────────── */}
-                <div className="brand-header">
-                    <div className="logo-ring">
-                        <div className="logo-inner">
-                            {logoUrl ? (
-                                <img src={logoUrl} alt={salonNombre || "Logo"} />
-                            ) : (
-                                <span className="logo-placeholder">
-                                    {(salonNombre || "RS").slice(0, 2).toUpperCase()}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    <span className="salon-tagline">¡Tu mejor versión! ✨</span>
-                </div>
-
                 {/* ── Main Card ──────────────────────────────────── */}
                 <div className="card">
+                    {/* ── Brand Header (moved inside card) ────────────── */}
+                    <div className="brand-header">
+                        <div className="logo-ring">
+                            <div className="logo-inner">
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt={salonNombre || "Logo"} />
+                                ) : (
+                                    <span className="logo-placeholder">
+                                        {(salonNombre || "RS").slice(0, 2).toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <span className="salon-tagline">¡Tu mejor versión! ✨</span>
+                    </div>
+
                     {/* STAGE: FORM */}
                     {stage === "form" && (
                         <>
-                            <div style={{ textAlign: "center", fontSize: "3rem", marginBottom: "8px" }}>✨</div>
-                            <h1 className="title">¡HOY ES<br />TU DÍA DE<br />SUERTE!</h1>
+                            <h1 className="title">¡HOY ES TU<br />DÍA DE SUERTE!</h1>
                             {promoNombre && (
                                 <p style={{ textAlign: "center", fontSize: "0.78rem", fontWeight: 700, color: "#923f5f", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>
                                     {promoNombre}
@@ -530,7 +529,6 @@ export default function PromoPage() {
                     {/* STAGE: SPINNING */}
                     {stage === "spinning" && (
                         <div className="spinning-area">
-                            <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🌟</div>
                             <div className="spin-circle" />
                             <h2 style={{ fontFamily: "Epilogue, sans-serif", fontWeight: 900, fontSize: "1.4rem", color: "#b4005d", marginBottom: "8px" }}>
                                 Sorteando tu premio{dots}
@@ -542,7 +540,6 @@ export default function PromoPage() {
                     {/* STAGE: PRIZE */}
                     {stage === "prize" && premio && (
                         <>
-                            <div style={{ textAlign: "center", fontSize: "3.5rem", marginBottom: "8px" }}>🎉</div>
                             <h1 className="title">¡Felicitaciones<br />{nombre}!</h1>
                             <p className="subtitle">¡Te ganaste un premio! Presioná el botón para reclamarlo por WhatsApp.</p>
 
@@ -577,7 +574,6 @@ export default function PromoPage() {
                     {/* STAGE: ALREADY PLAYED */}
                     {stage === "already_played" && (
                         <>
-                            <div className="already-played-icon">💔</div>
                             <h1 className="title" style={{ fontSize: "1.6rem" }}>Ya participaste</h1>
                             <p className="subtitle" style={{ marginTop: "12px" }}>
                                 Este número de WhatsApp ya participó en el sorteo.<br /><br />
@@ -589,7 +585,6 @@ export default function PromoPage() {
                     {/* STAGE: NO PRIZES */}
                     {stage === "no_prizes" && (
                         <>
-                            <div style={{ textAlign: "center", fontSize: "3rem", marginBottom: "12px" }}>😔</div>
                             <h1 className="title" style={{ fontSize: "1.6rem" }}>Sin premios activos</h1>
                             <p className="subtitle" style={{ marginTop: "12px" }}>
                                 Por el momento no hay premios disponibles para sortear.<br />
