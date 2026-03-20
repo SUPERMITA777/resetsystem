@@ -20,6 +20,7 @@ export interface PromoWeb {
     activa: boolean;
     whatsapp_negocio: string;
     subtitulo_logo?: string;
+    short_code?: string;
     createdAt?: Timestamp;
 }
 
@@ -41,6 +42,37 @@ export interface Participante {
     premioId: string;
     premioNombre: string;
     ganado_en: Timestamp;
+}
+
+// ─── SHORT LINKS ──────────────────────────────────────────────────────────────
+
+export interface ShortLink {
+    tenantId: string;
+    promoId: string;
+}
+
+export async function getShortLink(shortCode: string): Promise<ShortLink | null> {
+    const snap = await getDoc(doc(db, "short_links", shortCode.toLowerCase()));
+    if (!snap.exists()) return null;
+    return snap.data() as ShortLink;
+}
+
+export async function reserveShortLink(shortCode: string, tenantId: string, promoId: string): Promise<void> {
+    const code = shortCode.toLowerCase();
+    const docRef = doc(db, "short_links", code);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        const data = snap.data() as ShortLink;
+        if (data.tenantId !== tenantId || data.promoId !== promoId) {
+            throw new Error(`El link /p/${code} ya está siendo utilizado por otra promo.`);
+        }
+    }
+    await setDoc(docRef, { tenantId, promoId });
+}
+
+export async function releaseShortLink(shortCode: string): Promise<void> {
+    if (!shortCode) return;
+    await deleteDoc(doc(db, "short_links", shortCode.toLowerCase()));
 }
 
 // ─── PROMOS ───────────────────────────────────────────────────────────────────

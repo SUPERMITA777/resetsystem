@@ -10,6 +10,7 @@ import {
     getPromos, createPromo, updatePromo,
     getPremios, createPremio, updatePremio, deletePremio,
     getParticipantes, resetParticipante,
+    reserveShortLink, releaseShortLink,
 } from "@/lib/services/promoWebService";
 
 
@@ -46,7 +47,7 @@ export default function PromosWebPage() {
     const [copied, setCopied] = useState(false);
 
     // form for promo config
-    const [promoForm, setPromoForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Tu mejor versión! ✨", activa: true });
+    const [promoForm, setPromoForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Tu mejor versión! ✨", short_code: "", activa: true });
 
     // form for prizes
     const [showPremioModal, setShowPremioModal] = useState(false);
@@ -61,7 +62,7 @@ export default function PromosWebPage() {
             if (list.length > 0) {
                 const p = list[0];
                 setSelectedPromo(p);
-                setPromoForm({ nombre: p.nombre, whatsapp_negocio: p.whatsapp_negocio, subtitulo_logo: p.subtitulo_logo || "¡Tu mejor versión! ✨", activa: p.activa });
+                setPromoForm({ nombre: p.nombre, whatsapp_negocio: p.whatsapp_negocio, subtitulo_logo: p.subtitulo_logo || "¡Tu mejor versión! ✨", short_code: p.short_code || "", activa: p.activa });
                 const [premiosList, ganList] = await Promise.all([
                     getPremios(TENANT_ID, p.id),
                     getParticipantes(TENANT_ID, p.id),
@@ -78,9 +79,11 @@ export default function PromosWebPage() {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    const landingUrl = selectedPromo
-        ? `${typeof window !== "undefined" ? window.location.origin : ""}/promo/${TENANT_ID}/${selectedPromo.id}`
-        : "";
+    const landingUrl = selectedPromo?.short_code
+        ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${selectedPromo.short_code}`
+        : selectedPromo
+            ? `${typeof window !== "undefined" ? window.location.origin : ""}/promo/${TENANT_ID}/${selectedPromo.id}`
+            : "";
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(landingUrl);
@@ -93,15 +96,35 @@ export default function PromosWebPage() {
             toast.error("Completá el nombre y el WhatsApp del negocio");
             return;
         }
+        
+        let finalShortCode = promoForm.short_code.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+        
         setSaving(true);
         try {
-            if (selectedPromo) {
-                await updatePromo(TENANT_ID, selectedPromo.id, promoForm);
-                toast.success("¡Promo actualizada!");
-            } else {
-                const id = await createPromo(TENANT_ID, { ...promoForm, activa: true });
+            let promoIdToUse = selectedPromo?.id;
+
+            if (!promoIdToUse) {
+                promoIdToUse = await createPromo(TENANT_ID, { ...promoForm, short_code: "", activa: true });
                 toast.success("¡Promo creada!");
             }
+
+            if (finalShortCode) {
+                try {
+                    await reserveShortLink(finalShortCode, TENANT_ID, promoIdToUse);
+                } catch (err: any) {
+                    toast.error(err.message || "Ese link corto ya está en uso.");
+                    setSaving(false);
+                    return;
+                }
+            }
+
+            if (selectedPromo && selectedPromo.short_code && selectedPromo.short_code !== finalShortCode) {
+                await releaseShortLink(selectedPromo.short_code);
+            }
+
+            await updatePromo(TENANT_ID, promoIdToUse, { ...promoForm, short_code: finalShortCode });
+            if (selectedPromo) toast.success("¡Promo actualizada!");
+
             await loadData();
         } catch (e) {
             toast.error("Error al guardar");
@@ -255,6 +278,18 @@ export default function PromosWebPage() {
                                 value={promoForm.subtitulo_logo}
                                 onChange={e => setPromoForm({ ...promoForm, subtitulo_logo: e.target.value })}
                             />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Link Personalizado (Opcional)</label>
+                            <div className="flex items-center">
+                                <span className="bg-gray-100 border border-r-0 border-gray-100 rounded-l-xl px-3 py-3 text-sm text-gray-400">/p/</span>
+                                <input
+                                    className="w-full bg-gray-50 rounded-r-xl p-3 text-sm font-medium focus:ring-2 focus:ring-pink-300 outline-none transition-all border border-gray-100"
+                                    placeholder="ej: mi-sorteo"
+                                    value={promoForm.short_code}
+                                    onChange={e => setPromoForm({ ...promoForm, short_code: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                                />
+                            </div>
                         </div>
                     </div>
 
