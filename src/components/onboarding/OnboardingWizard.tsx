@@ -7,7 +7,7 @@ import { CheckCircle2, ChevronRight, Store, LayoutGrid, Users, Scissors } from '
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, collection, setDoc, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, collection, setDoc, writeBatch, getDoc } from 'firebase/firestore';
 
 const STEPS = [
     { id: 'salon', title: 'Mi Salón', icon: Store, description: 'Datos básicos de tu negocio.' },
@@ -51,18 +51,42 @@ export function OnboardingWizard() {
         const loadingToast = toast.loading('Configurando tu entorno mágico...');
 
         try {
-            // Mock tenant ID. En producción vendría del Context del admin logueado
-            const tenantId = 'resetspa';
+            // Generar un slug único a partir del nombre del salón
+            let baseSlug = (salonName || 'Mi Salon').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            if (!baseSlug) baseSlug = 'nuevo-salon';
+            
+            let tenantId = baseSlug;
+            let counter = 1;
+            
+            // Verificar si el tenant ya existe
+            while (true) {
+                const checkRef = doc(db, 'tenants', tenantId);
+                const checkSnap = await getDoc(checkRef);
+                if (!checkSnap.exists()) {
+                    break;
+                }
+                tenantId = `${baseSlug}-${counter}`;
+                counter++;
+            }
 
             const batch = writeBatch(db);
 
-            // 1. Actualizar Configuración del Salón
+            // 1. Crear Configuración del Salón
             const tenantRef = doc(db, 'tenants', tenantId);
-            batch.update(tenantRef, {
+            batch.set(tenantRef, {
+                slug: tenantId,
                 nombre_salon: salonName || 'Mi Salón',
-                "datos_contacto.whatsapp": phone,
-                "datos_contacto.direccion": address,
-                config_boxes: boxesCount
+                datos_contacto: {
+                    whatsapp: phone || '',
+                    direccion: address || '',
+                    telefono: '',
+                    descripcion: '',
+                    instagram: ''
+                },
+                config_boxes: boxesCount,
+                status: 'active',
+                createdAt: new Date(),
+                tema_visual: 'nude'
             });
 
             // 2. Crear primer empleado
