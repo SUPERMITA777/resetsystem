@@ -203,34 +203,34 @@ export default function PromoPage() {
                     z-index: 1;
                 }
                 .logo-ring {
-                    width: 120px;
-                    height: 120px;
-                    border-radius: 50%;
-                    padding: 4px;
-                    background: linear-gradient(135deg, #ff6fa2, #b4005d);
-                    box-shadow: 0 0 0 4px rgba(255,111,162,0.2), 0 8px 24px rgba(180,0,93,0.18);
-                    margin-bottom: 8px;
+                    width: 160px;
+                    height: auto;
+                    min-height: 100px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 12px;
+                    background: transparent;
+                    box-shadow: none;
                 }
                 .logo-inner {
                     width: 100%;
                     height: 100%;
-                    border-radius: 50%;
-                    background: #fff;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    overflow: hidden;
+                    overflow: visible;
                 }
                 .logo-inner img {
                     width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    border-radius: 50%;
+                    height: auto;
+                    max-height: 140px;
+                    object-fit: contain;
                 }
                 .logo-placeholder {
                     font-family: 'Epilogue', sans-serif;
                     font-weight: 900;
-                    font-size: 2.22rem;
+                    font-size: 2.5rem;
                     background: linear-gradient(135deg, #b4005d, #ff6fa2);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
