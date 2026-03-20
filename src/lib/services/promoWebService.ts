@@ -19,6 +19,7 @@ export interface PromoWeb {
     nombre: string;
     activa: boolean;
     whatsapp_negocio: string;
+    subtitulo_logo?: string;
     createdAt?: Timestamp;
 }
 
@@ -29,6 +30,7 @@ export interface Premio {
     tipo: "descuento" | "regalo" | "otro";
     vencimiento: Timestamp;
     probabilidad: number; // peso relativo 1-10
+    stock?: number; // cantidad de premios disponibles
     activo: boolean;
     ganadores: number;
 }
@@ -156,7 +158,18 @@ export async function registrarParticipante(
     );
     const premioSnap = await getDoc(premioRef);
     if (premioSnap.exists()) {
-        await updateDoc(premioRef, { ganadores: (premioSnap.data().ganadores || 0) + 1 });
+        const pData = premioSnap.data() as Premio;
+        const updates: any = { ganadores: (pData.ganadores || 0) + 1 };
+        
+        if (typeof pData.stock === "number") {
+            const nuevoStock = pData.stock - 1;
+            updates.stock = nuevoStock;
+            if (nuevoStock <= 0) {
+                updates.activo = false;
+            }
+        }
+        
+        await updateDoc(premioRef, updates);
     }
 }
 
@@ -190,7 +203,7 @@ export async function resetParticipante(
 export function sortearPremio(premios: Premio[]): Premio | null {
     const now = Timestamp.now();
     const elegibles = premios.filter(
-        (p) => p.activo && p.vencimiento.seconds > now.seconds
+        (p) => p.activo && p.vencimiento.seconds > now.seconds && (typeof p.stock !== "number" || p.stock > 0)
     );
     if (elegibles.length === 0) return null;
 

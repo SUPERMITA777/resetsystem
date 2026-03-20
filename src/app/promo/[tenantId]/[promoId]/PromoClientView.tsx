@@ -55,6 +55,7 @@ export default function PromoClientView({ tenantId, promoId, initialPromo, initi
 
     const promoNombre = initialPromo.nombre;
     const whatsappNegocio = initialTenant?.datos_contacto?.whatsapp || initialPromo.whatsapp_negocio;
+    const subtitle = initialPromo.subtitulo_logo || "¡Tu mejor versión! ✨";
     const salonNombre = initialTenant?.nombre_salon || "";
     const logoUrl = initialTenant?.logo_url || null;
     const instagram = initialTenant?.datos_contacto?.instagram || null;
@@ -453,7 +454,7 @@ export default function PromoClientView({ tenantId, promoId, initialPromo, initi
                                 )}
                             </div>
                         </div>
-                        <span className="salon-tagline">¡Tu mejor versión! ✨</span>
+                        <span className="salon-tagline">{subtitle}</span>
                     </div>
 
                     {/* STAGE: FORM */}

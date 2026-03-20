@@ -21,6 +21,7 @@ interface PremioForm {
     tipo: "descuento" | "regalo" | "otro";
     vencimientoStr: string;
     probabilidad: number;
+    stock?: number | "";
     activo: boolean;
 }
 const emptyForm = (): PremioForm => ({
@@ -29,6 +30,7 @@ const emptyForm = (): PremioForm => ({
     tipo: "descuento",
     vencimientoStr: "",
     probabilidad: 5,
+    stock: "",
     activo: true,
 });
 
@@ -44,7 +46,7 @@ export default function PromosWebPage() {
     const [copied, setCopied] = useState(false);
 
     // form for promo config
-    const [promoForm, setPromoForm] = useState({ nombre: "", whatsapp_negocio: "", activa: true });
+    const [promoForm, setPromoForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Tu mejor versión! ✨", activa: true });
 
     // form for prizes
     const [showPremioModal, setShowPremioModal] = useState(false);
@@ -59,7 +61,7 @@ export default function PromosWebPage() {
             if (list.length > 0) {
                 const p = list[0];
                 setSelectedPromo(p);
-                setPromoForm({ nombre: p.nombre, whatsapp_negocio: p.whatsapp_negocio, activa: p.activa });
+                setPromoForm({ nombre: p.nombre, whatsapp_negocio: p.whatsapp_negocio, subtitulo_logo: p.subtitulo_logo || "¡Tu mejor versión! ✨", activa: p.activa });
                 const [premiosList, ganList] = await Promise.all([
                     getPremios(TENANT_ID, p.id),
                     getParticipantes(TENANT_ID, p.id),
@@ -118,6 +120,7 @@ export default function PromosWebPage() {
                 tipo: premio.tipo,
                 vencimientoStr: d ? d.toISOString().split("T")[0] : "",
                 probabilidad: premio.probabilidad,
+                stock: premio.stock ?? "",
                 activo: premio.activo,
             });
         } else {
@@ -135,6 +138,11 @@ export default function PromosWebPage() {
         }
         const vencimiento = Timestamp.fromDate(new Date(premioForm.vencimientoStr + "T23:59:59"));
         const data = { ...premioForm, vencimiento } as any;
+        if (data.stock === "") {
+            delete data.stock;
+        } else {
+            data.stock = Number(data.stock);
+        }
         delete data.vencimientoStr;
         setSaving(true);
         try {
@@ -220,7 +228,7 @@ export default function PromosWebPage() {
                 {/* Promo Config Card */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
                     <p className="text-xs font-black uppercase tracking-widest text-gray-400">Configuración de la Promo</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Nombre de la promo</label>
                             <input
@@ -237,6 +245,15 @@ export default function PromosWebPage() {
                                 placeholder="5491112345678"
                                 value={promoForm.whatsapp_negocio}
                                 onChange={e => setPromoForm({ ...promoForm, whatsapp_negocio: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Subtítulo del Logo</label>
+                            <input
+                                className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-pink-300 outline-none transition-all border border-gray-100"
+                                placeholder="Ej: ¡Tu mejor versión! ✨"
+                                value={promoForm.subtitulo_logo}
+                                onChange={e => setPromoForm({ ...promoForm, subtitulo_logo: e.target.value })}
                             />
                         </div>
                     </div>
@@ -339,6 +356,8 @@ export default function PromosWebPage() {
                                             </div>
                                             <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-1">
                                                 <span>Prob: {p.probabilidad}/10</span>
+                                                <span>•</span>
+                                                <span>Stock: {typeof p.stock === "number" ? p.stock : "∞"}</span>
                                                 <span>•</span>
                                                 <span>Vence: {p.vencimiento?.toDate?.()?.toLocaleDateString("es-AR") || "—"}</span>
                                                 <span>•</span>
@@ -456,7 +475,7 @@ export default function PromosWebPage() {
                                     onChange={e => setPremioForm({ ...premioForm, descripcion: e.target.value })}
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 mb-1">Tipo</label>
                                     <select
@@ -476,6 +495,15 @@ export default function PromosWebPage() {
                                         className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-pink-300 outline-none border border-gray-100"
                                         value={premioForm.probabilidad}
                                         onChange={e => setPremioForm({ ...premioForm, probabilidad: Number(e.target.value) })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1" title="Para premios ilimitados, dejar vacío">Stock (opcional)</label>
+                                    <input
+                                        type="number" min={1} placeholder="∞"
+                                        className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-pink-300 outline-none border border-gray-100"
+                                        value={premioForm.stock}
+                                        onChange={e => setPremioForm({ ...premioForm, stock: e.target.value === "" ? "" : Number(e.target.value) })}
                                     />
                                 </div>
                             </div>
