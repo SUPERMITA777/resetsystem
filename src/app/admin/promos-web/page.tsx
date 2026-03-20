@@ -188,14 +188,34 @@ export default function PromosWebPage() {
         <AdminLayout>
             <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto p-4 md:p-8">
                 {/* Header */}
-                <div className="flex justify-between items-end">
+                <div className="flex justify-between items-start">
                     <div>
                         <h1 className="text-4xl font-black uppercase tracking-tighter">🎁 Promos Web</h1>
                         <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">
                             Sorteos de premios para tus clientes
                         </p>
                     </div>
+                    {selectedPromo && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleCopyLink}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${copied ? "bg-green-100 text-green-700" : "bg-pink-50 text-pink-600 hover:bg-pink-100"}`}
+                            >
+                                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                {copied ? "¡Copiado!" : "Copiar Link"}
+                            </button>
+                            <a
+                                href={landingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg"
+                            >
+                                <ExternalLink className="w-4 h-4" /> Ver Sorteo
+                            </a>
+                        </div>
+                    )}
                 </div>
+
 
                 {/* Promo Config Card */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Sparkles, Phone, User, Star } from "lucide-react";
+import { Phone, User } from "lucide-react";
 import {
     getPromo,
     getPremios,
@@ -11,6 +11,8 @@ import {
     sortearPremio,
     Premio,
 } from "@/lib/services/promoWebService";
+import { clienteService } from "@/lib/services/clienteService";
+import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Timestamp as FirebaseTimestamp } from "firebase/firestore";
 
 type Stage = "form" | "spinning" | "prize" | "already_played" | "no_prizes" | "inactive";
@@ -39,18 +41,31 @@ export default function PromoPage() {
     const [confettiShown, setConfettiShown] = useState(false);
     const [dots, setDots] = useState(".");
 
-    // load tenant promo info
+    // Tenant branding
+    const [salonNombre, setSalonNombre] = useState("");
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [instagram, setInstagram] = useState<string | null>(null);
+
+    // Load tenant promo + branding
     useEffect(() => {
         if (!tenantId || !promoId) return;
-        getPromo(tenantId, promoId).then(p => {
-            if (!p) return;
-            if (!p.activa) { setStage("inactive"); return; }
-            setPromoNombre(p.nombre);
-            setWhatsappNegocio(p.whatsapp_negocio);
+        Promise.all([
+            getPromo(tenantId, promoId),
+            getTenant(tenantId),
+        ]).then(([promo, tenant]) => {
+            if (!promo) return;
+            if (!promo.activa) { setStage("inactive"); return; }
+            setPromoNombre(promo.nombre);
+            setWhatsappNegocio(promo.whatsapp_negocio);
+            if (tenant) {
+                setSalonNombre(tenant.nombre_salon || "");
+                setLogoUrl(tenant.logo_url || null);
+                setInstagram(tenant.datos_contacto?.instagram || null);
+            }
         });
     }, [tenantId, promoId]);
 
-    // animated dots during spinning
+    // Animated dots during spinning
     useEffect(() => {
         if (stage !== "spinning") return;
         const interval = setInterval(() => {
@@ -77,8 +92,8 @@ export default function PromoPage() {
             // Raffle
             setStage("spinning");
             const premiosList = await getPremios(tenantId, promoId);
-            
-            // Artificial suspense 
+
+            // Artificial suspense
             await new Promise(r => setTimeout(r, 2800));
 
             const ganado = sortearPremio(premiosList);
@@ -88,7 +103,7 @@ export default function PromoPage() {
                 return;
             }
 
-            // Register winner
+            // Register winner in promo participantes
             await registrarParticipante(tenantId, promoId, {
                 nombre: nombre.trim(),
                 whatsapp: cleanPhone,
@@ -96,6 +111,24 @@ export default function PromoPage() {
                 premioNombre: ganado.nombre,
                 ganado_en: FirebaseTimestamp.now(),
             });
+
+            // Auto-register as client (if not already exists)
+            try {
+                const existingCliente = await clienteService.getClienteByTelefono(tenantId, cleanPhone);
+                if (!existingCliente) {
+                    const [firstName, ...rest] = nombre.trim().split(" ");
+                    await clienteService.createCliente(tenantId, {
+                        nombre: firstName || nombre.trim(),
+                        apellido: rest.join(" ") || "",
+                        telefono: cleanPhone,
+                        tenantId,
+                        notas: `Registrado via sorteo: ${promoNombre}`,
+                    });
+                }
+            } catch (clientErr) {
+                // Non-blocking: if client registration fails don't break the flow
+                console.warn("No se pudo registrar como cliente:", clientErr);
+            }
 
             setPremio(ganado);
             setStage("prize");
@@ -107,7 +140,7 @@ export default function PromoPage() {
         } finally {
             setLoading(false);
         }
-    }, [nombre, whatsapp, tenantId, promoId]);
+    }, [nombre, whatsapp, tenantId, promoId, promoNombre]);
 
     const handleReclamar = () => {
         if (!premio || !whatsappNegocio) return;
@@ -120,6 +153,9 @@ export default function PromoPage() {
         day: "2-digit", month: "long", year: "numeric"
     });
 
+    const instagramHandle = instagram?.startsWith("@") ? instagram : instagram ? `@${instagram}` : null;
+    const instagramUrl = instagram ? `https://instagram.com/${instagram.replace("@", "")}` : null;
+
     return (
         <>
             <style>{`
@@ -127,7 +163,7 @@ export default function PromoPage() {
 
                 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-                body { 
+                body {
                     font-family: 'Plus Jakarta Sans', sans-serif;
                     background: linear-gradient(135deg, #FFE4F0 0%, #F8ECFF 50%, #E8E4FF 100%);
                     min-height: 100vh;
@@ -136,11 +172,13 @@ export default function PromoPage() {
                 .promo-root {
                     min-height: 100vh;
                     display: flex;
+                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     padding: 24px 16px;
                     position: relative;
                     overflow: hidden;
+                    gap: 0;
                 }
 
                 .sparkle-deco {
@@ -154,6 +192,67 @@ export default function PromoPage() {
                     100% { opacity: 0.9; transform: scale(1.1) rotate(10deg); }
                 }
 
+                /* ── Brand header ─────────────────────────────── */
+                .brand-header {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                    margin-bottom: 20px;
+                    position: relative;
+                    z-index: 1;
+                }
+                .logo-ring {
+                    width: 88px;
+                    height: 88px;
+                    border-radius: 50%;
+                    padding: 4px;
+                    background: linear-gradient(135deg, #ff6fa2, #b4005d);
+                    box-shadow: 0 0 0 4px rgba(255,111,162,0.2), 0 8px 24px rgba(180,0,93,0.18);
+                    margin-bottom: 4px;
+                }
+                .logo-inner {
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    background: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                .logo-inner img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    border-radius: 50%;
+                }
+                .logo-placeholder {
+                    font-family: 'Epilogue', sans-serif;
+                    font-weight: 900;
+                    font-size: 1.8rem;
+                    background: linear-gradient(135deg, #b4005d, #ff6fa2);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    letter-spacing: -0.04em;
+                }
+                .salon-name {
+                    font-family: 'Epilogue', sans-serif;
+                    font-weight: 900;
+                    font-size: 1.3rem;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    color: #302e30;
+                }
+                .salon-tagline {
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    color: #923f5f;
+                    letter-spacing: 0.02em;
+                }
+
+                /* ── Main card ────────────────────────────────── */
                 .card {
                     background: rgba(255,255,255,0.75);
                     backdrop-filter: blur(20px);
@@ -190,26 +289,6 @@ export default function PromoPage() {
                     margin-bottom: 28px;
                 }
 
-                .input-field {
-                    width: 100%;
-                    background: #f5eff1;
-                    border: none;
-                    border-radius: 16px;
-                    padding: 14px 16px 14px 44px;
-                    font-family: 'Plus Jakarta Sans', sans-serif;
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    color: #302e30;
-                    outline: none;
-                    transition: all 0.2s;
-                    margin-bottom: 12px;
-                }
-                .input-field:focus {
-                    background: #fff;
-                    box-shadow: 0 0 0 2px rgba(180, 0, 93, 0.2);
-                }
-                .input-field::placeholder { color: #b0acae; font-weight: 500; }
-
                 .input-wrapper {
                     position: relative;
                     margin-bottom: 12px;
@@ -222,6 +301,24 @@ export default function PromoPage() {
                     color: #ff6fa2;
                     pointer-events: none;
                 }
+                .input-field {
+                    width: 100%;
+                    background: #f5eff1;
+                    border: none;
+                    border-radius: 16px;
+                    padding: 14px 16px 14px 44px;
+                    font-family: 'Plus Jakarta Sans', sans-serif;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: #302e30;
+                    outline: none;
+                    transition: all 0.2s;
+                }
+                .input-field:focus {
+                    background: #fff;
+                    box-shadow: 0 0 0 2px rgba(180, 0, 93, 0.2);
+                }
+                .input-field::placeholder { color: #b0acae; font-weight: 500; }
 
                 .btn-primary {
                     width: 100%;
@@ -291,26 +388,54 @@ export default function PromoPage() {
                 }
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+                /* ── Confetti ─────────────────────────────────── */
                 .confetti-container {
                     position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
                     pointer-events: none;
                     z-index: 100;
                     overflow: hidden;
                 }
                 .confetti-piece {
                     position: absolute;
-                    width: 10px;
-                    height: 10px;
                     border-radius: 2px;
                     animation: fall linear forwards;
                 }
                 @keyframes fall {
                     0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
                     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+                }
+
+                /* ── Instagram footer ─────────────────────────── */
+                .ig-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    margin-top: 20px;
+                    position: relative;
+                    z-index: 1;
+                    text-decoration: none;
+                }
+                .ig-footer:hover .ig-handle { opacity: 1; }
+                .ig-chip {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 8px 16px;
+                    background: rgba(221,200,255,0.5);
+                    backdrop-filter: blur(8px);
+                    border-radius: 999px;
+                    border: 1px solid rgba(101,81,138,0.15);
+                }
+                .ig-handle {
+                    font-family: 'Plus Jakarta Sans', sans-serif;
+                    font-size: 0.78rem;
+                    font-weight: 700;
+                    color: #65518a;
+                    opacity: 0.85;
+                    transition: opacity 0.2s;
                 }
 
                 .disclaimer {
@@ -320,7 +445,6 @@ export default function PromoPage() {
                     margin-top: 20px;
                     line-height: 1.5;
                 }
-
                 .already-played-icon {
                     font-size: 4rem;
                     text-align: center;
@@ -351,13 +475,9 @@ export default function PromoPage() {
             )}
 
             <div className="promo-root">
-                {/* Sparkle decorations */}
+                {/* Floating sparkles */}
                 {SPARKLES_POS.map((s, i) => (
-                    <div
-                        key={i}
-                        className="sparkle-deco"
-                        style={{ ...s, animationDelay: s.delay }}
-                    >
+                    <div key={i} className="sparkle-deco" style={{ ...s, animationDelay: s.delay }}>
                         <svg width={s.size} height={s.size} viewBox="0 0 24 24" fill="none">
                             <path d="M12 2L13.5 9L20 12L13.5 15L12 22L10.5 15L4 12L10.5 9L12 2Z"
                                 fill="#ff6fa2" opacity="0.7" />
@@ -365,6 +485,26 @@ export default function PromoPage() {
                     </div>
                 ))}
 
+                {/* ── Brand Header ───────────────────────────────── */}
+                <div className="brand-header">
+                    <div className="logo-ring">
+                        <div className="logo-inner">
+                            {logoUrl ? (
+                                <img src={logoUrl} alt={salonNombre || "Logo"} />
+                            ) : (
+                                <span className="logo-placeholder">
+                                    {(salonNombre || "RS").slice(0, 2).toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    {salonNombre && (
+                        <span className="salon-name">{salonNombre}</span>
+                    )}
+                    <span className="salon-tagline">Tu momento de cuidado y bienestar ✨</span>
+                </div>
+
+                {/* ── Main Card ──────────────────────────────────── */}
                 <div className="card">
                     {/* STAGE: FORM */}
                     {stage === "form" && (
@@ -380,29 +520,14 @@ export default function PromoPage() {
 
                             <div className="input-wrapper">
                                 <span className="input-icon"><User size={16} /></span>
-                                <input
-                                    className="input-field"
-                                    placeholder="Tu nombre 💅"
-                                    value={nombre}
-                                    onChange={e => setNombre(e.target.value)}
-                                />
+                                <input className="input-field" placeholder="Tu nombre 💅" value={nombre} onChange={e => setNombre(e.target.value)} />
                             </div>
                             <div className="input-wrapper">
                                 <span className="input-icon"><Phone size={16} /></span>
-                                <input
-                                    className="input-field"
-                                    placeholder="Tu WhatsApp 📱 (ej: 1123456789)"
-                                    type="tel"
-                                    value={whatsapp}
-                                    onChange={e => setWhatsapp(e.target.value)}
-                                />
+                                <input className="input-field" placeholder="Tu WhatsApp 📱 (ej: 1123456789)" type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
                             </div>
 
-                            <button
-                                className="btn-primary"
-                                onClick={handleSortear}
-                                disabled={loading}
-                            >
+                            <button className="btn-primary" onClick={handleSortear} disabled={loading}>
                                 🍀 ¡HOY ES MI DÍA DE SUERTE!
                             </button>
 
@@ -496,6 +621,21 @@ export default function PromoPage() {
                         </>
                     )}
                 </div>
+
+                {/* ── Instagram Footer ───────────────────────────── */}
+                {instagramHandle && instagramUrl && (
+                    <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="ig-footer">
+                        <div className="ig-chip">
+                            {/* Instagram SVG icon */}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="2" width="20" height="20" rx="5" stroke="#65518a" strokeWidth="2"/>
+                                <circle cx="12" cy="12" r="4" stroke="#65518a" strokeWidth="2"/>
+                                <circle cx="17.5" cy="6.5" r="1" fill="#65518a"/>
+                            </svg>
+                            <span className="ig-handle">Seguinos en Instagram {instagramHandle}</span>
+                        </div>
+                    </a>
+                )}
             </div>
         </>
     );
