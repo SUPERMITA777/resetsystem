@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService } from "@/lib/services/clienteService";
 import { X, Save, User, Phone, Mail, FileText, MapPin, Map, CheckCircle } from "lucide-react";
@@ -25,6 +25,23 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         notas: ""
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const formRef = useRef<HTMLFormElement>(null);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return;
+            if (e.key === "Escape") {
+                onClose();
+            } else if (e.key === "Enter" && !isSubmitting) {
+                if (e.target instanceof HTMLTextAreaElement) return;
+                e.preventDefault();
+                formRef.current?.requestSubmit();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose, isSubmitting]);
 
     if (!isOpen) return null;
 
@@ -88,7 +105,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>

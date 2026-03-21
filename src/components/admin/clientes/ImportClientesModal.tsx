@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService } from "@/lib/services/clienteService";
 import { X, Upload, Download, FileSpreadsheet } from "lucide-react";
@@ -17,6 +17,18 @@ interface ImportarClientesModalProps {
 export function ImportarClientesModal({ isOpen, onClose, onImportFinished, tenantId }: ImportarClientesModalProps) {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return;
+            if (e.key === "Escape" && !isUploading) {
+                onClose();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose, isUploading]);
 
     if (!isOpen) return null;
 
