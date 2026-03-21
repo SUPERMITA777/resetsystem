@@ -20,6 +20,9 @@ export interface Cliente {
     telefono: string; // WhatsApp
     tenantId: string;
     notas?: string;
+    direccion?: string;
+    provincia?: string;
+    direccionValidada?: boolean;
     createdAt?: any;
     ultimaVisita?: string;
 }

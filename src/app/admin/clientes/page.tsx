@@ -11,6 +11,7 @@ import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from 'xlsx';
 import { NuevoClienteModal } from "@/components/admin/clientes/NuevoClienteModal";
 import { ImportarClientesModal } from "@/components/admin/clientes/ImportClientesModal";
+import { EditarClienteModal } from "@/components/admin/clientes/EditarClienteModal";
 
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -22,6 +23,8 @@ export default function ClientesPage() {
     const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
     const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
@@ -64,12 +67,20 @@ export default function ClientesPage() {
         }
     };
 
+    const handleEdit = (cliente: Cliente) => {
+        setSelectedCliente(cliente);
+        setIsEditModalOpen(true);
+    };
+
     const handleExportExcel = () => {
         const exportData = filteredClientes.map(c => ({
             Nombre: c.nombre,
             Apellido: c.apellido,
             Telefono: c.telefono,
             Email: c.email || "",
+            Dirección: c.direccion || "",
+            Provincia: c.provincia || "",
+            "Dirección Validada": c.direccionValidada ? "Sí" : "No",
             "Ultima Visita": c.ultimaVisita || "Sin visitas",
             Notas: c.notas || ""
         }));
@@ -77,12 +88,15 @@ export default function ClientesPage() {
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         // Ajustar ancho
         worksheet["!cols"] = [
-            { wpx: 100 },
-            { wpx: 100 },
-            { wpx: 120 },
-            { wpx: 150 },
-            { wpx: 120 },
-            { wpx: 200 }
+            { wpx: 100 }, // Nombre
+            { wpx: 100 }, // Apellido
+            { wpx: 120 }, // Telefono
+            { wpx: 150 }, // Email
+            { wpx: 150 }, // Dirección
+            { wpx: 100 }, // Provincia
+            { wpx: 100 }, // Validada
+            { wpx: 120 }, // Visita
+            { wpx: 200 }  // Notas
         ];
 
         const workbook = XLSX.utils.book_new();
@@ -182,7 +196,7 @@ export default function ClientesPage() {
                                                     <User className="w-6 h-6" />
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <button className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
+                                                    <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button 
@@ -286,7 +300,7 @@ export default function ClientesPage() {
                                                     </td>
                                                     <td className="p-4 pr-6 text-right">
                                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
+                                                            <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
                                                             <button 
@@ -321,6 +335,17 @@ export default function ClientesPage() {
                 onClose={() => setIsImportModalOpen(false)}
                 onImportFinished={loadClientes}
                 tenantId={currentTenant}
+            />
+
+            <EditarClienteModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedCliente(null);
+                }}
+                onSave={loadClientes}
+                tenantId={currentTenant}
+                cliente={selectedCliente}
             />
         </AdminLayout>
     );

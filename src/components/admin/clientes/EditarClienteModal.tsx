@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { clienteService } from "@/lib/services/clienteService";
+import { clienteService, Cliente } from "@/lib/services/clienteService";
 import { X, Save, User, Phone, Mail, FileText, MapPin, Map, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
-interface NuevoClienteModalProps {
+interface EditarClienteModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: () => void;
     tenantId: string;
+    cliente: Cliente | null;
 }
 
-export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoClienteModalProps) {
+export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente }: EditarClienteModalProps) {
     const [formData, setFormData] = useState({
         nombre: "",
         apellido: "",
@@ -26,7 +27,22 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        if (cliente && isOpen) {
+            setFormData({
+                nombre: cliente.nombre || "",
+                apellido: cliente.apellido || "",
+                email: cliente.email || "",
+                telefono: cliente.telefono || "",
+                direccion: cliente.direccion || "",
+                provincia: cliente.provincia || "",
+                direccionValidada: cliente.direccionValidada || false,
+                notas: cliente.notas || ""
+            });
+        }
+    }, [cliente, isOpen]);
+
+    if (!isOpen || !cliente) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,10 +53,10 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         }
 
         setIsSubmitting(true);
-        const loadingToast = toast.loading("Creando cliente...");
+        const loadingToast = toast.loading("Actualizando cliente...");
 
         try {
-            await clienteService.createCliente(tenantId, {
+            await clienteService.updateCliente(tenantId, cliente.id, {
                 nombre: formData.nombre.trim(),
                 apellido: formData.apellido.trim(),
                 telefono: formData.telefono.trim(),
@@ -49,16 +65,14 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                 provincia: formData.provincia.trim() || undefined,
                 direccionValidada: formData.direccionValidada,
                 notas: formData.notas.trim() || undefined,
-                tenantId: tenantId
             });
             
-            toast.success("Cliente creado exitosamente", { id: loadingToast });
-            setFormData({ nombre: "", apellido: "", email: "", telefono: "", direccion: "", provincia: "", direccionValidada: false, notas: "" });
+            toast.success("Cliente actualizado exitosamente", { id: loadingToast });
             onSave();
             onClose();
         } catch (error: any) {
-            console.error("Error creating cliente:", error);
-            toast.error("Error al crear cliente: " + (error.message || "Error desconocido"), { id: loadingToast });
+            console.error("Error updating cliente:", error);
+            toast.error("Error al actualizar cliente: " + (error.message || "Error desconocido"), { id: loadingToast });
         } finally {
             setIsSubmitting(false);
         }
@@ -79,9 +93,9 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                 <div className="bg-gray-50/50 px-8 py-6 border-b border-gray-100 flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                            Nuevo Cliente
+                            Editar Cliente
                         </h2>
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Ingresa los datos</p>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Modifica los datos</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm">
                         <X className="w-5 h-5 text-gray-400" />
@@ -147,7 +161,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Dirección Section */}
                         <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 space-y-4">
                             <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
@@ -221,7 +235,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                             className="w-full bg-black text-white hover:bg-gray-800 h-14 rounded-2xl font-bold shadow-2xl shadow-black/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs disabled:opacity-50"
                         >
                             <Save className="w-5 h-5" />
-                            {isSubmitting ? "Guardando..." : "Crear Cliente"}
+                            {isSubmitting ? "Guardando..." : "Guardar Cambios"}
                         </Button>
                     </div>
                 </form>
@@ -229,4 +243,3 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         </div>
     );
 }
-
