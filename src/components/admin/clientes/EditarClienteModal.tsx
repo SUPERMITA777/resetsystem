@@ -78,11 +78,11 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                 nombre: formData.nombre.trim(),
                 apellido: formData.apellido.trim(),
                 telefono: formData.telefono.trim(),
-                email: formData.email.trim() || undefined,
-                direccion: formData.direccion.trim() || undefined,
-                provincia: formData.provincia.trim() || undefined,
+                email: formData.email.trim(),
+                direccion: formData.direccion.trim(),
+                provincia: formData.provincia.trim(),
                 direccionValidada: formData.direccionValidada,
-                notas: formData.notas.trim() || undefined,
+                notas: formData.notas.trim(),
             });
             
             toast.success("Cliente actualizado exitosamente", { id: loadingToast });
@@ -195,12 +195,37 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                                     />
                                 </div>
                                 <div>
-                                    <input
+                                    <select
                                         value={formData.provincia}
                                         onChange={e => setFormData({ ...formData, provincia: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm"
-                                        placeholder="Provincia"
-                                    />
+                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm appearance-none"
+                                    >
+                                        <option value="">ELEGIR PROVINCIA</option>
+                                        <option value="Capital Federal">Capital Federal</option>
+                                        <option value="Buenos Aires">Buenos Aires</option>
+                                        <option value="Catamarca">Catamarca</option>
+                                        <option value="Chaco">Chaco</option>
+                                        <option value="Chubut">Chubut</option>
+                                        <option value="Córdoba">Córdoba</option>
+                                        <option value="Corrientes">Corrientes</option>
+                                        <option value="Entre Ríos">Entre Ríos</option>
+                                        <option value="Formosa">Formosa</option>
+                                        <option value="Jujuy">Jujuy</option>
+                                        <option value="La Pampa">La Pampa</option>
+                                        <option value="La Rioja">La Rioja</option>
+                                        <option value="Mendoza">Mendoza</option>
+                                        <option value="Misiones">Misiones</option>
+                                        <option value="Neuquén">Neuquén</option>
+                                        <option value="Río Negro">Río Negro</option>
+                                        <option value="Salta">Salta</option>
+                                        <option value="San Juan">San Juan</option>
+                                        <option value="San Luis">San Luis</option>
+                                        <option value="Santa Cruz">Santa Cruz</option>
+                                        <option value="Santa Fe">Santa Fe</option>
+                                        <option value="Santiago del Estero">Santiago del Estero</option>
+                                        <option value="Tierra del Fuego">Tierra del Fuego</option>
+                                        <option value="Tucumán">Tucumán</option>
+                                    </select>
                                 </div>
                             </div>
                             
