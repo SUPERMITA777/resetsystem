@@ -48,8 +48,8 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!formData.nombre.trim() || !formData.apellido.trim() || !formData.telefono.trim()) {
-            toast.error("Nombre, apellido y teléfono son obligatorios");
+        if (!formData.nombre.trim() || !formData.telefono.trim()) {
+            toast.error("Nombre y teléfono son obligatorios");
             return;
         }
 
@@ -122,10 +122,9 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Apellido *</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Apellido (Opcional)</label>
                                 <div className="relative">
                                     <input
-                                        required
                                         value={formData.apellido}
                                         onChange={e => setFormData({ ...formData, apellido: e.target.value })}
                                         className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
