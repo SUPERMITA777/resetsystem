@@ -5,7 +5,7 @@ import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Search, User, Phone, Mail, Calendar, Edit2, Trash2, MoreVertical, Plus, Filter, Download, Upload, LayoutGrid, List } from "lucide-react";
+import { Search, User, Phone, Mail, Calendar, Edit2, Trash2, MoreVertical, Plus, Filter, Download, Upload, LayoutGrid, List, MessageCircle } from "lucide-react";
 import { clienteService, Cliente } from "@/lib/services/clienteService";
 import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from 'xlsx';
@@ -196,12 +196,15 @@ export default function ClientesPage() {
                                                     <User className="w-6 h-6" />
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
+                                                    <a href={`https://wa.me/${cliente.telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-300 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all" title="Contactar por WhatsApp">
+                                                        <MessageCircle className="w-4 h-4" />
+                                                    </a>
+                                                    <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Editar cliente">
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(cliente.id)}
-                                                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Eliminar cliente"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -300,12 +303,15 @@ export default function ClientesPage() {
                                                     </td>
                                                     <td className="p-4 pr-6 text-right">
                                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
+                                                            <a href={`https://wa.me/${cliente.telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all" title="Contactar por WhatsApp">
+                                                                <MessageCircle className="w-4 h-4" />
+                                                            </a>
+                                                            <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Editar cliente">
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
                                                             <button 
                                                                 onClick={() => handleDelete(cliente.id)}
-                                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Eliminar cliente"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
