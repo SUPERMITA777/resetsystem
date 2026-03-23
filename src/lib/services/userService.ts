@@ -44,6 +44,7 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+    if (!uid) return null;
     const userRef = doc(db, COLLECTION_NAME, uid);
     const docSnap = await getDoc(userRef);
 
@@ -62,7 +63,10 @@ export async function getUsersByTenant(tenantId: string): Promise<UserProfile[]>
     );
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => doc.data() as UserProfile);
+    return snapshot.docs.map(doc => ({
+        ...doc.data(),
+        uid: doc.id
+    } as UserProfile));
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
@@ -70,5 +74,8 @@ export async function getAllUsers(): Promise<UserProfile[]> {
     const q = query(usersRef, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => doc.data() as UserProfile);
+    return snapshot.docs.map(doc => ({
+        ...doc.data(),
+        uid: doc.id
+    } as UserProfile));
 }
