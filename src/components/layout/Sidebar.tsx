@@ -2,14 +2,29 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift, Dumbbell } from "lucide-react";
+import { CalendarDays, User as UserIcon, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift, Dumbbell, LogOut } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { GlobalSearch } from "./GlobalSearch";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 export function Sidebar() {
     const [tenantName, setTenantName] = useState("RESET SYSTEM");
-
     const [tenantId, setTenantId] = useState("resetspa");
+
+    const { user } = useAuth();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            router.push("/login");
+        } catch (error) {
+            console.error("Error logging out", error);
+        }
+    };
 
     useEffect(() => {
         const id = localStorage.getItem('currentTenant') || 'resetspa';
@@ -49,7 +64,7 @@ export function Sidebar() {
                     Agenda
                 </Link>
                 <Link href="/admin/clientes" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <User className="w-5 h-5 text-[var(--primary)]" />
+                    <UserIcon className="w-5 h-5 text-[var(--primary)]" />
                     Clientes
                 </Link>
                 <Link href="/admin/staff" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
@@ -98,11 +113,38 @@ export function Sidebar() {
                     <FileBarChart className="w-5 h-5 text-[var(--primary)]" />
                     Reportes
                 </Link>
-                <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mb-4">
+                <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <Settings className="w-5 h-5 text-[var(--primary)]" />
                     Configuración
                 </Link>
             </nav>
+
+            {/* Current User & Logout */}
+            <div className="w-full px-4 mt-auto pt-6 border-t border-[var(--secondary)]">
+                <div className="bg-[var(--secondary)]/30 rounded-2xl p-4 flex items-center justify-between border border-[var(--secondary)]/50">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="w-10 h-10 rounded-full bg-[var(--primary)] text-[var(--background)] flex items-center justify-center font-bold shrink-0">
+                            {user?.email?.charAt(0).toUpperCase() || <UserIcon className="w-5 h-5" />}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold text-[var(--foreground)] truncate">
+                                {user?.displayName || "Usuario"}
+                            </span>
+                            <span className="text-[10px] text-gray-500 truncate">
+                                {user?.email}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={handleLogout}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
+                        title="Cerrar Sessión"
+                    >
+                        <LogOut className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
         </aside>
     );
 }
