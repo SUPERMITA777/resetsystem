@@ -28,9 +28,10 @@ export const addFitnessTrack = async (track: Omit<FitnessTrack, 'id'>): Promise<
 
 export const getFitnessTracks = async (tenantId: string): Promise<FitnessTrack[]> => {
     const colRef = collection(db, "fitness_tracks");
-    const q = query(colRef, where("tenantId", "==", tenantId), orderBy("name"));
+    const q = query(colRef, where("tenantId", "==", tenantId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FitnessTrack));
+    const tracks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FitnessTrack));
+    return tracks.sort((a, b) => a.name.localeCompare(b.name));
 };
 
 export const deleteFitnessTrack = async (trackId: string, fileUrl: string) => {

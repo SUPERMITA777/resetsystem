@@ -87,13 +87,6 @@ export default function FitnessSystemPage() {
         }
     };
 
-    // Tone Audio Context Start
-    useEffect(() => {
-        if (isPlaying) {
-            Tone.start();
-        }
-    }, [isPlaying]);
-
     // BPM Sync
     useEffect(() => {
         if (playerRef.current && baseBPM > 0) {
@@ -197,8 +190,13 @@ export default function FitnessSystemPage() {
         };
     }, [isPlaying, baseBPM, targetBPM]);
 
-    const handlePlayPause = () => {
+    const handlePlayPause = async () => {
         if (!isLoaded) return;
+        
+        if (Tone.context.state !== "running") {
+            await Tone.start();
+        }
+        
         setIsPlaying(!isPlaying);
     };
 
