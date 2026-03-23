@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift } from "lucide-react";
+import { CalendarDays, User, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift, Dumbbell } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { GlobalSearch } from "./GlobalSearch";
 
@@ -63,6 +63,10 @@ export function Sidebar() {
                 <Link href="/admin/productos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <ShoppingBag className="w-5 h-5 text-[var(--primary)]" />
                     Productos
+                </Link>
+                <Link href="/admin/fitness" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
+                    <Dumbbell className="w-5 h-5 text-[var(--primary)]" />
+                    Fitness
                 </Link>
 
                 <div className="pt-4 mt-2 border-t border-[var(--secondary)]">
