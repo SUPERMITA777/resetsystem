@@ -2,44 +2,89 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import * as Tone from "tone";
-import { Play, Pause, RefreshCcw, Settings, Activity, Music, Loader2, ArrowLeft } from "lucide-react";
+import { Play, Pause, RefreshCcw, Settings, Activity, Music, Loader2, ArrowLeft, Cloud } from "lucide-react";
 import Link from "next/link";
+import { FitnessTrack, getFitnessTracks } from "@/lib/services/fitnessService";
 
 export default function FitnessSystemPage() {
+    const [tenantId, setTenantId] = useState("resetspa");
+    const [tracks, setTracks] = useState<FitnessTrack[]>([]);
+    const [selectedTrack, setSelectedTrack] = useState<FitnessTrack | null>(null);
+
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoadingTrack, setIsLoadingTrack] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    
     const [baseBPM, setBaseBPM] = useState(128);
     const [targetBPM, setTargetBPM] = useState(128);
-    const [progress, setProgress] = useState(0);
     const [timeFormatted, setTimeFormatted] = useState("00:00:00");
     const [activeLoop, setActiveLoop] = useState<number | null>(null); // 4 or 8
 
     const playerRef = useRef<Tone.GrainPlayer | null>(null);
     const pulseOverlayRef = useRef<HTMLDivElement>(null);
     const timerRef = useRef<number | null>(null);
-    const startTimeRef = useRef<number>(0);
-    const elapsedRef = useRef<number>(0);
+    const lastFrameTimeRef = useRef<number>(0);
+    const bufferTimeMsRef = useRef<number>(0);
     const pulseIntervalRef = useRef<number | null>(null);
 
-    // Audio load
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    // Initial load
+    useEffect(() => {
+        const id = localStorage.getItem('currentTenant') || 'resetspa';
+        setTenantId(id);
+        fetchTracks(id);
+    }, []);
 
+    const fetchTracks = async (id: string) => {
+        try {
+            const data = await getFitnessTracks(id);
+            setTracks(data);
+        } catch (error) {
+            console.error("Error fetching tracks", error);
+        }
+    };
+
+    // Audio load
+    const handleTrackSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const trackId = e.target.value;
+        if (!trackId) return;
+
+        const track = tracks.find(t => t.id === trackId);
+        if (!track) return;
+
+        setSelectedTrack(track);
         setIsLoaded(false);
+        setIsLoadingTrack(true);
         setIsPlaying(false);
+        
         if (playerRef.current) {
             playerRef.current.dispose();
             playerRef.current = null;
         }
 
-        const url = URL.createObjectURL(file);
-        const player = new Tone.GrainPlayer(url, () => {
-            setIsLoaded(true);
-            setTargetBPM(baseBPM);
-        }).toDestination();
-        player.loop = false;
-        playerRef.current = player;
+        try {
+            // Using Tone GrainPlayer
+            const player = new Tone.GrainPlayer({
+                url: track.url,
+                onload: () => {
+                    setIsLoaded(true);
+                    setIsLoadingTrack(false);
+                    setBaseBPM(track.bpm);
+                    setTargetBPM(track.bpm);
+                    
+                    // Reset stopwatch
+                    bufferTimeMsRef.current = 0;
+                    setTimeFormatted("00:00:00");
+                    setActiveLoop(null);
+                }
+            }).toDestination();
+            
+            player.loop = false;
+            playerRef.current = player;
+        } catch (error) {
+            console.error("CORS or Loading Error", error);
+            setIsLoadingTrack(false);
+            alert("Error loading track. It might be a CORS issue from Storage.");
+        }
     };
 
     // Tone Audio Context Start
@@ -51,13 +96,13 @@ export default function FitnessSystemPage() {
 
     // BPM Sync
     useEffect(() => {
-        if (playerRef.current) {
+        if (playerRef.current && baseBPM > 0) {
             playerRef.current.playbackRate = targetBPM / baseBPM;
         }
 
         // Setup metronome visual pulse
         if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
-        if (isPlaying) {
+        if (isPlaying && targetBPM > 0) {
             const intervalMs = 60000 / targetBPM;
             pulseIntervalRef.current = window.setInterval(() => {
                 const overlay = pulseOverlayRef.current;
@@ -77,35 +122,52 @@ export default function FitnessSystemPage() {
         };
     }, [targetBPM, baseBPM, isPlaying]);
 
-    // Loop actions
+    // Loop actions (4 or 8 beats)
     const triggerLoop = (beats: number) => {
-        if (!playerRef.current || !isPlaying) return;
+        if (!playerRef.current || !isPlaying || baseBPM === 0) return;
         
         if (activeLoop === beats) {
             // Disable loop
             playerRef.current.loop = false;
             setActiveLoop(null);
         } else {
-            // Enable loop
-            const currentToneTime = playerRef.current.now(); // Note this is context time, but 'now' might just be context.currentTime
-            // It's better to capture the position in seconds. Tone doesn't expose GrainPlayer position easily.
-            // But GrainPlayer tracks time through requestAnimationFrame loop or internal Transport.
-            // Since we need exact loop points, Tone GrainPlayer uses `loopStart` and `loopEnd` in seconds of the buffer.
+            // Enable loop precisely at current buffer time.
+            // 1 beat duration in original buffer = 60 / baseBPM seconds.
+            const beatDurationInSecs = 60 / baseBPM;
+            const loopDuration = beats * beatDurationInSecs;
+            const currentPositionInSecs = bufferTimeMsRef.current / 1000;
             
-            // Due to standard GrainPlayer limitations with getting playing position synchronously, we'll leave this stubbed as visual for now, or just restart it to 0. 
-            // In a pro environment, you'd track Transport position or use Tone.Player instead.
+            playerRef.current.loopStart = currentPositionInSecs;
+            // Add a small safety pad for ToneJS buffer ends or strict maths
+            playerRef.current.loopEnd = currentPositionInSecs + loopDuration;
+            playerRef.current.loop = true;
+            
             setActiveLoop(beats);
         }
     };
 
     // Stopwatch and playback
     useEffect(() => {
-        const updateTimer = () => {
+        const updateTimer = (time: number) => {
             if (!isPlaying) return;
-            const now = performance.now();
-            const currentElapsed = elapsedRef.current + (now - startTimeRef.current);
             
-            const totalMs = currentElapsed;
+            const delta = time - lastFrameTimeRef.current;
+            lastFrameTimeRef.current = time;
+            
+            // Increment the buffer time according to the current playback rate
+            const playbackRate = baseBPM > 0 ? (targetBPM / baseBPM) : 1;
+            bufferTimeMsRef.current += delta * playbackRate;
+            
+            // Loop adjustment: if we passed the loop end, reset bufferTime to loop start
+            if (playerRef.current && playerRef.current.loop) {
+                const loopEndMs = Number(playerRef.current.loopEnd) * 1000;
+                const loopStartMs = Number(playerRef.current.loopStart) * 1000;
+                if (bufferTimeMsRef.current >= loopEndMs) {
+                    bufferTimeMsRef.current = loopStartMs + (bufferTimeMsRef.current - loopEndMs);
+                }
+            }
+            
+            const totalMs = bufferTimeMsRef.current;
             const mins = Math.floor(totalMs / 60000);
             const secs = Math.floor((totalMs % 60000) / 1000);
             const cs = Math.floor((totalMs % 1000) / 10);
@@ -113,22 +175,15 @@ export default function FitnessSystemPage() {
             setTimeFormatted(
                 `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}:${cs.toString().padStart(2, '0')}`
             );
-            
-            if (playerRef.current && playerRef.current.buffer) {
-                // approximate progress
-                const duration = playerRef.current.buffer.duration;
-                // Since GrainPlayer playback rate changes the time, tracking accurate progress is hard without Transport.
-                // We'll just do a pseudo progress for UX.
-            }
 
             timerRef.current = requestAnimationFrame(updateTimer);
         };
 
         if (isPlaying) {
-            startTimeRef.current = performance.now();
+            lastFrameTimeRef.current = performance.now();
             timerRef.current = requestAnimationFrame(updateTimer);
             if (playerRef.current && playerRef.current.state !== 'started') {
-                playerRef.current.start();
+                playerRef.current.start(0, bufferTimeMsRef.current / 1000);
             }
         } else {
             if (timerRef.current) cancelAnimationFrame(timerRef.current);
@@ -140,25 +195,21 @@ export default function FitnessSystemPage() {
         return () => {
             if (timerRef.current) cancelAnimationFrame(timerRef.current);
         };
-    }, [isPlaying]);
+    }, [isPlaying, baseBPM, targetBPM]);
 
     const handlePlayPause = () => {
         if (!isLoaded) return;
-        if (isPlaying) {
-            elapsedRef.current += (performance.now() - startTimeRef.current);
-            setIsPlaying(false);
-        } else {
-            setIsPlaying(true);
-        }
+        setIsPlaying(!isPlaying);
     };
 
     const handleReset = () => {
         setIsPlaying(false);
-        elapsedRef.current = 0;
+        bufferTimeMsRef.current = 0;
         setTimeFormatted("00:00:00");
-        setProgress(0);
+        setActiveLoop(null);
         if (playerRef.current) {
             playerRef.current.stop();
+            playerRef.current.loop = false;
         }
     };
 
@@ -193,25 +244,40 @@ export default function FitnessSystemPage() {
                     {/* Left Column: Player & Timer */}
                     <div className="md:col-span-8 flex flex-col gap-6">
                         
-                        {/* Audio Source */}
+                        {/* Audio Source Cloud Selector */}
                         <section className="bg-[#131313] p-6 rounded-3xl border border-white/5 flex flex-col gap-4">
-                            <label className="text-xs font-bold uppercase tracking-widest text-[#00F0FF]">Audio Source</label>
-                            <input 
-                                type="file" 
-                                accept="audio/*" 
-                                onChange={handleFileUpload} 
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-black file:uppercase file:tracking-widest file:bg-[#00F0FF]/10 file:text-[#00F0FF] hover:file:bg-[#00F0FF]/20 transition-all cursor-pointer"
-                            />
+                            <div className="flex justify-between items-center">
+                                <label className="text-xs font-bold uppercase tracking-widest text-[#00F0FF] flex items-center gap-2">
+                                    <Cloud className="w-4 h-4" /> Cloud Tracks
+                                </label>
+                                <Link href="/admin/fitness/config">
+                                    <button className="p-2 bg-[#1a1a1a] rounded-lg hover:bg-[#00F0FF]/20 hover:text-[#00F0FF] transition-colors">
+                                        <Settings className="w-4 h-4" />
+                                    </button>
+                                </Link>
+                            </div>
+                            
+                            <div className="relative">
+                                <select 
+                                    onChange={handleTrackSelect}
+                                    defaultValue=""
+                                    className="w-full bg-[#1a1a1a] text-white font-bold p-4 rounded-xl border border-white/10 outline-none focus:border-[#00F0FF]/50 appearance-none cursor-pointer"
+                                >
+                                    <option value="" disabled>Seleccionar un track...</option>
+                                    {tracks.map(track => (
+                                        <option key={track.id} value={track.id}>{track.name} ({track.bpm} BPM)</option>
+                                    ))}
+                                </select>
+                                <Music className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                            </div>
                             
                             <div className="flex items-center gap-4 mt-2">
                                 <div className="flex-1">
                                     <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 block">Base Track BPM</label>
-                                    <input 
-                                        type="number" 
-                                        value={baseBPM} 
-                                        onChange={(e) => setBaseBPM(Number(e.target.value))} 
-                                        className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-white font-mono outline-none focus:border-[#00F0FF]/50 transition-colors"
-                                    />
+                                    <div className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-white font-mono opacity-50 flex items-center gap-3">
+                                        <Activity className="w-4 h-4" />
+                                        {baseBPM} BPM
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -238,7 +304,8 @@ export default function FitnessSystemPage() {
                                     disabled={!isLoaded}
                                     className={`w-24 h-24 rounded-full flex items-center justify-center transition-all active:scale-90 ${isLoaded ? (isPlaying ? 'bg-[#ff3366] text-white shadow-[0_0_30px_rgba(255,51,102,0.3)]' : 'bg-[#00F0FF] text-black shadow-[0_0_30px_rgba(0,240,255,0.3)]') : 'bg-[#1a1a1a] text-gray-600 cursor-not-allowed'}`}
                                 >
-                                    {!isLoaded ? <Loader2 className="w-10 h-10 animate-spin" /> : (isPlaying ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-2" />)}
+                                    {isLoadingTrack ? <Loader2 className="w-10 h-10 animate-spin text-[#00F0FF]" /> : 
+                                    (!isLoaded ? <Music className="w-8 h-8 opacity-20" /> : (isPlaying ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-2" />))}
                                 </button>
                             </div>
                         </section>
@@ -280,14 +347,14 @@ export default function FitnessSystemPage() {
                                 <div className="p-3 bg-[#00F0FF]/10 text-[#00F0FF] rounded-xl"><Activity className="w-5 h-5" /></div>
                                 <div>
                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Time Stretch</p>
-                                    <p className="text-sm font-black text-white">{(targetBPM / baseBPM).toFixed(2)}x</p>
+                                    <p className="text-sm font-black text-white">{baseBPM > 0 ? (targetBPM / baseBPM).toFixed(2) : '1.00'}x</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4 bg-[#1a1a1a] p-4 rounded-2xl">
-                                <div className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RefreshCcw className="w-5 h-5" /></div>
+                                <div className="p-3 bg-[#00F0FF]/10 text-[#00F0FF] rounded-xl"><RefreshCcw className="w-5 h-5" /></div>
                                 <div>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Sync Mode</p>
-                                    <p className="text-sm font-black text-white">ENABLED</p>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Auto Loop</p>
+                                    <p className="text-sm font-black text-white">{activeLoop ? `ACTIVE (${activeLoop} Beats)` : 'DISABLED'}</p>
                                 </div>
                             </div>
                         </section>
@@ -295,7 +362,7 @@ export default function FitnessSystemPage() {
                 </main>
 
                 {/* LOOP SECTION */}
-                <section className="bg-[#131313] p-6 rounded-3xl border border-white/5">
+                <section className="bg-[#131313] p-6 rounded-3xl border border-white/5 disabled:opacity-50">
                     <div className="flex items-center justify-between mb-6">
                         <div className="h-px bg-white/10 flex-1"></div>
                         <span className="text-[10px] text-[#00F0FF] uppercase tracking-[0.4em] font-black px-6">Loop Control</span>
@@ -305,6 +372,7 @@ export default function FitnessSystemPage() {
                     <div className="grid grid-cols-2 gap-6">
                         <button 
                             onClick={() => triggerLoop(4)}
+                            disabled={!isLoaded || baseBPM === 0}
                             className={`group relative h-28 rounded-2xl overflow-hidden flex items-center justify-center transition-all border-b-4 ${activeLoop === 4 ? 'bg-[#00F0FF]/20 border-[#00F0FF]' : 'bg-[#1a1a1a] border-transparent hover:border-[#00F0FF]/50'}`}
                         >
                             <div className="flex flex-col items-center z-10">
@@ -316,6 +384,7 @@ export default function FitnessSystemPage() {
 
                         <button 
                             onClick={() => triggerLoop(8)}
+                            disabled={!isLoaded || baseBPM === 0}
                             className={`group relative h-28 rounded-2xl overflow-hidden flex items-center justify-center transition-all border-b-4 ${activeLoop === 8 ? 'bg-[#00F0FF]/20 border-[#00F0FF]' : 'bg-[#1a1a1a] border-transparent hover:border-[#00F0FF]/50'}`}
                         >
                             <div className="flex flex-col items-center z-10">

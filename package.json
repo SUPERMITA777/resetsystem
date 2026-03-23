@@ -18,7 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "firebase": "^12.10.0",
+    "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
@@ -29,6 +29,7 @@
     "react-hot-toast": "^2.6.0",
     "tailwind-merge": "^3.5.0",
     "tone": "^15.1.22",
+    "web-audio-beat-detector": "^8.2.36",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
