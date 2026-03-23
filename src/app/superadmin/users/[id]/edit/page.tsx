@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { getAllTenants, TenantData } from "@/lib/services/tenantService";
 import { getUserProfile, UserRole } from "@/lib/services/userService";
@@ -9,9 +9,9 @@ import { ShieldCheck, Store, Users, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
-    const uid = params.id;
+    const { id: uid } = use(params);
 
     const [status, setStatus] = useState("");
     const [email, setEmail] = useState("");

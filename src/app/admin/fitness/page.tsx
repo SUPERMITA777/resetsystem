@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { Play, Pause, RefreshCcw, Settings, Activity, Music, Loader2, ArrowLeft, Cloud, ChevronUp, ChevronDown } from "lucide-react";
-import Link from "next/link";import { FitnessTrack, getFitnessTracks } from "@/lib/services/fitnessService";
+import Link from "next/link";
+import { FitnessTrack, getFitnessTracks } from "@/lib/services/fitnessService";
 
 export default function FitnessSystemPage() {
     const [tenantId, setTenantId] = useState("resetspa");
@@ -18,6 +19,7 @@ export default function FitnessSystemPage() {
     const [targetBPM, setTargetBPM] = useState(128);
     const [timeFormatted, setTimeFormatted] = useState("00:00:00");
     const [activeLoop, setActiveLoop] = useState<number | null>(null); // 4 or 8
+    const [toneStarted, setToneStarted] = useState(false);
 
     const playerRef = useRef<Tone.GrainPlayer | null>(null);
     const pulseOverlayRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,11 @@ export default function FitnessSystemPage() {
         if (playerRef.current) {
             playerRef.current.dispose();
             playerRef.current = null;
+        }
+
+        if (!toneStarted) {
+            await Tone.start();
+            setToneStarted(true);
         }
 
         try {
@@ -183,8 +190,9 @@ export default function FitnessSystemPage() {
     const handlePlayPause = async () => {
         if (!isLoaded) return;
         
-        if (Tone.context.state !== "running") {
+        if (!toneStarted || Tone.context.state !== "running") {
             await Tone.start();
+            setToneStarted(true);
         }
         
         setIsPlaying(!isPlaying);
@@ -204,6 +212,27 @@ export default function FitnessSystemPage() {
     return (
         <div className="fixed inset-0 bg-[#0e0e0e] text-white font-sans overflow-hidden flex flex-col items-center p-2 sm:p-4 pb-6 sm:pb-8">
             {/* Visual Pulse Overlay */}
+            {!toneStarted && (
+                <div 
+                    onClick={async () => {
+                        await Tone.start();
+                        setToneStarted(true);
+                    }}
+                    className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500 cursor-pointer"
+                >
+                    <div className="w-20 h-20 bg-[#00F0FF]/10 rounded-full flex items-center justify-center mb-6 animate-pulse border border-[#00F0FF]/30">
+                        <Activity className="w-10 h-10 text-[#00F0FF]" />
+                    </div>
+                    <h2 className="text-2xl font-black tracking-tighter uppercase text-[#00F0FF] mb-2">Activar Audio</h2>
+                    <p className="text-gray-400 text-sm max-w-xs leading-relaxed mb-8">
+                        Toca cualquier parte de la pantalla para habilitar el sistema de audio en este dispositivo.
+                    </p>
+                    <div className="px-8 py-4 bg-[#00F0FF] text-black font-black rounded-2xl shadow-[0_0_30px_rgba(0,240,255,0.4)]">
+                        COMENZAR SESIÓN
+                    </div>
+                </div>
+            )}
+
             <div 
                 ref={pulseOverlayRef} 
                 className="pointer-events-none absolute inset-0 bg-[#00F0FF] opacity-0 mix-blend-screen z-0" 
