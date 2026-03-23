@@ -6,6 +6,7 @@ import { app } from "@/lib/firebase";
 import { getAllTenants, TenantData } from "@/lib/services/tenantService";
 import { createUserProfile, UserRole } from "@/lib/services/userService";
 import { ShieldCheck, Store, Plus, Users } from "lucide-react";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export default function CreateUserPage() {
     const [status, setStatus] = useState("");
@@ -75,6 +76,7 @@ export default function CreateUserPage() {
     };
 
     return (
+        <AuthGuard allowedRoles={['superadmin']}>
         <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
             {/* Sidebar Reused Logic - simple for superadmin inner pages */}
             <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
@@ -186,5 +188,6 @@ export default function CreateUserPage() {
                 </div>
             </main>
         </div>
+        </AuthGuard>
     );
 }

@@ -20,6 +20,7 @@ import { deleteAuthUser } from "@/lib/actions/userActions";
 import { getAllTenants, TenantData } from "@/lib/services/tenantService";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
@@ -89,6 +90,7 @@ export default function UserManagementPage() {
     };
 
     return (
+        <AuthGuard allowedRoles={['superadmin']}>
         <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
             <Toaster />
             {/* Sidebar Reused Logic */}
@@ -239,5 +241,6 @@ export default function UserManagementPage() {
                 </div>
             </main>
         </div>
+        </AuthGuard>
     );
 }

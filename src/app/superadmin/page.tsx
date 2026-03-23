@@ -8,6 +8,7 @@ import { Store, MapPin, LayoutGrid, ArrowRight, ShieldCheck, Plus, Settings, Use
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SalonEditModal } from "@/components/superadmin/SalonEditModal";
 
 export default function SuperadminDashboard() {
@@ -39,8 +40,9 @@ export default function SuperadminDashboard() {
     };
 
     return (
-        <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
-            <Toaster />
+        <AuthGuard allowedRoles={['superadmin']}>
+            <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
+                <Toaster />
             {/* Sidebar Simple para Superadmin */}
             <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
                 <div className="p-6 border-b border-gray-800">
@@ -184,5 +186,6 @@ export default function SuperadminDashboard() {
                 onUpdate={loadTenants}
             />
         </div>
+        </AuthGuard>
     );
 }

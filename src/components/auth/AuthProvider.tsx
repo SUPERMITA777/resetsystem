@@ -11,10 +11,11 @@ interface AuthContextType {
     isStaff: boolean;
     role: string | null;
     staffId: string | null;
+    tenantId: string | null;
     loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, isStaff: false, role: null, staffId: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ user: null, isStaff: false, role: null, staffId: null, tenantId: null, loading: true });
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isStaff, setIsStaff] = useState<boolean>(false);
     const [role, setRole] = useState<string | null>(null);
     const [staffId, setStaffId] = useState<string | null>(null);
+    const [tenantId, setTenantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -38,20 +40,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         setIsStaff(isUserStaff);
                         setRole(profile.role || null);
                         setStaffId(isUserStaff ? firebaseUser.uid : null);
+                        setTenantId(profile.tenantId || null);
                     } else {
                         setIsStaff(false);
                         setRole(null);
                         setStaffId(null);
+                        setTenantId(null);
                     }
                 } catch (e) {
                     setIsStaff(false);
                     setRole(null);
                     setStaffId(null);
+                    setTenantId(null);
                 }
             } else {
                 setIsStaff(false);
                 setRole(null);
                 setStaffId(null);
+                setTenantId(null);
             }
             setUser(firebaseUser);
             setLoading(false);
@@ -61,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, isStaff, role, staffId, loading }}>
+        <AuthContext.Provider value={{ user, isStaff, role, staffId, tenantId, loading }}>
             {children}
         </AuthContext.Provider>
     );

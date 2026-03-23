@@ -7,6 +7,7 @@ import { getUserProfile, UserRole } from "@/lib/services/userService";
 import { updateAuthUser } from "@/lib/actions/userActions";
 import { ShieldCheck, Store, Users, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -85,6 +86,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     };
 
     return (
+        <AuthGuard allowedRoles={['superadmin']}>
         <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
             {/* Sidebar Reused Logic */}
             <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
@@ -206,5 +208,6 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                 </div>
             </main>
         </div>
+        </AuthGuard>
     );
 }

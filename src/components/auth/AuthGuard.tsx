@@ -4,15 +4,27 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth();
+export function AuthGuard({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
+    const { user, role, loading } = useAuth();
     const router = useRouter();
 
+    const allowedRolesStr = allowedRoles ? JSON.stringify(allowedRoles) : null;
+
     useEffect(() => {
-        if (!loading && !user) {
-            router.push("/login");
+        if (!loading) {
+            if (!user) {
+                router.push("/login");
+            } else if (allowedRoles && role && !allowedRoles.includes(role)) {
+                if (role === 'superadmin') {
+                    router.push("/superadmin");
+                } else if (role === 'salon_admin') {
+                    router.push("/admin/dashboard");
+                } else {
+                    router.push("/profesional/dashboard");
+                }
+            }
         }
-    }, [user, loading, router]);
+    }, [user, role, loading, router, allowedRolesStr]);
 
     if (loading) {
         return (
@@ -22,8 +34,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    // If there is no user, return null while redirecting
-    if (!user) {
+    // If there is no user or unauthorized role, return null while redirecting
+    if (!user || (allowedRoles && role && !allowedRoles.includes(role))) {
         return null;
     }
 

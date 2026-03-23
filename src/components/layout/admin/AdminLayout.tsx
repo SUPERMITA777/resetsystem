@@ -4,22 +4,32 @@ import React, { useEffect } from "react";
 import { Sidebar } from "../Sidebar";
 import { Topbar } from "../Topbar";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getTenant } from "@/lib/services/tenantService";
 
 export function AdminLayout({ children, topbarContent }: { children: React.ReactNode, topbarContent?: React.ReactNode }) {
+    const { role, tenantId: userTenantId } = useAuth();
+
     useEffect(() => {
-        const tenantId = localStorage.getItem("currentTenant") || "resetspa";
-        getTenant(tenantId).then(data => {
+        let activeTenant = localStorage.getItem("currentTenant") || "resetspa";
+
+        // FORCED TENANT ISOLATION: 
+        if (role === 'salon_admin' && userTenantId) {
+            activeTenant = userTenantId;
+            localStorage.setItem("currentTenant", activeTenant);
+        }
+
+        getTenant(activeTenant).then(data => {
             if (data?.nombre_salon) {
                 document.title = `${data.nombre_salon} Web`;
             } else {
                 document.title = "RESET HOME SPA WEB";
             }
         });
-    }, []);
+    }, [role, userTenantId]);
 
     return (
-        <AuthGuard>
+        <AuthGuard allowedRoles={['superadmin', 'salon_admin']}>
             <div className="flex h-screen overflow-hidden bg-[var(--background)] theme-nude">
                 <Sidebar />
                 <div className="flex-1 flex flex-col relative overflow-hidden">
