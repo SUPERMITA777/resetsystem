@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import * as Tone from "tone";
-import { Play, Pause, RefreshCcw, Settings, Activity, Music, Loader2, ArrowLeft, Cloud } from "lucide-react";
-import Link from "next/link";
-import { FitnessTrack, getFitnessTracks } from "@/lib/services/fitnessService";
+import { Play, Pause, RefreshCcw, Settings, Activity, Music, Loader2, ArrowLeft, Cloud, ChevronUp, ChevronDown } from "lucide-react";
+import Link from "next/link";import { FitnessTrack, getFitnessTracks } from "@/lib/services/fitnessService";
 
 export default function FitnessSystemPage() {
     const [tenantId, setTenantId] = useState("resetspa");
@@ -249,52 +248,84 @@ export default function FitnessSystemPage() {
                     </div>
                 </section>
 
-                {/* Main Middle Row (Stopwatch & Sliders side-by-side) */}
-                <main className="flex-1 min-h-0 flex gap-3 sm:gap-4">
+                {/* Main Content Area: Left Col (Stopwatch + Loop) | Right Col (Slider) */}
+                <main className="flex-1 min-h-0 flex gap-3 sm:gap-4 pb-2">
                     
-                    {/* Stopwatch & Player (Left) */}
-                    <section className="flex-1 bg-[#131313] p-4 rounded-3xl border border-[#00F0FF]/20 shadow-[0_0_30px_rgba(0,240,255,0.05)] flex flex-col relative overflow-hidden h-full">
-                        <div className="absolute inset-0 bg-gradient-to-b from-[#00F0FF]/5 to-transparent opacity-50 z-0 pointer-events-none"></div>
-                        
-                        {/* Time & Base BPM */}
-                        <div className="flex flex-col items-center justify-center flex-1 z-10 space-y-2">
-                            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(0,240,255,0.3)] tabular-nums truncate w-full text-center">
-                                {timeFormatted}
-                            </h2>
-                            <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#00F0FF] font-bold bg-black/50 px-3 py-1 rounded-full border border-[#00f0ff]/20">
-                                Base: {baseBPM} BPM
-                            </p>
-                        </div>
-                        
-                        {/* Player Controls */}
-                        <div className="flex items-center gap-4 sm:gap-6 z-10 w-full justify-center shrink-0 mt-2">
-                            <button 
-                                onClick={handleReset}
-                                className="p-3 sm:p-4 rounded-2xl bg-[#1a1a1a] text-gray-400 active:scale-95 hover:text-white transition-colors"
-                            >
-                                <RefreshCcw className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </button>
+                    {/* Left Column: Player & Loop */}
+                    <div className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
+                        {/* Stopwatch & Player */}
+                        <section className="flex-1 bg-[#131313] p-4 rounded-3xl border border-[#00F0FF]/20 shadow-[0_0_30px_rgba(0,240,255,0.05)] flex flex-col relative overflow-hidden min-h-0">
+                            <div className="absolute inset-0 bg-gradient-to-b from-[#00F0FF]/5 to-transparent opacity-50 z-0 pointer-events-none"></div>
                             
-                            <button 
-                                onClick={handlePlayPause}
-                                disabled={!isLoaded}
-                                className={`w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-95 border-2 ${isLoaded ? (isPlaying ? 'bg-[#ff3366]/90 border-[#ff3366] text-white shadow-[0_0_30px_rgba(255,51,102,0.4)]' : 'bg-[#00F0FF]/90 border-[#00F0FF] text-black shadow-[0_0_30px_rgba(0,240,255,0.4)]') : 'bg-[#1a1a1a] border-transparent text-gray-600'}`}
-                            >
-                                {isLoadingTrack ? <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-[#00F0FF]" /> : 
-                                (!isLoaded ? <Music className="w-6 h-6 sm:w-8 sm:h-8 opacity-20" /> : (isPlaying ? <Pause className="w-8 h-8 sm:w-10 sm:h-10 fill-current" /> : <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-current ml-2" />))}
-                            </button>
-                        </div>
-                    </section>
+                            {/* Time & Base BPM */}
+                            <div className="flex flex-col items-center justify-center flex-1 z-10 space-y-2">
+                                <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(0,240,255,0.3)] tabular-nums truncate w-full text-center">
+                                    {timeFormatted}
+                                </h2>
+                                <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#00F0FF] font-bold bg-black/50 px-3 py-1 rounded-full border border-[#00f0ff]/20">
+                                    Base: {baseBPM} BPM
+                                </p>
+                            </div>
+                            
+                            {/* Player Controls */}
+                            <div className="flex items-center gap-4 sm:gap-6 z-10 w-full justify-center shrink-0 mt-2">
+                                <button 
+                                    onClick={handleReset}
+                                    className="p-3 sm:p-4 rounded-2xl bg-[#1a1a1a] text-gray-400 active:scale-95 hover:text-white transition-colors"
+                                >
+                                    <RefreshCcw className="w-5 h-5 sm:w-6 sm:h-6" />
+                                </button>
+                                
+                                <button 
+                                    onClick={handlePlayPause}
+                                    disabled={!isLoaded}
+                                    className={`w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-95 border-2 ${isLoaded ? (isPlaying ? 'bg-[#ff3366]/90 border-[#ff3366] text-white shadow-[0_0_30px_rgba(255,51,102,0.4)]' : 'bg-[#00F0FF]/90 border-[#00F0FF] text-black shadow-[0_0_30px_rgba(0,240,255,0.4)]') : 'bg-[#1a1a1a] border-transparent text-gray-600'}`}
+                                >
+                                    {isLoadingTrack ? <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-[#00F0FF]" /> : 
+                                    (!isLoaded ? <Music className="w-6 h-6 sm:w-8 sm:h-8 opacity-20" /> : (isPlaying ? <Pause className="w-8 h-8 sm:w-10 sm:h-10 fill-current" /> : <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-current ml-2" />))}
+                                </button>
+                            </div>
+                        </section>
+
+                        {/* LOOP SECTION (Now in left column) */}
+                        <section className="bg-[#131313] p-2 sm:p-3 rounded-2xl border border-white/5 shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                <button 
+                                    onClick={() => triggerLoop(4)}
+                                    disabled={!isLoaded || baseBPM === 0}
+                                    className={`group h-12 sm:h-16 rounded-xl overflow-hidden shadow-lg flex flex-col items-center justify-center transition-all border ${activeLoop === 4 ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white' : 'bg-[#1a1a1a] border-white/5 text-gray-400 hover:text-white hover:border-white/10'}`}
+                                >
+                                    <span className={`font-black text-lg sm:text-xl tracking-tighter ${activeLoop === 4 ? 'text-[#00F0FF] drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]' : ''}`}>4 BEATS</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => triggerLoop(8)}
+                                    disabled={!isLoaded || baseBPM === 0}
+                                    className={`group h-12 sm:h-16 rounded-xl overflow-hidden shadow-lg flex flex-col items-center justify-center transition-all border ${activeLoop === 8 ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white' : 'bg-[#1a1a1a] border-white/5 text-gray-400 hover:text-white hover:border-white/10'}`}
+                                >
+                                    <span className={`font-black text-lg sm:text-xl tracking-tighter ${activeLoop === 8 ? 'text-[#00F0FF] drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]' : ''}`}>8 BEATS</span>
+                                </button>
+                            </div>
+                        </section>
+                    </div>
                     
-                    {/* Target BPM Slider (Right) */}
-                    <section className="w-[70px] sm:w-[90px] bg-gradient-to-b from-[#131313] to-[#0a0a0a] rounded-3xl border border-[#00F0FF]/15 flex flex-col items-center py-4 relative h-full shrink-0">
+                    {/* Target BPM Slider (Right Column Full Height) */}
+                    <section className="w-[80px] sm:w-[100px] bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] rounded-3xl border border-[#00F0FF]/20 flex flex-col items-center py-3 relative h-full shrink-0 shadow-lg">
                         <div className="shrink-0 text-center z-10 mb-2">
-                            <span className="font-black text-xl sm:text-2xl tracking-tighter text-white tabular-nums drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">{targetBPM}</span>
+                            <span className="font-black text-2xl sm:text-3xl tracking-tighter text-[#00F0FF] tabular-nums drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">{targetBPM}</span>
                         </div>
 
-                        <div className="relative flex-1 w-full flex justify-center py-1 sm:py-2">
+                        {/* Precision UP Button */}
+                        <button 
+                            onClick={() => setTargetBPM(prev => Math.min(200, prev + 2))}
+                            className="bg-white/5 hover:bg-white/10 active:bg-white/20 p-2 sm:p-3 rounded-xl transition-all z-10 shrink-0 text-gray-300 hover:text-white shadow-md border border-white/5 active:scale-95"
+                        >
+                            <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
+
+                        <div className="relative flex-1 w-full flex justify-center py-2 min-h-[150px]">
                             {/* We use standard HTML slider but rotated via Tailwind to prevent browser-specific bugs with writingMode */}
-                            <div className="absolute inset-y-4 right-0 left-0 flex items-center justify-center z-10 pointer-events-none">
+                            <div className="absolute inset-y-4 right-0 left-0 flex items-center justify-center z-20 pointer-events-none">
                                 {/* The physical input rotates around its center, so its width needs to be the container's height */}
                                 <input 
                                     type="range" 
@@ -302,7 +333,7 @@ export default function FitnessSystemPage() {
                                     max="200" 
                                     value={targetBPM} 
                                     onChange={(e) => setTargetBPM(Number(e.target.value))}
-                                    className="custom-range h-8 hover:cursor-grab active:cursor-grabbing appearance-none bg-transparent absolute pointer-events-auto"
+                                    className="custom-range h-10 hover:cursor-grab active:cursor-grabbing appearance-none bg-transparent absolute pointer-events-auto"
                                     style={{ 
                                         width: 'calc(100% + 2rem)', // Stretch effectively equivalent to height
                                         transform: 'rotate(-90deg)' 
@@ -311,36 +342,24 @@ export default function FitnessSystemPage() {
                             </div>
 
                             {/* Custom track visual under the input */}
-                            <div className="absolute top-2 sm:top-4 bottom-2 sm:bottom-4 w-2 sm:w-3 bg-[#1a1a1a] rounded-full overflow-hidden flex flex-col justify-end pointer-events-none shadow-inner border border-white/5">
+                            <div className="absolute top-2 sm:top-4 bottom-2 sm:bottom-4 w-3 sm:w-4 bg-[#0e0e0e] rounded-full overflow-hidden flex flex-col justify-end pointer-events-none shadow-inner border border-white/5 z-0">
                                 <div 
-                                    className="w-full bg-gradient-to-b from-[#00F0FF] to-[#00f0ff8c]"
+                                    className="w-full bg-gradient-to-b from-[#00F0FF] to-[#00f0ff8c] shadow-[0_0_15px_rgba(0,240,255,0.5)]"
                                     style={{ height: `${((targetBPM - 60) / 140) * 100}%` }}
                                 ></div>
                             </div>
                         </div>
+
+                        {/* Precision DOWN Button */}
+                        <button 
+                            onClick={() => setTargetBPM(prev => Math.max(60, prev - 2))}
+                            className="bg-white/5 hover:bg-white/10 active:bg-white/20 p-2 sm:p-3 rounded-xl transition-all z-10 shrink-0 text-gray-300 hover:text-white shadow-md border border-white/5 active:scale-95 mt-1"
+                        >
+                            <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
                     </section>
                 </main>
 
-                {/* LOOP SECTION (Compact Footer) */}
-                <section className="bg-[#131313] p-2 sm:p-3 rounded-2xl border border-white/5 shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                        <button 
-                            onClick={() => triggerLoop(4)}
-                            disabled={!isLoaded || baseBPM === 0}
-                            className={`group h-14 sm:h-16 md:h-20 rounded-xl overflow-hidden shadow-lg flex flex-col items-center justify-center transition-all border ${activeLoop === 4 ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white' : 'bg-[#1a1a1a] border-white/5 text-gray-400 hover:text-white hover:border-white/10'}`}
-                        >
-                            <span className={`font-black text-xl sm:text-2xl tracking-tighter ${activeLoop === 4 ? 'text-[#00F0FF] drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]' : ''}`}>4 BEATS</span>
-                        </button>
-
-                        <button 
-                            onClick={() => triggerLoop(8)}
-                            disabled={!isLoaded || baseBPM === 0}
-                            className={`group h-14 sm:h-16 md:h-20 rounded-xl overflow-hidden shadow-lg flex flex-col items-center justify-center transition-all border ${activeLoop === 8 ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-white' : 'bg-[#1a1a1a] border-white/5 text-gray-400 hover:text-white hover:border-white/10'}`}
-                        >
-                            <span className={`font-black text-xl sm:text-2xl tracking-tighter ${activeLoop === 8 ? 'text-[#00F0FF] drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]' : ''}`}>8 BEATS</span>
-                        </button>
-                    </div>
-                </section>
                 
             </div>
             
