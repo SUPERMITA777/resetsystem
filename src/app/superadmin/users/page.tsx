@@ -16,14 +16,17 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { getAllUsers, UserProfile, UserRole } from "@/lib/services/userService";
+import { deleteAuthUser } from "@/lib/actions/userActions";
 import { getAllTenants, TenantData } from "@/lib/services/tenantService";
 import toast, { Toaster } from "react-hot-toast";
+import Link from "next/link";
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [tenants, setTenants] = useState<Record<string, string>>({}); // id -> nombre
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -60,6 +63,25 @@ export default function UserManagementPage() {
                 return <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider"><Store className="w-3 h-3" /> Admin Salón</span>;
             default:
                 return <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-[10px] font-bold uppercase tracking-wider"><Tag className="w-3 h-3" /> Staff</span>;
+        }
+    };
+
+    const handleDeleteUser = async (uid: string) => {
+        if (!window.confirm("¿Estás seguro de que deseas ELIMINAR permanentemente a este usuario?")) return;
+        
+        try {
+            setOpenDropdownId(null);
+            const loadingToast = toast.loading("Eliminando usuario...");
+            const res = await deleteAuthUser(uid);
+            if (res.success) {
+                setUsers(prev => prev.filter(u => u.uid !== uid));
+                toast.success("Usuario eliminado", { id: loadingToast });
+            } else {
+                toast.error("Error: " + res.error, { id: loadingToast });
+            }
+        } catch (error: any) {
+            toast.error("Hubo un error al eliminar");
+            console.error(error);
         }
     };
 
@@ -103,10 +125,12 @@ export default function UserManagementPage() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <Button className="bg-gray-900 hover:bg-gray-800 rounded-xl px-6 h-10 transition-all hover:-translate-y-0.5 shadow-lg shadow-gray-200">
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Nuevo Usuario
-                        </Button>
+                        <Link href="/superadmin/create-user">
+                            <Button className="bg-gray-900 hover:bg-gray-800 rounded-xl px-6 h-10 transition-all hover:-translate-y-0.5 shadow-lg shadow-gray-200">
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Nuevo Usuario
+                            </Button>
+                        </Link>
                     </div>
                 </header>
 
@@ -181,10 +205,26 @@ export default function UserManagementPage() {
                                                         {user.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right">
-                                                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors">
+                                                <td className="px-8 py-5 text-right relative">
+                                                    <button 
+                                                        onClick={() => setOpenDropdownId(openDropdownId === user.uid ? null : user.uid)}
+                                                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors focus:outline-none"
+                                                    >
                                                         <MoreVertical className="w-5 h-5" />
                                                     </button>
+                                                    {openDropdownId === user.uid && (
+                                                        <div className="absolute right-8 top-12 z-50 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden text-left py-1 animate-in fade-in zoom-in-95 duration-100">
+                                                            <Link href={`/superadmin/users/${user.uid}/edit`} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 font-medium transition-colors">
+                                                                Editar Usuario
+                                                            </Link>
+                                                            <button 
+                                                                onClick={() => handleDeleteUser(user.uid)}
+                                                                className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium transition-colors border-t border-gray-50"
+                                                            >
+                                                                Eliminar permanentemente
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}

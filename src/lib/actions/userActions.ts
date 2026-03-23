@@ -48,6 +48,7 @@ export async function updateAuthUser(uid: string, data: {
     status?: string;
     password?: string;
     whatsapp?: string;
+    tenantId?: string | null;
 }) {
     try {
         const auth = getAdminAuth();
