@@ -60,7 +60,15 @@ export async function updateAuthUser(uid: string, data: {
         if (data.password) authUpdates.password = data.password;
 
         if (Object.keys(authUpdates).length > 0) {
-            await auth.updateUser(uid, authUpdates);
+            try {
+                await auth.updateUser(uid, authUpdates);
+            } catch (authError: any) {
+                // If user doesn't exist in Auth, we ignore and continue to Firestore update
+                console.warn(`Auth record not found for UID: ${uid}. Skipping Auth update.`);
+                if (authError.code !== 'auth/user-not-found') {
+                    throw authError;
+                }
+            }
         }
 
         // 2. Update Firestore
