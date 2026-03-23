@@ -50,10 +50,13 @@ export default function UserManagementPage() {
         loadData();
     }, []);
 
-    const filteredUsers = users.filter(user =>
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredUsers = users.filter(user => {
+        const safeEmail = user.email || "";
+        const safeName = user.displayName || "";
+        const search = searchQuery.toLowerCase();
+        
+        return safeEmail.toLowerCase().includes(search) || safeName.toLowerCase().includes(search);
+    });
 
     const getRoleBadge = (role: UserRole) => {
         switch (role) {
@@ -171,13 +174,13 @@ export default function UserManagementPage() {
                                                 <td className="px-8 py-5">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-400 group-hover:bg-[#9381FF]/10 group-hover:text-[#9381FF] transition-colors uppercase">
-                                                            {user.email[0]}
+                                                            {(user.email || 'U')[0]}
                                                         </div>
                                                         <div>
                                                             <div className="font-bold text-gray-900">{user.displayName || 'Sin Nombre'}</div>
                                                             <div className="text-xs text-gray-400 flex items-center gap-1">
                                                                 <Mail className="w-3 h-3" />
-                                                                {user.email}
+                                                                {user.email || 'Sin Correo'}
                                                             </div>
                                                         </div>
                                                     </div>
