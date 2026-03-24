@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Clase } from "@/lib/services/claseService";
+import { Clase, claseService } from "@/lib/services/claseService";
 import { createTurno } from "@/lib/services/agendaService";
 import toast from "react-hot-toast";
 import { CheckCircle2, MessageCircle, User, Calendar, Clock, X } from "lucide-react";
@@ -14,12 +14,13 @@ interface ClaseBookingModalProps {
     isOpen: boolean;
     onClose: () => void;
     clase: Clase | null;
+    horario: { id: string, fecha: string, hora: string, inscriptosCount: number } | null;
     tenantId: string;
     tenantName: string;
     salonWhatsapp?: string;
 }
 
-export function ClaseBookingModal({ isOpen, onClose, clase, tenantId, tenantName, salonWhatsapp }: ClaseBookingModalProps) {
+export function ClaseBookingModal({ isOpen, onClose, clase, horario, tenantId, tenantName, salonWhatsapp }: ClaseBookingModalProps) {
     const [step, setStep] = useState<'form' | 'success'>('form');
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -29,29 +30,32 @@ export function ClaseBookingModal({ isOpen, onClose, clase, tenantId, tenantName
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!clase) return;
+        if (!clase || !horario) return;
 
         setLoading(true);
         try {
-            // Create a pending turno linked to this class
+            // Create a pending turno linked to this class and specific schedule
             await createTurno(tenantId, {
                 nombre: formData.nombre,
                 whatsapp: formData.whatsapp,
-                fecha: clase.fecha,
-                horaInicio: clase.hora,
+                fecha: horario.fecha,
+                horaInicio: horario.hora,
                 clienteAbreviado: formData.nombre.slice(0, 10),
                 tratamientoAbreviado: "CLASE",
                 subtratamientoAbreviado: clase.nombre.slice(0, 20),
-                duracionMinutos: 60,
+                duracionMinutos: clase.duracion || 60,
                 boxId: clase.boxId || "salon-grupal",
                 status: 'PENDIENTE',
                 claseId: clase.id,
                 valorCreditos: clase.valorCreditos
             });
 
+            // Increment inscriptos for this specific schedule
+            await claseService.incrementInscriptos(tenantId, clase.id, horario.id);
+
             // Send WhatsApp to local
             if (salonWhatsapp) {
-                const text = encodeURIComponent(`NUEVA INSCRIPCIÓN\n\nClase: ${clase.nombre}\nFecha: ${clase.fecha} ${clase.hora}\nCliente: ${formData.nombre}\nWhatsApp: ${formData.whatsapp}`);
+                const text = encodeURIComponent(`NUEVA INSCRIPCIÓN\n\nClase: ${clase.nombre}\nFecha: ${horario.fecha} ${horario.hora}\nCliente: ${formData.nombre}\nWhatsApp: ${formData.whatsapp}`);
                 window.open(`https://wa.me/${salonWhatsapp.replace(/\D/g, '')}?text=${text}`, '_blank');
             }
 

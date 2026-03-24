@@ -18,6 +18,7 @@ export default function PublicClasesPage() {
     const [clases, setClases] = useState<Clase[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedClase, setSelectedClase] = useState<Clase | null>(null);
+    const [selectedHorario, setSelectedHorario] = useState<{id: string, fecha: string, hora: string, inscriptosCount: number} | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
@@ -28,9 +29,7 @@ export default function PublicClasesPage() {
                 if (tenantData) {
                     setTenant(tenantData);
                     const classesData = await claseService.getClases(slug);
-                    // Filter for future classes only
-                    const today = new Date().toISOString().split('T')[0];
-                    setClases(classesData.filter(c => c.fecha >= today).sort((a,b) => a.fecha.localeCompare(b.fecha)));
+                    setClases(classesData);
                 }
             } catch (error) {
                 console.error("Error loading data", error);
@@ -73,98 +72,73 @@ export default function PublicClasesPage() {
                 </div>
 
                 <div className="space-y-6">
-                    {clases.length > 0 ? (
-                        clases.map((clase) => {
-                            const isFull = clase.inscriptosCount >= clase.cupo;
-                            const isLastSpots = !isFull && (clase.cupo - clase.inscriptosCount) <= 3;
+                    {clases.length > 0 ? (                        clases.map((clase) => {
+                            const availableHorarios = (clase.horarios || []).filter(h => {
+                                const today = new Date().toISOString().split('T')[0];
+                                return h.fecha >= today && (h.inscriptosCount < clase.cupo);
+                            }).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora));
+
+                            if (availableHorarios.length === 0) return null;
 
                             return (
-                                <div key={clase.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-[#f4d0d9]/10 group transition-all duration-300 active:scale-[0.98]">
-                                    {/* Galería de Imágenes / Imagen Principal */}
-                                    {clase.imagenes && clase.imagenes.length > 0 && (
-                                        <div className="relative h-56 w-full">
+                                <div key={clase.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-[#f4d0d9]/10 transition-all duration-300">
+                                    {/* Imagen Principal */}
+                                    <div className="relative h-64 w-full">
+                                        {clase.imagenes && clase.imagenes.length > 0 ? (
                                             <img 
                                                 src={clase.imagenes[0]} 
                                                 alt={clase.nombre} 
                                                 className="w-full h-full object-cover"
                                             />
-                                            {clase.imagenes.length > 1 && (
-                                                <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-[#7b5460]">
-                                                    + {clase.imagenes.length - 1} fotos
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    <div className="p-7">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className="space-y-1">
-                                                <h3 className="text-2xl font-serif italic text-[#7b5460] leading-tight">{clase.nombre}</h3>
-                                                <div className="flex items-center gap-3 text-xs font-bold text-[#9086AB]">
-                                                    <span className="flex items-center gap-1">
-                                                        {format(new Date(clase.fecha + 'T12:00:00'), "EEEE dd", { locale: es })}
-                                                    </span>
-                                                    <span className="w-1 h-1 bg-[#f4d0d9] rounded-full" />
-                                                    <span>{clase.hora} HS</span>
-                                                </div>
+                                        ) : (
+                                            <div className="w-full h-full bg-[#faf9f9] flex items-center justify-center">
+                                                <Calendar className="w-12 h-12 text-[#D4A5B2]/20" />
                                             </div>
-                                            {isFull ? (
-                                                <span className="px-3 py-1 bg-gray-100 text-gray-400 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                                    CUPOS AGOTADOS
-                                                </span>
-                                            ) : isLastSpots ? (
-                                                <span className="px-3 py-1 bg-[#fccad8] text-[#7b5460] rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
-                                                    ÚLTIMOS CUPOS
-                                                </span>
-                                            ) : (
-                                                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                                    DISPONIBLE
-                                                </span>
-                                            )}
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-8">
+                                            <h3 className="text-3xl font-serif italic text-white leading-tight">{clase.nombre}</h3>
+                                            <p className="text-white/80 text-xs font-medium line-clamp-1 mt-1">{clase.detalle}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-7 space-y-4">
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-50 pb-4">
+                                            <span>Horarios Disponibles</span>
+                                            <span className="text-[#D4A5B2]">{availableHorarios.length} OPCIONES</span>
                                         </div>
 
-                                        {/* Info Profesional y Duración */}
-                                        <div className="flex items-center gap-6 mb-8 pb-6 border-b border-gray-50">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-[#faf9f9] flex items-center justify-center border border-[#f4d0d9]/30">
-                                                    <UserIcon className="w-4 h-4 text-[#D4A5B2]" />
+                                        <div className="grid gap-3">
+                                            {availableHorarios.map((h) => (
+                                                <div 
+                                                    key={h.id}
+                                                    onClick={() => { 
+                                                        setSelectedClase(clase); 
+                                                        setSelectedHorario(h);
+                                                        setIsModalOpen(true); 
+                                                    }}
+                                                    className="flex items-center justify-between p-4 rounded-[1.5rem] bg-[#faf9f9] hover:bg-[#f4d0d9]/10 border border-transparent hover:border-[#f4d0d9]/30 transition-all cursor-pointer group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex flex-col items-center justify-center w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#f4d0d9]/20">
+                                                            <span className="text-[9px] font-black text-[#D4A5B2] leading-none mb-1">
+                                                                {format(new Date(h.fecha + 'T12:00:00'), "MMM", { locale: es }).toUpperCase()}
+                                                            </span>
+                                                            <span className="text-sm font-black text-[#7b5460] leading-none">
+                                                                {h.fecha.split('-')[2]}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-[#7b5460]">{h.hora} HS</span>
+                                                            <span className="text-[10px] font-bold text-gray-400 capitalize">
+                                                                {format(new Date(h.fecha + 'T12:00:00'), "EEEE", { locale: es })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <Button className="h-9 px-4 rounded-full bg-[#7b5460] text-white text-[10px] font-black uppercase tracking-widest group-hover:scale-105 transition-transform">
+                                                        Cupos: {clase.cupo - h.inscriptosCount}
+                                                    </Button>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 leading-none">Prof.</span>
-                                                    <span className="text-xs font-bold text-[#7b5460]">{clase.profesionalNombre || "Staff Reset"}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-[#faf9f9] flex items-center justify-center border border-[#f4d0d9]/30">
-                                                    <Clock className="w-4 h-4 text-[#D4A5B2]" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 leading-none">Duración</span>
-                                                    <span className="text-xs font-bold text-[#7b5460]">{clase.duracion || 60} min</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-end justify-between">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                    <Users className="w-3 h-3" />
-                                                    <span>Restantes: {clase.cupo - clase.inscriptosCount} cupos</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[10px] font-black text-[#635a7c] uppercase tracking-[0.2em] bg-[#e8ddff] w-fit px-2 py-0.5 rounded-lg mt-1">
-                                                    <Tag className="w-3 h-3" />
-                                                    <span>{clase.valorCreditos} PTR</span>
-                                                </div>
-                                            </div>
-
-                                            <Button 
-                                                disabled={isFull}
-                                                onClick={() => { setSelectedClase(clase); setIsModalOpen(true); }}
-                                                className={`h-12 px-8 rounded-full font-serif italic text-lg transition-all shadow-md active:scale-95 
-                                                    ${isFull ? 'bg-gray-100 text-gray-300' : 'bg-white text-[#7b5460] border border-[#f4d0d9] hover:bg-[#7b5460] hover:text-white'}`}
-                                            >
-                                                Inscribirme
-                                            </Button>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -197,8 +171,9 @@ export default function PublicClasesPage() {
 
             <ClaseBookingModal 
                 isOpen={isModalOpen}
-                onClose={() => { setIsModalOpen(false); setSelectedClase(null); }}
+                onClose={() => { setIsModalOpen(false); setSelectedClase(null); setSelectedHorario(null); }}
                 clase={selectedClase}
+                horario={selectedHorario}
                 tenantId={slug}
                 tenantName={tenant.nombre_salon}
                 salonWhatsapp={tenant.datos_contacto?.whatsapp}

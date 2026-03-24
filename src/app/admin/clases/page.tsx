@@ -149,14 +149,19 @@ export default function ClasesAdminPage() {
 
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
-                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Fecha</span>
+                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Programación</span>
                                         <span className="text-sm font-bold text-gray-700">
-                                            {format(new Date(clase.fecha + 'T12:00:00'), "dd 'de' MMM", { locale: es })}
+                                            {clase.horarios?.length || 0} Horarios
                                         </span>
                                     </div>
                                     <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
-                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Hora</span>
-                                        <span className="text-sm font-bold text-gray-700">{clase.hora} HS</span>
+                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Próxima</span>
+                                        <span className="text-sm font-bold text-gray-700">
+                                            {clase.horarios && clase.horarios.length > 0 
+                                                ? format(new Date(clase.horarios[0].fecha + 'T12:00:00'), "dd/MM", { locale: es }) + " " + clase.horarios[0].hora
+                                                : "Sin fecha"
+                                            }
+                                        </span>
                                     </div>
                                 </div>
 
@@ -173,17 +178,18 @@ export default function ClasesAdminPage() {
 
                                 <div className="space-y-3 pt-4 border-t border-gray-50">
                                     {(() => {
-                                        const isFull = clase.inscriptosCount >= clase.cupo;
+                                        const totalInscriptos = (clase.horarios || []).reduce((acc, h) => acc + (h.inscriptosCount || 0), 0);
+                                        const totalCupos = (clase.horarios || []).length * clase.cupo;
                                         return (
                                             <div 
                                                 onClick={() => { setClaseForInscriptos(clase); setIsInscriptosModalOpen(true); }}
-                                                className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${isFull ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-orange-50 text-orange-700 border border-orange-100'}`}
+                                                className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] active:scale-95 bg-gray-50 text-gray-600 border border-gray-100`}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <Users className="w-4 h-4" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Cupos:</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Inscriptos Totales:</span>
                                                 </div>
-                                                <span className="text-sm font-black">{clase.inscriptosCount} / {clase.cupo} alumnos</span>
+                                                <span className="text-sm font-black">{totalInscriptos} alumnos</span>
                                             </div>
                                         );
                                     })()}
