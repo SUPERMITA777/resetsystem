@@ -23,6 +23,10 @@ export interface Clase {
     boxId: string;
     fecha: string; // YYYY-MM-DD
     hora: string;  // HH:mm
+    duracion: number; // en minutos
+    profesionalId: string;
+    profesionalNombre: string;
+    imagenes?: string[];
     inscriptosCount: number;
     createdAt?: any;
     status: 'active' | 'cancelled';

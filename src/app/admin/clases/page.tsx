@@ -99,8 +99,12 @@ export default function ClasesAdminPage() {
                         {filteredClases.map(clase => (
                             <Card key={clase.id} className="p-6 border-none shadow-premium-soft rounded-[2rem] group hover:shadow-premium transition-all duration-300">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 group-hover:bg-black group-hover:text-white transition-all">
-                                        <Calendar className="w-6 h-6" />
+                                    <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 group-hover:bg-black group-hover:text-white transition-all overflow-hidden relative">
+                                        {clase.imagenes && clase.imagenes.length > 0 ? (
+                                            <img src={clase.imagenes[0]} alt={clase.nombre} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Calendar className="w-6 h-6" />
+                                        )}
                                     </div>
                                     <div className="flex gap-1">
                                         <button 
@@ -127,7 +131,7 @@ export default function ClasesAdminPage() {
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
                                         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Fecha</span>
                                         <span className="text-sm font-bold text-gray-700">
@@ -137,6 +141,17 @@ export default function ClasesAdminPage() {
                                     <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
                                         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Hora</span>
                                         <span className="text-sm font-bold text-gray-700">{clase.hora} HS</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
+                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Profesional</span>
+                                        <span className="text-sm font-bold text-gray-700 truncate">{clase.profesionalNombre || "Sin asignar"}</span>
+                                    </div>
+                                    <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
+                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Duración</span>
+                                        <span className="text-sm font-bold text-gray-700">{clase.duracion || 60} MIN</span>
                                     </div>
                                 </div>
 
