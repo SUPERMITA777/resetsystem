@@ -135,3 +135,21 @@ export async function getTurnosPorProfesional(tenantId: string, profesionalId: s
 
     return turnos;
 }
+
+// Obtener todos los inscritos en una clase y horario específicos
+export async function getInscriptosPorClaseYHorario(tenantId: string, claseId: string, fecha: string, horaInicio: string): Promise<TurnoDB[]> {
+    const q = query(
+        collection(db, `tenants/${tenantId}/agenda`),
+        where("claseId", "==", claseId),
+        where("fecha", "==", fecha),
+        where("horaInicio", "==", horaInicio)
+    );
+    const querySnapshot = await getDocs(q);
+
+    const turnos: TurnoDB[] = [];
+    querySnapshot.forEach((doc) => {
+        turnos.push({ id: doc.id, ...doc.data() } as TurnoDB);
+    });
+
+    return turnos;
+}

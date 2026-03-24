@@ -19,6 +19,7 @@ export default function PublicClasesPage() {
     const [loading, setLoading] = useState(true);
     const [selectedClase, setSelectedClase] = useState<Clase | null>(null);
     const [selectedHorario, setSelectedHorario] = useState<{id: string, fecha: string, hora: string, inscriptosCount: number} | null>(null);
+    const [expandedClaseId, setExpandedClaseId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
@@ -83,64 +84,76 @@ export default function PublicClasesPage() {
                             return (
                                 <div key={clase.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-[#f4d0d9]/10 transition-all duration-300">
                                     {/* Imagen Principal */}
-                                    <div className="relative h-64 w-full">
+                                    <div 
+                                        className="relative h-64 w-full cursor-pointer group"
+                                        onClick={() => setExpandedClaseId(expandedClaseId === clase.id ? null : clase.id)}
+                                    >
                                         {clase.imagenes && clase.imagenes.length > 0 ? (
                                             <img 
                                                 src={clase.imagenes[0]} 
                                                 alt={clase.nombre} 
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                             />
                                         ) : (
                                             <div className="w-full h-full bg-[#faf9f9] flex items-center justify-center">
                                                 <Calendar className="w-12 h-12 text-[#D4A5B2]/20" />
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-8">
-                                            <h3 className="text-3xl font-serif italic text-white leading-tight">{clase.nombre}</h3>
-                                            <p className="text-white/80 text-xs font-medium line-clamp-1 mt-1">{clase.detalle}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-7 space-y-4">
-                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-50 pb-4">
-                                            <span>Horarios Disponibles</span>
-                                            <span className="text-[#D4A5B2]">{availableHorarios.length} OPCIONES</span>
-                                        </div>
-
-                                        <div className="grid gap-3">
-                                            {availableHorarios.map((h) => (
-                                                <div 
-                                                    key={h.id}
-                                                    onClick={() => { 
-                                                        setSelectedClase(clase); 
-                                                        setSelectedHorario(h);
-                                                        setIsModalOpen(true); 
-                                                    }}
-                                                    className="flex items-center justify-between p-4 rounded-[1.5rem] bg-[#faf9f9] hover:bg-[#f4d0d9]/10 border border-transparent hover:border-[#f4d0d9]/30 transition-all cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="flex flex-col items-center justify-center w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#f4d0d9]/20">
-                                                            <span className="text-[9px] font-black text-[#D4A5B2] leading-none mb-1">
-                                                                {format(new Date(h.fecha + 'T12:00:00'), "MMM", { locale: es }).toUpperCase()}
-                                                            </span>
-                                                            <span className="text-sm font-black text-[#7b5460] leading-none">
-                                                                {h.fecha.split('-')[2]}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-xs font-black text-[#7b5460]">{h.hora} HS</span>
-                                                            <span className="text-[10px] font-bold text-gray-400 capitalize">
-                                                                {format(new Date(h.fecha + 'T12:00:00'), "EEEE", { locale: es })}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <Button className="h-9 px-4 rounded-full bg-[#7b5460] text-white text-[10px] font-black uppercase tracking-widest group-hover:scale-105 transition-transform">
-                                                        Cupos: {clase.cupo - h.inscriptosCount}
-                                                    </Button>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <h3 className="text-3xl font-serif italic text-white leading-tight">{clase.nombre}</h3>
+                                                    <p className="text-white/80 text-xs font-medium line-clamp-1 mt-1">{clase.detalle}</p>
                                                 </div>
-                                            ))}
+                                                <div className="bg-white/20 backdrop-blur-md rounded-full px-4 py-2 text-[10px] font-black text-white uppercase tracking-widest border border-white/30">
+                                                    {expandedClaseId === clase.id ? "Ocultar" : "Ver Horarios"}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {expandedClaseId === clase.id && (
+                                        <div className="p-7 space-y-4 animate-in slide-in-from-top-4 duration-300">
+                                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-50 pb-4">
+                                                <span>Horarios Disponibles</span>
+                                                <span className="text-[#D4A5B2]">{availableHorarios.length} OPCIONES</span>
+                                            </div>
+
+                                            <div className="grid gap-3">
+                                                {availableHorarios.map((h) => (
+                                                    <div 
+                                                        key={h.id}
+                                                        onClick={() => { 
+                                                            setSelectedClase(clase); 
+                                                            setSelectedHorario(h);
+                                                            setIsModalOpen(true); 
+                                                        }}
+                                                        className="flex items-center justify-between p-4 rounded-[1.5rem] bg-[#faf9f9] hover:bg-[#f4d0d9]/10 border border-transparent hover:border-[#f4d0d9]/30 transition-all cursor-pointer group/item"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex flex-col items-center justify-center w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#f4d0d9]/20">
+                                                                <span className="text-[9px] font-black text-[#D4A5B2] leading-none mb-1">
+                                                                    {format(new Date(h.fecha + 'T12:00:00'), "MMM", { locale: es }).toUpperCase()}
+                                                                </span>
+                                                                <span className="text-sm font-black text-[#7b5460] leading-none">
+                                                                    {h.fecha.split('-')[2]}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-black text-[#7b5460]">{h.hora} HS</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 capitalize">
+                                                                    {format(new Date(h.fecha + 'T12:00:00'), "EEEE", { locale: es })}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <Button className="h-9 px-4 rounded-full bg-[#7b5460] text-white text-[10px] font-black uppercase tracking-widest group-hover/item:scale-105 transition-transform">
+                                                            Reservar
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })

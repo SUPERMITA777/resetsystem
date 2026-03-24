@@ -101,38 +101,60 @@ export default function TurnosPage() {
                             apellido: turno.apellido || turno.clienteAbreviado.split(' ').slice(1).join(' ') || '',
                             telefono: wa,
                             tenantId: currentTenant,
-                            creditos: 3
+                            creditos: 1
                         });
-                        cliente = { id: nuevoId, creditos: 3 } as any;
-                        toast.success("Nuevo cliente creado con 3 créditos");
+                        cliente = { id: nuevoId, creditos: 1 } as any;
+                        toast.success("Nuevo cliente creado con 1 crédito");
                     }
                     
                     // Descontar créditos (el valor de la clase)
-                    const costo = turno.valorCreditos || 0;
+                    const costo = turno.valorCreditos || 1;
+                    if ((cliente?.creditos || 0) < costo) {
+                        toast.error("El cliente no posee créditos suficientes para esta clase");
+                        return; // Block acceptance
+                    }
                     await clienteService.deductCredits(currentTenant, cliente!.id, costo);
                     toast.success(`${costo} créditos descontados`);
                 }
                 
                 const clase = await claseService.getClaseById(currentTenant, turno.claseId);
+                let selectedHorarioId = '';
                 if (clase) {
                     const matchingHorario = (clase.horarios || []).find(h => h.fecha === turno.fecha && h.hora === turno.horaInicio);
                     if (matchingHorario) {
+                        selectedHorarioId = matchingHorario.id;
                         await claseService.incrementInscriptos(currentTenant, turno.claseId, matchingHorario.id);
                     } else {
-                        // Fallback if no matching horario found (unlikely if valid turno)
                         console.warn("No se encontró el horario coincidente para incrementar inscriptos");
                     }
+                }
+
+                // Generar QR para la confirmación
+                const qrData = encodeURIComponent(`CLASE|${turno.id}|${turno.claseId}|${selectedHorarioId}`);
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${qrData}`;
+                
+                const clienteWa = turno.clienteWhatsapp || turno.whatsapp || '';
+                if (clienteWa) {
+                    const msg = encodeURIComponent(`✅ ¡Tu clase de ${turno.tratamientoAbreviado} ha sido confirmada!
+📅 Fecha: ${turno.fecha}
+⏰ Hora: ${turno.horaInicio}
+👤 Cliente: ${turno.clienteAbreviado}
+
+Presenta este código QR al llegar:
+${qrUrl}`);
+                    window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                }
+            } else {
+                // For non-class turnos, just open WhatsApp link
+                const clienteWa = turno.clienteWhatsapp || turno.whatsapp || '';
+                if (clienteWa) {
+                    const msg = encodeURIComponent(`¡Hola! Tu turno fue aceptado y agendado. ¡Te esperamos!`);
+                    window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
                 }
             }
 
             toast.success("Turno aceptado y confirmado");
             loadPendientes();
-
-            const clienteWa = turno.clienteWhatsapp || turno.whatsapp || '';
-            if (clienteWa) {
-                const msg = encodeURIComponent(`¡Hola! Tu turno fue aceptado y agendado. ¡Te esperamos!`);
-                window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
-            }
         } catch (error: any) {
             console.error(error);
             toast.error("Error al aceptar turno: " + (error.message || ""));

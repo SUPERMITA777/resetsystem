@@ -262,7 +262,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                         {/* Columna de Horas */}
                         <div className="w-20 shrink-0 flex flex-col border-r border-gray-100 bg-gray-50/30 sticky left-0 z-20">
                             {HORAS.map(hora => (
-                                <div key={hora} className="h-5 border-b border-gray-50 flex items-center justify-center text-[9px] font-bold text-gray-400 bg-gray-50/50">
+                                <div key={hora} className="flex-1 border-b border-gray-50 flex items-center justify-center text-[9px] font-bold text-gray-400 bg-gray-50/50 min-h-[20px]">
                                     {hora}
                                 </div>
                             ))}
@@ -273,7 +273,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                             <CurrentTimeIndicator config={config} HORAS={HORAS} />
 
                             {columns.map(col => (
-                                <div key={col.id} className="flex flex-col border-r last:border-0 border-gray-100">
+                                <div key={col.id} className="flex flex-col flex-1 border-r last:border-0 border-gray-100">
                                     {HORAS.map(hora => {
                                         let turnosEnCelda = turnos.filter(t => {
                                             const tHora = (t.horaInicio || '').substring(0, 5);

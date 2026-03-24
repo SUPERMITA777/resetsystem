@@ -21,7 +21,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         telefono: "",
         notas: "",
         // Créditos fields
-        creditos: 0,
+        creditos: 1,
         montoPagado: 0,
         metodoPago: "EFECTIVO",
         fechaNacimiento: ""
@@ -79,7 +79,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
             }
             
             toast.success("Cliente creado exitosamente", { id: loadingToast });
-            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 0, montoPagado: 0, metodoPago: "EFECTIVO", fechaNacimiento: "" });
+            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 1, montoPagado: 0, metodoPago: "EFECTIVO", fechaNacimiento: "" });
             onSave();
             onClose();
         } catch (error: any) {

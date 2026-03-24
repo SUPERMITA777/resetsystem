@@ -144,36 +144,36 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[2rem]">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+            <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto rounded-[1.5rem] p-0 border-none shadow-2xl">
+                <DialogHeader className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+                    <DialogTitle className="text-xl font-black uppercase tracking-tight">
                         {clase ? "Editar Clase" : "Nueva Clase Grupal"}
                     </DialogTitle>
                 </DialogHeader>
 
-                <form ref={formRef} onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-6 space-y-5">
                     <div className="grid gap-5">
                         {/* Información Básica */}
-                        <div className="space-y-2">
-                            <Label htmlFor="nombre" className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nombre de la Clase</Label>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="nombre" className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Nombre de la Clase</Label>
                             <Input
                                 id="nombre"
                                 placeholder="Ej: Yoga Flow, Pilates..."
                                 value={formData.nombre}
                                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                                 required
-                                className="h-11 rounded-xl font-bold border-gray-100 focus:ring-black"
+                                className="h-10 rounded-xl font-bold border-gray-100 focus:ring-black bg-gray-50/50"
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="profesional" className="text-[10px] font-black uppercase tracking-widest text-gray-400">Profesional</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="profesional" className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Profesional</Label>
                                 <div className="relative">
                                     <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
                                     <select
                                         id="profesional"
-                                        className="w-full h-11 rounded-xl border-gray-100 font-bold pl-10 pr-3 outline-none focus:ring-2 focus:ring-black appearance-none bg-white text-sm"
+                                        className="w-full h-10 rounded-xl border-gray-100 font-bold pl-10 pr-3 outline-none focus:ring-2 focus:ring-black appearance-none bg-gray-50/50 text-sm"
                                         value={formData.profesionalId}
                                         onChange={(e) => handleProfesionalChange(e.target.value)}
                                     >
@@ -184,50 +184,50 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
                                     </select>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="duracion" className="text-[10px] font-black uppercase tracking-widest text-gray-400">Duración (min)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="duracion" className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Duración (min)</Label>
                                 <div className="relative">
                                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                                     <Input
                                         id="duracion"
                                         type="number"
                                         value={formData.duracion}
-                                        onChange={(e) => setFormData({ ...formData, duracion: parseInt(e.target.value) })}
+                                        onChange={(e) => setFormData({ ...formData, duracion: parseInt(e.target.value) || 0 })}
                                         required
-                                        className="h-11 rounded-xl font-bold border-gray-100 pl-10"
+                                        className="h-10 rounded-xl font-bold border-gray-100 pl-10 bg-gray-50/50"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="cupo" className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cupo</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="cupo" className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Cupo</Label>
                                 <Input
                                     id="cupo"
                                     type="number"
                                     value={formData.cupo}
-                                    onChange={(e) => setFormData({ ...formData, cupo: parseInt(e.target.value) })}
+                                    onChange={(e) => setFormData({ ...formData, cupo: parseInt(e.target.value) || 0 })}
                                     required
-                                    className="h-11 rounded-xl font-bold border-gray-100"
+                                    className="h-10 rounded-xl font-bold border-gray-100 bg-gray-50/50"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="creditos" className="text-[10px] font-black uppercase tracking-widest text-gray-400">Créditos</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="creditos" className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Créditos</Label>
                                 <Input
                                     id="creditos"
                                     type="number"
                                     value={formData.valorCreditos}
-                                    onChange={(e) => setFormData({ ...formData, valorCreditos: parseInt(e.target.value) })}
+                                    onChange={(e) => setFormData({ ...formData, valorCreditos: parseInt(e.target.value) || 0 })}
                                     required
-                                    className="h-11 rounded-xl font-bold border-gray-100"
+                                    className="h-10 rounded-xl font-bold border-gray-100 bg-gray-50/50"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="box" className="text-[10px] font-black uppercase tracking-widest text-gray-400">Box</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="box" className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Box</Label>
                                 <select
                                     id="box"
-                                    className="w-full h-11 rounded-xl border-gray-100 font-bold px-3 outline-none focus:ring-2 focus:ring-black appearance-none bg-white text-sm"
+                                    className="w-full h-10 rounded-xl border-gray-100 font-bold px-3 outline-none focus:ring-2 focus:ring-black appearance-none bg-gray-50/50 text-sm"
                                     value={formData.boxId}
                                     onChange={(e) => setFormData({ ...formData, boxId: e.target.value })}
                                 >

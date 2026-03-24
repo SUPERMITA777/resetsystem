@@ -218,8 +218,8 @@ export default function ClientesPage() {
                                                 <h3 className="text-xl font-black text-gray-900 truncate">
                                                     {cliente.nombre} {cliente.apellido}
                                                 </h3>
-                                                <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                <div className={`flex items-center gap-2 font-bold text-xs uppercase tracking-widest ${ (cliente.creditos || 0) <= 1 ? 'text-red-500' : 'text-emerald-600'}`}>
+                                                    <span className={`w-2 h-2 rounded-full animate-pulse ${ (cliente.creditos || 0) <= 1 ? 'bg-red-500' : 'bg-emerald-500'}`} />
                                                     {cliente.creditos || 0} Créditos
                                                 </div>
                                             </div>
@@ -277,7 +277,7 @@ export default function ClientesPage() {
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm font-bold text-gray-900">{cliente.nombre} {cliente.apellido}</p>
-                                                                <div className="flex items-center gap-1.5 text-amber-600 font-bold text-[9px] uppercase tracking-widest mt-0.5">
+                                                                <div className={`flex items-center gap-1.5 font-bold text-[9px] uppercase tracking-widest mt-0.5 ${ (cliente.creditos || 0) <= 1 ? 'text-red-600' : 'text-amber-600'}`}>
                                                                     <Zap className="w-2.5 h-2.5" />
                                                                     {cliente.creditos || 0} PTR
                                                                 </div>

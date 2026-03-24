@@ -25,6 +25,8 @@ export interface TurnoData {
         inscriptosCount: number;
         cupo: number;
     };
+    valorCreditos?: number;
+    clienteWhatsapp?: string;
     subtratamientosSnap?: Array<{
         id: string;
         nombre: string;
@@ -64,9 +66,8 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
     } : undefined;
 
     // Base cell height is 20px (matching h-5 in AgendaGrid)
-    const CELL_HEIGHT = 20;
     const intervalToUse = interval || 60;
-    const heightPx = (turno.duracionMinutos / intervalToUse) * CELL_HEIGHT;
+    const heightPercent = (turno.duracionMinutos / intervalToUse) * 100;
 
     const statusColors = {
         PENDIENTE: 'bg-amber-400',
@@ -79,17 +80,17 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
     const status = (turno as any).status || 'RESERVADO';
     let bgColor = statusColors[status as keyof typeof statusColors] || 'bg-black';
 
-    // Inteligencia de Clases
+    // Inteligencia de Clases: Naranja (incompleto), Verde (completo)
     const isClase = !!turno.claseId;
     if (isClase && turno.claseInfo) {
         const isFull = turno.claseInfo.inscriptosCount >= turno.claseInfo.cupo;
-        bgColor = isFull ? 'bg-green-600' : 'bg-orange-400';
+        bgColor = isFull ? 'bg-green-500' : 'bg-orange-500';
     }
 
     return (
         <div
             ref={setNodeRef}
-            style={{ ...style, height: `${heightPx}px` }}
+            style={{ ...style, height: `${heightPercent}%` }}
             onClick={onClick}
             {...listeners}
             {...attributes}
@@ -116,13 +117,13 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
                     </div>
                 )}
             </div>
-            {heightPx >= 25 && (
+            {heightPercent >= 125 && (
                 <div className="truncate leading-tight mt-1 opacity-90 font-bold flex items-center gap-1">
                     {!isClase && <span className="w-1 h-1 rounded-full bg-white/50" />}
                     {turno.tratamientoAbreviado}
                 </div>
             )}
-            {heightPx >= 40 && turno.profesionalNombre && (
+            {heightPercent >= 200 && turno.profesionalNombre && (
                 <div className="truncate leading-tight mt-0.5 opacity-70 font-black flex items-center gap-1 italic">
                     @{turno.profesionalNombre.split(' ')[0]}
                 </div>
