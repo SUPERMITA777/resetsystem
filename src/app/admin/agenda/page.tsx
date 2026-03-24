@@ -80,7 +80,10 @@ export default function AgendaPage() {
                 if (t.claseId) {
                     const clase = clasesDb.find(c => c.id === t.claseId);
                     if (clase) {
-                        return { ...t, claseInfo: { inscriptosCount: clase.inscriptosCount, cupo: clase.cupo } };
+                        // Buscar el horario específico para este turno
+                        const horario = clase.horarios?.find(h => h.fecha === t.fecha && h.hora === t.horaInicio);
+                        const count = horario ? (horario.inscriptosCount || 0) : 0;
+                        return { ...t, claseInfo: { inscriptosCount: count, cupo: clase.cupo } };
                     }
                 }
                 return t;
