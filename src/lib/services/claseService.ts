@@ -52,9 +52,11 @@ export const claseService = {
 
     async getClases(tenantId: string): Promise<Clase[]> {
         const ref = collection(db, "tenants", tenantId, COLLECTION_NAME);
-        const q = query(ref, orderBy("fecha", "asc"), orderBy("hora", "asc"));
+        const q = query(ref, orderBy("fecha", "asc"));
         const snap = await getDocs(q);
-        return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Clase));
+        const clases = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Clase));
+        // Ordenar por hora en memoria para las clases del mismo día
+        return clases.sort((a, b) => a.hora.localeCompare(b.hora));
     },
 
     async getClasesByDateRange(tenantId: string, startDate: string, endDate: string): Promise<Clase[]> {

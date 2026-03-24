@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Plus, Calendar, Clock, Users, Trash2, Edit3, Tag, Search, Filter } from "lucide-react";
+import { Plus, Calendar, Clock, Users, Trash2, Edit3, Tag, Search, Filter, ExternalLink } from "lucide-react";
 import { Clase, claseService } from "@/lib/services/claseService";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ClaseModal } from "@/components/admin/clases/ClaseModal";
@@ -26,8 +26,9 @@ export default function ClasesAdminPage() {
         try {
             const data = await claseService.getClases(tenantId);
             setClases(data);
-        } catch (error) {
-            toast.error("Error al cargar las clases");
+        } catch (error: any) {
+            console.error("Error cargando clases:", error);
+            toast.error("Error al cargar las clases. " + (error.message || ""));
         } finally {
             setLoading(false);
         }
@@ -64,13 +65,23 @@ export default function ClasesAdminPage() {
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase">Clases Grupales</h1>
                         <p className="text-gray-500 font-medium">Gestiona el cronograma de clases y cupos disponibles.</p>
                     </div>
-                    <Button 
-                        onClick={() => { setSelectedClase(null); setIsModalOpen(true); }}
-                        className="bg-black text-white hover:bg-gray-800 rounded-2xl h-14 px-8 font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
-                    >
-                        <Plus className="w-5 h-5 mr-3" />
-                        Nueva Clase
-                    </Button>
+                    <div className="flex gap-4">
+                        <Button
+                            onClick={() => window.open(`/salon/${tenantId}/clases`, "_blank")}
+                            variant="outline"
+                            className="rounded-2xl h-14 px-6 font-bold uppercase tracking-widest border-2 hover:bg-gray-50 transition-all border-gray-100"
+                        >
+                            <ExternalLink className="w-5 h-5 mr-3" />
+                            Ver Web Pública
+                        </Button>
+                        <Button 
+                            onClick={() => { setSelectedClase(null); setIsModalOpen(true); }}
+                            className="bg-black text-white hover:bg-gray-800 rounded-2xl h-14 px-8 font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                        >
+                            <Plus className="w-5 h-5 mr-3" />
+                            Nueva Clase
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex bg-white p-2 rounded-[2rem] shadow-premium-soft border border-gray-100 gap-4">
