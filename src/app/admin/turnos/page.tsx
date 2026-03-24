@@ -88,14 +88,29 @@ export default function TurnosPage() {
         try {
             await updateTurno(currentTenant, turno.id, { status: 'CONFIRMADO' });
             
-            // NEW: Credit deduction and Class enrollment update
+            // Lógica de Créditos y Alumnos en Clases
             if (turno.claseId) {
-                const wa = turno.clienteWhatsapp || turno.whatsapp || '';
-                const cliente = await clienteService.getClienteByTelefono(currentTenant, wa);
-                
-                if (cliente) {
-                    await clienteService.deductCredits(currentTenant, cliente.id, turno.valorCreditos || 0);
-                    toast.success("Créditos descontados con éxito");
+                const wa = (turno.clienteWhatsapp || turno.whatsapp || '').replace(/\D/g, '');
+                if (wa) {
+                    let cliente = await clienteService.getClienteByTelefono(currentTenant, wa);
+                    
+                    if (!cliente) {
+                        // Crear cliente con 3 créditos por defecto si no existe
+                        const nuevoId = await clienteService.createCliente(currentTenant, {
+                            nombre: turno.nombre || turno.clienteAbreviado.split(' ')[0] || 'Cliente',
+                            apellido: turno.apellido || turno.clienteAbreviado.split(' ').slice(1).join(' ') || '',
+                            telefono: wa,
+                            tenantId: currentTenant,
+                            creditos: 3
+                        });
+                        cliente = { id: nuevoId, creditos: 3 } as any;
+                        toast.success("Nuevo cliente creado con 3 créditos");
+                    }
+                    
+                    // Descontar créditos (el valor de la clase)
+                    const costo = turno.valorCreditos || 0;
+                    await clienteService.deductCredits(currentTenant, cliente!.id, costo);
+                    toast.success(`${costo} créditos descontados`);
                 }
                 
                 await claseService.incrementInscriptos(currentTenant, turno.claseId);
@@ -109,9 +124,9 @@ export default function TurnosPage() {
                 const msg = encodeURIComponent(`¡Hola! Tu turno fue aceptado y agendado. ¡Te esperamos!`);
                 window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Error al aceptar turno");
+            toast.error("Error al aceptar turno: " + (error.message || ""));
         }
     };
 

@@ -98,5 +98,16 @@ export const claseService = {
             const current = (snap.data() as Clase).inscriptosCount || 0;
             await updateDoc(ref, { inscriptosCount: current + 1 });
         }
+    },
+
+    async getInscriptos(tenantId: string, claseId: string) {
+        // Obtenemos los turnos vinculados a esta clase que estén CONFIRMADOS o RESERVADOS
+        const q = query(
+            collection(db, "tenants", tenantId, "agenda"),
+            where("claseId", "==", claseId),
+            where("status", "in", ["CONFIRMADO", "RESERVADO", "COMPLETADO"])
+        );
+        const snap = await getDocs(q);
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     }
 };

@@ -8,6 +8,7 @@ import { Plus, Calendar, Clock, Users, Trash2, Edit3, Tag, Search, Filter, Exter
 import { Clase, claseService } from "@/lib/services/claseService";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ClaseModal } from "@/components/admin/clases/ClaseModal";
+import { InscriptosModal } from "@/components/admin/clases/InscriptosModal";
 import toast, { Toaster } from "react-hot-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -19,6 +20,10 @@ export default function ClasesAdminPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClase, setSelectedClase] = useState<Clase | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+
+    // Inscriptos Modal state
+    const [isInscriptosModalOpen, setIsInscriptosModalOpen] = useState(false);
+    const [claseForInscriptos, setClaseForInscriptos] = useState<Clase | null>(null);
 
     const loadClases = async () => {
         if (!tenantId) return;
@@ -167,14 +172,22 @@ export default function ClasesAdminPage() {
                                 </div>
 
                                 <div className="space-y-3 pt-4 border-t border-gray-50">
-                                    <div className="flex items-center justify-between text-xs font-bold">
-                                        <div className="flex items-center gap-2 text-gray-400">
-                                            <Users className="w-3.5 h-3.5" />
-                                            <span>Cupo:</span>
-                                        </div>
-                                        <span className="text-gray-900">{clase.inscriptosCount} / {clase.cupo} alumnos</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs font-bold">
+                                    {(() => {
+                                        const isFull = clase.inscriptosCount >= clase.cupo;
+                                        return (
+                                            <div 
+                                                onClick={() => { setClaseForInscriptos(clase); setIsInscriptosModalOpen(true); }}
+                                                className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${isFull ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-orange-50 text-orange-700 border border-orange-100'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Users className="w-4 h-4" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Cupos:</span>
+                                                </div>
+                                                <span className="text-sm font-black">{clase.inscriptosCount} / {clase.cupo} alumnos</span>
+                                            </div>
+                                        );
+                                    })()}
+                                    <div className="flex items-center justify-between text-xs font-bold px-3">
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Tag className="w-3.5 h-3.5" />
                                             <span>Créditos:</span>
@@ -197,6 +210,13 @@ export default function ClasesAdminPage() {
                     onClose={() => { setIsModalOpen(false); setSelectedClase(null); }}
                     onSave={loadClases}
                     clase={selectedClase}
+                />
+
+                <InscriptosModal
+                    isOpen={isInscriptosModalOpen}
+                    onClose={() => { setIsInscriptosModalOpen(false); setClaseForInscriptos(null); }}
+                    clase={claseForInscriptos}
+                    tenantId={tenantId || ''}
                 />
             </div>
         </AdminLayout>

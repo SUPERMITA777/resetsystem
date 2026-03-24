@@ -29,14 +29,14 @@ export function DialogContent({ children, className = "" }: { children: React.Re
     );
 }
 
-export function DialogHeader({ children }: { children: React.ReactNode }) {
-    return <div className="p-6 pb-2">{children}</div>;
+export function DialogHeader({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+    return <div className={`p-6 pb-2 ${className}`}>{children}</div>;
 }
 
 export function DialogTitle({ children, className = "" }: { children: React.ReactNode; className?: string }) {
     return <h2 className={`text-xl font-bold ${className}`}>{children}</h2>;
 }
 
-export function DialogFooter({ children }: { children: React.ReactNode }) {
-    return <div className="p-6 pt-2 bg-gray-50/50 flex justify-end gap-2">{children}</div>;
+export function DialogFooter({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+    return <div className={`p-6 pt-2 bg-gray-50/50 flex justify-end gap-2 ${className}`}>{children}</div>;
 }
