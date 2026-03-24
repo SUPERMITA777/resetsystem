@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -24,6 +24,7 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
     const { tenantId } = useAuth();
     const [loading, setLoading] = useState(false);
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
+    const formRef = useRef<HTMLFormElement>(null);
     
     const [formData, setFormData] = useState({
         nombre: "",
@@ -44,9 +45,8 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
             if (tenantId && isOpen) {
                 try {
                     const users = await getUsersByTenant(tenantId);
-                    // Filtrar por roles que pueden ser profesionales (staff o salon_admin)
-                    const filtered = users.filter(u => u.role === 'staff' || u.role === 'salon_admin');
-                    setProfesionales(filtered);
+                    // Mostrar todos los usuarios del tenant como posibles profesionales
+                    setProfesionales(users);
                 } catch (error) {
                     console.error("Error cargando profesionales", error);
                 }
@@ -54,6 +54,21 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
         }
         loadProfesionales();
     }, [tenantId, isOpen]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return;
+            if (e.key === "Escape") {
+                onClose();
+            } else if (e.key === "Enter" && !loading) {
+                if (e.target instanceof HTMLTextAreaElement) return;
+                e.preventDefault();
+                formRef.current?.requestSubmit();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose, loading]);
 
     useEffect(() => {
         if (clase) {
@@ -105,11 +120,6 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
             return;
         }
 
-        if (!formData.profesionalId) {
-            toast.error("Debes seleccionar un profesional");
-            return;
-        }
-        
         setLoading(true);
         try {
             console.log("Guardando clase...", formData);
@@ -139,7 +149,7 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-6 py-4">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-8 space-y-6">
                     <div className="grid gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="nombre" className="text-xs font-black uppercase tracking-widest text-gray-400">Nombre de la Clase</Label>
@@ -160,8 +170,7 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
                                     <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
                                     <select
                                         id="profesional"
-                                        required
-                                        className="w-full h-12 rounded-xl border-gray-100 font-bold pl-10 pr-3 outline-none focus:ring-2 focus:ring-black appearance-none bg-white"
+                                        className="w-full h-12 rounded-xl border-gray-100 font-bold pl-10 pr-3 outline-none focus:ring-2 focus:ring-black appearance-none bg-white font-sans"
                                         value={formData.profesionalId}
                                         onChange={(e) => handleProfesionalChange(e.target.value)}
                                     >

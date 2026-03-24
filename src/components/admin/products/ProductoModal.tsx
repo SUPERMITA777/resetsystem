@@ -33,6 +33,23 @@ export function ProductoModal({ isOpen, onClose, onSave, producto, tenantId }: P
     const [uploadProgress, setUploadProgress] = useState(0);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return;
+            if (e.key === "Escape") {
+                onClose();
+            } else if (e.key === "Enter" && !saving) {
+                if (e.target instanceof HTMLTextAreaElement) return;
+                e.preventDefault();
+                formRef.current?.requestSubmit();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose, saving]);
 
     useEffect(() => {
         if (producto) {
@@ -157,7 +174,7 @@ export function ProductoModal({ isOpen, onClose, onSave, producto, tenantId }: P
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-6 space-y-5">
                     {/* Row: Nombre + Marca */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">

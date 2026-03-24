@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { serviceManagement, Tratamiento } from "@/lib/services/serviceManagement";
 import { getUsersByTenant, UserProfile } from "@/lib/services/userService";
@@ -20,6 +20,26 @@ interface TratamientoModalProps {
 export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantId, nextOrder }: TratamientoModalProps) {
     const [profesionales, setProfesionales] = useState<UserProfile[]>([]);
     const [activeTab, setActiveTab] = useState<"general" | "detalles">("general");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const formRef = useRef<HTMLFormElement>(null);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return;
+            if (e.key === "Escape") {
+                onClose();
+            } else if (e.key === "Enter" && !isSubmitting) {
+                // No enviar si estamos en un textarea
+                if (e.target instanceof HTMLTextAreaElement) return;
+                e.preventDefault();
+                formRef.current?.requestSubmit();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose, isSubmitting]);
+
     const [formData, setFormData] = useState<Partial<Tratamiento>>({
         nombre: "",
         descripcion: "",
@@ -69,6 +89,7 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             // Limpieza de datos antes de enviar a Firestore
             const cleanData = {
@@ -97,6 +118,8 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
         } catch (error: any) {
             console.error("Firestore Save Error:", error);
             toast.error(`Error al guardar: ${error.message || "Error desconocido"}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -166,7 +189,7 @@ export function TratamientoModal({ isOpen, onClose, onSave, tratamiento, tenantI
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                     {activeTab === "general" ? (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div>
