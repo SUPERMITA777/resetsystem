@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService } from "@/lib/services/clienteService";
-import { X, Save, User, Phone, Mail, FileText, MapPin, Map, CheckCircle } from "lucide-react";
+import { X, Save, User, Phone, Mail, FileText, Zap, DollarSign, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface NuevoClienteModalProps {
@@ -19,10 +19,11 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         apellido: "",
         email: "",
         telefono: "",
-        direccion: "",
-        provincia: "",
-        direccionValidada: false,
-        notas: ""
+        notas: "",
+        // Créditos fields
+        creditos: 0,
+        montoPagado: 0,
+        metodoPago: "EFECTIVO"
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
@@ -57,20 +58,26 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         const loadingToast = toast.loading("Creando cliente...");
 
         try {
-            await clienteService.createCliente(tenantId, {
+            const clientId = await clienteService.createCliente(tenantId, {
                 nombre: formData.nombre.trim(),
                 apellido: formData.apellido.trim(),
                 telefono: formData.telefono.trim(),
                 email: formData.email.trim(),
-                direccion: formData.direccion.trim(),
-                provincia: formData.provincia.trim(),
-                direccionValidada: formData.direccionValidada,
                 notas: formData.notas.trim(),
                 tenantId: tenantId
             });
+
+            // Si se ingresaron créditos, registrarlos
+            if (formData.creditos > 0) {
+                await clienteService.addCredits(tenantId, clientId, formData.creditos, {
+                    monto: formData.montoPagado,
+                    metodo: formData.metodoPago,
+                    fecha: new Date().toISOString().split('T')[0]
+                });
+            }
             
             toast.success("Cliente creado exitosamente", { id: loadingToast });
-            setFormData({ nombre: "", apellido: "", email: "", telefono: "", direccion: "", provincia: "", direccionValidada: false, notas: "" });
+            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 0, montoPagado: 0, metodoPago: "EFECTIVO" });
             onSave();
             onClose();
         } catch (error: any) {
@@ -81,14 +88,6 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         }
     };
 
-    const handleValidateAddress = () => {
-        if (!formData.direccion.trim() || !formData.provincia.trim()) {
-            toast.error("Ingresa dirección y provincia para validar en mapas");
-            return;
-        }
-        const query = encodeURIComponent(`${formData.direccion}, ${formData.provincia}`);
-        window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-    };
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -163,81 +162,57 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                                 </div>
                             </div>
                         </div>
-                        
-                        {/* Dirección Section */}
-                        <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 space-y-4">
+                                             {/* Gestión de Créditos Section */}
+                        <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100 space-y-4">
                             <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-blue-500" /> Dirección (Para Google Maps)
+                                <Zap className="w-3.5 h-3.5 text-amber-500" /> Gestión de Créditos
                             </h3>
-                            <div className="grid grid-cols-[2fr_1fr] gap-4">
+                            
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <input
-                                        value={formData.direccion}
-                                        onChange={e => setFormData({ ...formData, direccion: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm"
-                                        placeholder="Dirección exacta"
-                                    />
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Créditos a Comprar</label>
+                                    <div className="relative">
+                                        <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input
+                                            type="number"
+                                            value={formData.creditos}
+                                            onChange={e => setFormData({ ...formData, creditos: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-white border border-gray-100 rounded-2xl pl-10 pr-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm"
+                                            placeholder="Cantidad"
+                                        />
+                                    </div>
                                 </div>
                                 <div>
-                                    <select
-                                        value={formData.provincia}
-                                        onChange={e => setFormData({ ...formData, provincia: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm appearance-none"
-                                    >
-                                        <option value="">ELEGIR PROVINCIA</option>
-                                        <option value="Capital Federal">Capital Federal</option>
-                                        <option value="Buenos Aires">Buenos Aires</option>
-                                        <option value="Catamarca">Catamarca</option>
-                                        <option value="Chaco">Chaco</option>
-                                        <option value="Chubut">Chubut</option>
-                                        <option value="Córdoba">Córdoba</option>
-                                        <option value="Corrientes">Corrientes</option>
-                                        <option value="Entre Ríos">Entre Ríos</option>
-                                        <option value="Formosa">Formosa</option>
-                                        <option value="Jujuy">Jujuy</option>
-                                        <option value="La Pampa">La Pampa</option>
-                                        <option value="La Rioja">La Rioja</option>
-                                        <option value="Mendoza">Mendoza</option>
-                                        <option value="Misiones">Misiones</option>
-                                        <option value="Neuquén">Neuquén</option>
-                                        <option value="Río Negro">Río Negro</option>
-                                        <option value="Salta">Salta</option>
-                                        <option value="San Juan">San Juan</option>
-                                        <option value="San Luis">San Luis</option>
-                                        <option value="Santa Cruz">Santa Cruz</option>
-                                        <option value="Santa Fe">Santa Fe</option>
-                                        <option value="Santiago del Estero">Santiago del Estero</option>
-                                        <option value="Tierra del Fuego">Tierra del Fuego</option>
-                                        <option value="Tucumán">Tucumán</option>
-                                    </select>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Dinero Pagado ($)</label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input
+                                            type="number"
+                                            value={formData.montoPagado}
+                                            onChange={e => setFormData({ ...formData, montoPagado: parseFloat(e.target.value) || 0 })}
+                                            className="w-full bg-white border border-gray-100 rounded-2xl pl-10 pr-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm"
+                                            placeholder="Monto"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div className="flex items-center justify-between pt-2">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    onClick={handleValidateAddress}
-                                    className="h-10 text-[10px] font-bold uppercase tracking-widest rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50"
-                                >
-                                    <Map className="w-4 h-4 mr-2" />
-                                    Validar en Mapas
-                                </Button>
-
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${formData.direccionValidada ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-transparent group-hover:bg-gray-300'}`}>
-                                        <CheckCircle className="w-3.5 h-3.5" />
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest ${formData.direccionValidada ? 'text-emerald-600' : 'text-gray-400'}`}>
-                                        {formData.direccionValidada ? "Dirección Correcta" : "Confirmar Dirección"}
-                                    </span>
-                                    <input 
-                                        type="checkbox" 
-                                        className="hidden"
-                                        checked={formData.direccionValidada}
-                                        onChange={e => setFormData({ ...formData, direccionValidada: e.target.checked })}
-                                    />
-                                </label>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Medio de Pago</label>
+                                <div className="flex gap-2">
+                                    {["EFECTIVO", "TRANSFERENCIA", "TARJETA"].map((m) => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, metodoPago: m })}
+                                            className={`flex-1 h-11 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border-2 flex items-center justify-center gap-2
+                                                ${formData.metodoPago === m ? 'border-black bg-black text-white' : 'border-gray-50 bg-white text-gray-400 hover:border-gray-200'}`}
+                                        >
+                                            <Wallet className="w-3 h-3" />
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 

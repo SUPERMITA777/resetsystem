@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService, Cliente } from "@/lib/services/clienteService";
-import { X, Save, User, Phone, Mail, FileText, MapPin, Map, CheckCircle } from "lucide-react";
+import { X, Save, User, Phone, Mail, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface EditarClienteModalProps {
@@ -20,9 +20,6 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
         apellido: "",
         email: "",
         telefono: "",
-        direccion: "",
-        provincia: "",
-        direccionValidada: false,
         notas: ""
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,9 +31,6 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                 apellido: cliente.apellido || "",
                 email: cliente.email || "",
                 telefono: cliente.telefono || "",
-                direccion: cliente.direccion || "",
-                provincia: cliente.provincia || "",
-                direccionValidada: cliente.direccionValidada || false,
                 notas: cliente.notas || ""
             });
         }
@@ -79,9 +73,6 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                 apellido: formData.apellido.trim(),
                 telefono: formData.telefono.trim(),
                 email: formData.email.trim(),
-                direccion: formData.direccion.trim(),
-                provincia: formData.provincia.trim(),
-                direccionValidada: formData.direccionValidada,
                 notas: formData.notas.trim(),
             });
             
@@ -96,14 +87,6 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
         }
     };
 
-    const handleValidateAddress = () => {
-        if (!formData.direccion.trim() || !formData.provincia.trim()) {
-            toast.error("Ingresa dirección y provincia para validar en mapas");
-            return;
-        }
-        const query = encodeURIComponent(`${formData.direccion}, ${formData.provincia}`);
-        window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-    };
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -176,83 +159,6 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                                         placeholder="Ej: juan@email.com"
                                     />
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Dirección Section */}
-                        <div className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 space-y-4">
-                            <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-blue-500" /> Dirección (Para Google Maps)
-                            </h3>
-                            <div className="grid grid-cols-[2fr_1fr] gap-4">
-                                <div>
-                                    <input
-                                        value={formData.direccion}
-                                        onChange={e => setFormData({ ...formData, direccion: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm"
-                                        placeholder="Dirección exacta"
-                                    />
-                                </div>
-                                <div>
-                                    <select
-                                        value={formData.provincia}
-                                        onChange={e => setFormData({ ...formData, provincia: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm appearance-none"
-                                    >
-                                        <option value="">ELEGIR PROVINCIA</option>
-                                        <option value="Capital Federal">Capital Federal</option>
-                                        <option value="Buenos Aires">Buenos Aires</option>
-                                        <option value="Catamarca">Catamarca</option>
-                                        <option value="Chaco">Chaco</option>
-                                        <option value="Chubut">Chubut</option>
-                                        <option value="Córdoba">Córdoba</option>
-                                        <option value="Corrientes">Corrientes</option>
-                                        <option value="Entre Ríos">Entre Ríos</option>
-                                        <option value="Formosa">Formosa</option>
-                                        <option value="Jujuy">Jujuy</option>
-                                        <option value="La Pampa">La Pampa</option>
-                                        <option value="La Rioja">La Rioja</option>
-                                        <option value="Mendoza">Mendoza</option>
-                                        <option value="Misiones">Misiones</option>
-                                        <option value="Neuquén">Neuquén</option>
-                                        <option value="Río Negro">Río Negro</option>
-                                        <option value="Salta">Salta</option>
-                                        <option value="San Juan">San Juan</option>
-                                        <option value="San Luis">San Luis</option>
-                                        <option value="Santa Cruz">Santa Cruz</option>
-                                        <option value="Santa Fe">Santa Fe</option>
-                                        <option value="Santiago del Estero">Santiago del Estero</option>
-                                        <option value="Tierra del Fuego">Tierra del Fuego</option>
-                                        <option value="Tucumán">Tucumán</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between pt-2">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    onClick={handleValidateAddress}
-                                    className="h-10 text-[10px] font-bold uppercase tracking-widest rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50"
-                                >
-                                    <Map className="w-4 h-4 mr-2" />
-                                    Validar en Mapas
-                                </Button>
-
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${formData.direccionValidada ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-transparent group-hover:bg-gray-300'}`}>
-                                        <CheckCircle className="w-3.5 h-3.5" />
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest ${formData.direccionValidada ? 'text-emerald-600' : 'text-gray-400'}`}>
-                                        {formData.direccionValidada ? "Dirección Correcta" : "Confirmar Dirección"}
-                                    </span>
-                                    <input 
-                                        type="checkbox" 
-                                        className="hidden"
-                                        checked={formData.direccionValidada}
-                                        onChange={e => setFormData({ ...formData, direccionValidada: e.target.checked })}
-                                    />
-                                </label>
                             </div>
                         </div>
 

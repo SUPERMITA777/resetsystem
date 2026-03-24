@@ -80,9 +80,6 @@ export default function ClientesPage() {
             Apellido: c.apellido,
             Telefono: c.telefono,
             Email: c.email || "",
-            Dirección: c.direccion || "",
-            Provincia: c.provincia || "",
-            "Dirección Validada": c.direccionValidada ? "Sí" : "No",
             "Ultima Visita": c.ultimaVisita || "Sin visitas",
             Notas: c.notas || ""
         }));
@@ -94,9 +91,6 @@ export default function ClientesPage() {
             { wpx: 100 }, // Apellido
             { wpx: 120 }, // Telefono
             { wpx: 150 }, // Email
-            { wpx: 150 }, // Dirección
-            { wpx: 100 }, // Provincia
-            { wpx: 100 }, // Validada
             { wpx: 120 }, // Visita
             { wpx: 200 }  // Notas
         ];

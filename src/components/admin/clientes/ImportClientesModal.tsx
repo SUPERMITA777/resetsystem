@@ -38,8 +38,6 @@ export function ImportarClientesModal({ isOpen, onClose, onImportFinished, tenan
                 Nombre: "Juan",
                 Apellido: "Perez",
                 Telefono: "5491122334455",
-                Dirección: "Av. Siempre Viva 742",
-                Provincia: "Buenos Aires",
                 Email: "juan@example.com",
                 Notas: "Cliente frecuente"
             },
@@ -47,8 +45,6 @@ export function ImportarClientesModal({ isOpen, onClose, onImportFinished, tenan
                 Nombre: "Maria",
                 Apellido: "Gomez",
                 Telefono: "5491155443322",
-                Dirección: "",
-                Provincia: "",
                 Email: "",
                 Notas: ""
             }
@@ -61,8 +57,6 @@ export function ImportarClientesModal({ isOpen, onClose, onImportFinished, tenan
             { wpx: 100 }, // Nombre
             { wpx: 100 }, // Apellido
             { wpx: 120 }, // Telefono
-            { wpx: 150 }, // Dirección
-            { wpx: 100 }, // Provincia
             { wpx: 150 }, // Email
             { wpx: 200 }  // Notas
         ];
@@ -96,8 +90,6 @@ export function ImportarClientesModal({ isOpen, onClose, onImportFinished, tenan
                     const nombre = row["Nombre"] || row["nombre"] || "";
                     const apellido = row["Apellido"] || row["apellido"] || "";
                     const telefono = row["Telefono"] || row["Teléfono"] || row["telefono"] || "";
-                    const direccion = row["Dirección"] || row["Direccion"] || row["direccion"] || "";
-                    const provincia = row["Provincia"] || row["provincia"] || "";
                     const email = row["Email"] || row["email"] || row["Correo"] || "";
                     const notas = row["Notas"] || row["notas"] || "";
 
@@ -112,8 +104,6 @@ export function ImportarClientesModal({ isOpen, onClose, onImportFinished, tenan
                             nombre: String(nombre).trim(),
                             apellido: String(apellido).trim(),
                             telefono: String(telefono).trim(),
-                            direccion: direccion ? String(direccion).trim() : undefined,
-                            provincia: provincia ? String(provincia).trim() : undefined,
                             email: email ? String(email).trim() : undefined,
                             notas: notas ? String(notas).trim() : undefined,
                             tenantId: tenantId
