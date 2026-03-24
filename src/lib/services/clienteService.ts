@@ -27,6 +27,7 @@ export interface Cliente {
     createdAt?: any;
     ultimaVisita?: string;
     creditos?: number; // Added for the new credits system
+    fechaNacimiento?: string; // YYYY-MM-DD
 }
 
 export const clienteService = {

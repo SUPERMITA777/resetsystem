@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService } from "@/lib/services/clienteService";
-import { X, Save, User, Phone, Mail, FileText, Zap, DollarSign, Wallet } from "lucide-react";
+import { X, Save, User, Phone, Mail, FileText, Zap, DollarSign, Wallet, Cake } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface NuevoClienteModalProps {
@@ -23,7 +23,8 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         // Créditos fields
         creditos: 0,
         montoPagado: 0,
-        metodoPago: "EFECTIVO"
+        metodoPago: "EFECTIVO",
+        fechaNacimiento: ""
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
@@ -63,6 +64,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                 apellido: formData.apellido.trim(),
                 telefono: formData.telefono.trim(),
                 email: formData.email.trim(),
+                fechaNacimiento: formData.fechaNacimiento,
                 notas: formData.notas.trim(),
                 tenantId: tenantId
             });
@@ -77,7 +79,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
             }
             
             toast.success("Cliente creado exitosamente", { id: loadingToast });
-            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 0, montoPagado: 0, metodoPago: "EFECTIVO" });
+            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 0, montoPagado: 0, metodoPago: "EFECTIVO", fechaNacimiento: "" });
             onSave();
             onClose();
         } catch (error: any) {
@@ -160,6 +162,19 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                                         placeholder="Ej: juan@email.com"
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Fecha de Nacimiento (Opcional)</label>
+                            <div className="relative">
+                                <Cake className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                <input
+                                    type="date"
+                                    value={formData.fechaNacimiento}
+                                    onChange={e => setFormData({ ...formData, fechaNacimiento: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl pl-10 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                />
                             </div>
                         </div>
                                              {/* Gestión de Créditos Section */}

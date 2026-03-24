@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService, Cliente } from "@/lib/services/clienteService";
-import { X, Save, User, Phone, Mail, FileText } from "lucide-react";
+import { X, Save, User, Phone, Mail, FileText, Cake } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface EditarClienteModalProps {
@@ -20,7 +20,8 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
         apellido: "",
         email: "",
         telefono: "",
-        notas: ""
+        notas: "",
+        fechaNacimiento: ""
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -31,7 +32,8 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                 apellido: cliente.apellido || "",
                 email: cliente.email || "",
                 telefono: cliente.telefono || "",
-                notas: cliente.notas || ""
+                notas: cliente.notas || "",
+                fechaNacimiento: cliente.fechaNacimiento || ""
             });
         }
     }, [cliente, isOpen]);
@@ -73,6 +75,7 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                 apellido: formData.apellido.trim(),
                 telefono: formData.telefono.trim(),
                 email: formData.email.trim(),
+                fechaNacimiento: formData.fechaNacimiento,
                 notas: formData.notas.trim(),
             });
             
@@ -159,6 +162,19 @@ export function EditarClienteModal({ isOpen, onClose, onSave, tenantId, cliente 
                                         placeholder="Ej: juan@email.com"
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Fecha de Nacimiento (Opcional)</label>
+                            <div className="relative">
+                                <Cake className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                <input
+                                    type="date"
+                                    value={formData.fechaNacimiento}
+                                    onChange={e => setFormData({ ...formData, fechaNacimiento: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl pl-10 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none"
+                                />
                             </div>
                         </div>
 
