@@ -277,7 +277,7 @@ export function ClaseModal({ isOpen, onClose, onSave, clase }: ClaseModalProps) 
                         </div>
                     </div>
 
-                    <DialogFooter className="pt-6">
+                    <DialogFooter>
                         <Button type="button" variant="ghost" onClick={onClose} className="rounded-xl font-bold text-gray-400">
                             Cancelar
                         </Button>
