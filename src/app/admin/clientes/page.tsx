@@ -5,13 +5,14 @@ import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Search, User, Phone, Mail, Calendar, Edit2, Trash2, MoreVertical, Plus, Filter, Download, Upload, LayoutGrid, List, MessageCircle } from "lucide-react";
+import { Search, User, Phone, Mail, Calendar, Edit2, Trash2, MoreVertical, Plus, Filter, Download, Upload, LayoutGrid, List, MessageCircle, Zap } from "lucide-react";
 import { clienteService, Cliente } from "@/lib/services/clienteService";
 import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from 'xlsx';
 import { NuevoClienteModal } from "@/components/admin/clientes/NuevoClienteModal";
 import { ImportarClientesModal } from "@/components/admin/clientes/ImportClientesModal";
 import { EditarClienteModal } from "@/components/admin/clientes/EditarClienteModal";
+import { AddCreditsModal } from "@/components/admin/clientes/AddCreditsModal";
 
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -24,6 +25,7 @@ export default function ClientesPage() {
     const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
     const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -199,6 +201,13 @@ export default function ClientesPage() {
                                                     <a href={`https://wa.me/${cliente.telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-300 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all" title="Contactar por WhatsApp">
                                                         <MessageCircle className="w-4 h-4" />
                                                     </a>
+                                                    <button 
+                                                        onClick={() => { setSelectedCliente(cliente); setIsCreditsModalOpen(true); }}
+                                                        className="p-2 text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"
+                                                        title="Cargar Créditos"
+                                                    >
+                                                        <Zap className="w-4 h-4" />
+                                                    </button>
                                                     <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Editar cliente">
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
@@ -217,7 +226,7 @@ export default function ClientesPage() {
                                                 </h3>
                                                 <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
                                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                    Cliente Activo
+                                                    {cliente.creditos || 0} Créditos
                                                 </div>
                                             </div>
 
@@ -274,9 +283,9 @@ export default function ClientesPage() {
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm font-bold text-gray-900">{cliente.nombre} {cliente.apellido}</p>
-                                                                <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-[9px] uppercase tracking-widest mt-0.5">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                                    Activo
+                                                                <div className="flex items-center gap-1.5 text-amber-600 font-bold text-[9px] uppercase tracking-widest mt-0.5">
+                                                                    <Zap className="w-2.5 h-2.5" />
+                                                                    {cliente.creditos || 0} PTR
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -306,6 +315,13 @@ export default function ClientesPage() {
                                                             <a href={`https://wa.me/${cliente.telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all" title="Contactar por WhatsApp">
                                                                 <MessageCircle className="w-4 h-4" />
                                                             </a>
+                                                            <button 
+                                                                onClick={() => { setSelectedCliente(cliente); setIsCreditsModalOpen(true); }}
+                                                                className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"
+                                                                title="Cargar Créditos"
+                                                            >
+                                                                <Zap className="w-4 h-4" />
+                                                            </button>
                                                             <button onClick={() => handleEdit(cliente)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Editar cliente">
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
@@ -347,6 +363,17 @@ export default function ClientesPage() {
                 isOpen={isEditModalOpen}
                 onClose={() => {
                     setIsEditModalOpen(false);
+                    setSelectedCliente(null);
+                }}
+                onSave={loadClientes}
+                tenantId={currentTenant}
+                cliente={selectedCliente}
+            />
+
+            <AddCreditsModal 
+                isOpen={isCreditsModalOpen}
+                onClose={() => {
+                    setIsCreditsModalOpen(false);
                     setSelectedCliente(null);
                 }}
                 onSave={loadClientes}

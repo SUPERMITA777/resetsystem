@@ -11,6 +11,8 @@ import { es } from "date-fns/locale";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
 import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, deleteTurno, TurnoDB } from "@/lib/services/agendaService";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
+import { clienteService } from "@/lib/services/clienteService";
+import { claseService } from "@/lib/services/claseService";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function TurnosPage() {
@@ -85,6 +87,20 @@ export default function TurnosPage() {
     const handleAceptarTurno = async (turno: TurnoDB) => {
         try {
             await updateTurno(currentTenant, turno.id, { status: 'CONFIRMADO' });
+            
+            // NEW: Credit deduction and Class enrollment update
+            if (turno.claseId) {
+                const wa = turno.clienteWhatsapp || turno.whatsapp || '';
+                const cliente = await clienteService.getClienteByTelefono(currentTenant, wa);
+                
+                if (cliente) {
+                    await clienteService.deductCredits(currentTenant, cliente.id, turno.valorCreditos || 0);
+                    toast.success("Créditos descontados con éxito");
+                }
+                
+                await claseService.incrementInscriptos(currentTenant, turno.claseId);
+            }
+
             toast.success("Turno aceptado y confirmado");
             loadPendientes();
 
@@ -94,6 +110,7 @@ export default function TurnosPage() {
                 window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
             }
         } catch (error) {
+            console.error(error);
             toast.error("Error al aceptar turno");
         }
     };

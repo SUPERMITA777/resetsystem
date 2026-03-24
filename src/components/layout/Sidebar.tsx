@@ -75,6 +75,10 @@ export function Sidebar() {
                     <Sparkles className="w-5 h-5 text-[var(--primary)]" />
                     Tratamientos
                 </Link>
+                <Link href="/admin/clases" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
+                    <Dumbbell className="w-5 h-5 text-[var(--primary)]" />
+                    Clases
+                </Link>
                 <Link href="/admin/productos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
                     <ShoppingBag className="w-5 h-5 text-[var(--primary)]" />
                     Productos

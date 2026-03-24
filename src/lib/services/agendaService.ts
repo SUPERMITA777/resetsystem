@@ -45,6 +45,8 @@ export interface TurnoDB {
     }>;
     metodoPagoSena?: 'EFECTIVO' | 'TRANSFERENCIA';
     metodoPagoSaldo?: 'EFECTIVO' | 'TRANSFERENCIA';
+    claseId?: string;       // Link to group class
+    valorCreditos?: number; // Credit cost if it's a class
 }
 
 // Actualizar un turno completo

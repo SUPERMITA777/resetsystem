@@ -9,6 +9,7 @@ import {
     where,
     updateDoc,
     deleteDoc,
+    addDoc,
     serverTimestamp
 } from "firebase/firestore";
 
@@ -25,6 +26,7 @@ export interface Cliente {
     direccionValidada?: boolean;
     createdAt?: any;
     ultimaVisita?: string;
+    creditos?: number; // Added for the new credits system
 }
 
 export const clienteService = {
@@ -64,5 +66,46 @@ export const clienteService = {
     async deleteCliente(tenantId: string, id: string) {
         const ref = doc(db, "tenants", tenantId, "clientes", id);
         await deleteDoc(ref);
+    },
+
+    async addCredits(tenantId: string, id: string, amount: number, paymentData: { monto: number, metodo: string, fecha: string }) {
+        const ref = doc(db, "tenants", tenantId, "clientes", id);
+        const snap = await getDoc(ref);
+        const currentCredits = (snap.data() as Cliente).creditos || 0;
+        const newCredits = currentCredits + amount;
+        
+        await updateDoc(ref, { creditos: newCredits });
+
+        // Log transaction
+        const historyRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_historial");
+        await addDoc(historyRef, {
+            tipo: 'CARGA',
+            cantidad: amount,
+            nuevoSaldo: newCredits,
+            pago: paymentData,
+            createdAt: serverTimestamp()
+        });
+        
+        return newCredits;
+    },
+
+    async deductCredits(tenantId: string, id: string, amount: number) {
+        const ref = doc(db, "tenants", tenantId, "clientes", id);
+        const snap = await getDoc(ref);
+        const currentCredits = (snap.data() as Cliente).creditos || 0;
+        const newCredits = Math.max(0, currentCredits - amount);
+        
+        await updateDoc(ref, { creditos: newCredits });
+
+        // Log transaction
+        const historyRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_historial");
+        await addDoc(historyRef, {
+            tipo: 'CONSUMO',
+            cantidad: amount,
+            nuevoSaldo: newCredits,
+            createdAt: serverTimestamp()
+        });
+        
+        return newCredits;
     }
 };
