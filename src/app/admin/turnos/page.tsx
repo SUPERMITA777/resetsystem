@@ -4,19 +4,20 @@ import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Calendar as CalendarIcon, Clock, User, Tag, Search, Filter, Plus, ChevronRight, CalendarDays, List, CheckCircle2, AlertCircle, Check, X as XIcon, Phone, Edit3 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Tag, Search, Filter, Plus, ChevronRight, CalendarDays, List, CheckCircle2, AlertCircle, Check, X as XIcon, Phone, Edit3, Zap } from "lucide-react";
 import { getTenant } from "@/lib/services/tenantService";
 import { format, addDays, startOfToday, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
 import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, deleteTurno, TurnoDB } from "@/lib/services/agendaService";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
+import { AddCreditsModal } from "@/components/admin/clientes/AddCreditsModal";
 import { clienteService } from "@/lib/services/clienteService";
 import { claseService } from "@/lib/services/claseService";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function TurnosPage() {
-    const [activeTab, setActiveTab] = useState<'reservar' | 'listado' | 'pendientes'>('reservar');
+    const [activeTab, setActiveTab] = useState<'pendientes' | 'reservar' | 'listado'>('pendientes');
     const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
     const [selectedTratamiento, setSelectedTratamiento] = useState<Tratamiento | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
@@ -25,10 +26,13 @@ export default function TurnosPage() {
     
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
     const [modalData, setModalData] = useState<any>(null);
+    const [selectedClienteForCredits, setSelectedClienteForCredits] = useState<any>(null);
     
     // List state
     const [allTurnos, setAllTurnos] = useState<TurnoDB[]>([]);
+    const [listadoDate, setListadoDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [pendientesTurnos, setPendientesTurnos] = useState<TurnoDB[]>([]);
@@ -38,13 +42,16 @@ export default function TurnosPage() {
 
     useEffect(() => {
         loadTratamientos();
+    }, []);
+
+    useEffect(() => {
         if (activeTab === 'listado') {
             loadAllTurnos();
         }
         if (activeTab === 'pendientes') {
             loadPendientes();
         }
-    }, [activeTab]);
+    }, [activeTab, listadoDate]);
 
     const loadTratamientos = async () => {
         try {
@@ -58,11 +65,10 @@ export default function TurnosPage() {
     const loadAllTurnos = async () => {
         setLoading(true);
         try {
-            // Cargar turnos de los próximos 30 días para el listado
-            const start = format(new Date(), 'yyyy-MM-dd');
-            const end = format(addDays(new Date(), 30), 'yyyy-MM-dd');
-            const data = await getTurnosPorRango(currentTenant, start, end);
-            setAllTurnos(data.sort((a,b) => `${a.fecha} ${a.horaInicio}`.localeCompare(`${b.fecha} ${b.horaInicio}`)));
+            // Cargar turnos para la fecha seleccionada en el listado
+            const data = await getTurnosPorFecha(currentTenant, listadoDate);
+            // Filtrar para mostrar solo los que NO están pendientes
+            setAllTurnos(data.filter(t => t.status !== 'PENDIENTE').sort((a,b) => a.horaInicio.localeCompare(b.horaInicio)));
         } catch (error) {
             toast.error("Error al cargar listado");
         } finally {
@@ -86,16 +92,15 @@ export default function TurnosPage() {
 
     const handleAceptarTurno = async (turno: TurnoDB) => {
         try {
-            await updateTurno(currentTenant, turno.id, { status: 'CONFIRMADO' });
-            
-            // Lógica de Créditos y Alumnos en Clases
+            // 1. Lógica de Créditos - Verificar ANTES de cambiar el estado
+            let clienteId = '';
             if (turno.claseId) {
                 const wa = (turno.clienteWhatsapp || turno.whatsapp || '').replace(/\D/g, '');
                 if (wa) {
                     let cliente = await clienteService.getClienteByTelefono(currentTenant, wa);
                     
                     if (!cliente) {
-                        // Crear cliente con 3 créditos por defecto si no existe
+                        // Crear cliente con 1 crédito por defecto si no existe
                         const nuevoId = await clienteService.createCliente(currentTenant, {
                             nombre: turno.nombre || turno.clienteAbreviado.split(' ')[0] || 'Cliente',
                             apellido: turno.apellido || turno.clienteAbreviado.split(' ').slice(1).join(' ') || '',
@@ -107,16 +112,25 @@ export default function TurnosPage() {
                         toast.success("Nuevo cliente creado con 1 crédito");
                     }
                     
-                    // Descontar créditos (el valor de la clase)
+                    clienteId = cliente!.id;
                     const costo = turno.valorCreditos || 1;
                     if ((cliente?.creditos || 0) < costo) {
-                        toast.error("El cliente no posee créditos suficientes para esta clase");
-                        return; // Block acceptance
+                        toast.error(`Saldo insuficiente (${cliente?.creditos || 0}). El cliente necesita al menos ${costo} créditos.`);
+                        // El turno permanece PENDIENTE porque no llamamos a updateTurno
+                        return; 
                     }
-                    await clienteService.deductCredits(currentTenant, cliente!.id, costo);
+                    
+                    // Descontar créditos
+                    await clienteService.deductCredits(currentTenant, clienteId, costo);
                     toast.success(`${costo} créditos descontados`);
                 }
-                
+            }
+
+            // 2. Si pasó los créditos (o no es clase), actualizar estado
+            await updateTurno(currentTenant, turno.id, { status: 'CONFIRMADO' });
+            
+            // 3. Incrementar inscriptos si es clase
+            if (turno.claseId) {
                 const clase = await claseService.getClaseById(currentTenant, turno.claseId);
                 let selectedHorarioId = '';
                 if (clase) {
@@ -124,14 +138,12 @@ export default function TurnosPage() {
                     if (matchingHorario) {
                         selectedHorarioId = matchingHorario.id;
                         await claseService.incrementInscriptos(currentTenant, turno.claseId, matchingHorario.id);
-                    } else {
-                        console.warn("No se encontró el horario coincidente para incrementar inscriptos");
                     }
                 }
 
                 // Generar QR para la confirmación
                 const qrData = encodeURIComponent(`CLASE|${turno.id}|${turno.claseId}|${selectedHorarioId}`);
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${qrData}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&format=jpg&data=${qrData}`;
                 
                 const clienteWa = turno.clienteWhatsapp || turno.whatsapp || '';
                 if (clienteWa) {
@@ -140,7 +152,7 @@ export default function TurnosPage() {
 ⏰ Hora: ${turno.horaInicio}
 👤 Cliente: ${turno.clienteAbreviado}
 
-Presenta este código QR al llegar:
+Presenta este código QR al llegar (haz clic para ver tu pase):
 ${qrUrl}`);
                     window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
                 }
@@ -291,6 +303,15 @@ ${qrUrl}`);
                     </div>
                     <div className="flex bg-gray-100 p-1 rounded-2xl">
                         <button 
+                            onClick={() => setActiveTab('pendientes')}
+                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all relative ${activeTab === 'pendientes' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Pendientes
+                            {pendientesTurnos.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">{pendientesTurnos.length}</span>
+                            )}
+                        </button>
+                        <button 
                             onClick={() => setActiveTab('reservar')}
                             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'reservar' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                         >
@@ -301,15 +322,6 @@ ${qrUrl}`);
                             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'listado' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                         >
                             Listado
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('pendientes')}
-                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all relative ${activeTab === 'pendientes' ? 'bg-white text-black shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            Pendientes
-                            {pendientesTurnos.length > 0 && (
-                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">{pendientesTurnos.length}</span>
-                            )}
                         </button>
                     </div>
                 </div>
@@ -406,7 +418,7 @@ ${qrUrl}`);
                 ) : (
                     <div className="space-y-6">
                         {/* Listado View */}
-                        <div className="flex bg-white p-4 rounded-[2rem] shadow-premium-soft border border-gray-50 gap-4">
+                        <div className="flex flex-col md:flex-row bg-white p-4 rounded-[2rem] shadow-premium-soft border border-gray-50 gap-4">
                             <div className="relative flex-1">
                                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
                                 <input 
@@ -416,10 +428,23 @@ ${qrUrl}`);
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <Button className="h-14 px-8 rounded-[1.5rem] bg-black text-white font-bold hovre:bg-gray-800">
-                                <Filter className="w-5 h-5 mr-2" />
-                                Filtros
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setListadoDate(format(new Date(), 'yyyy-MM-dd'))}
+                                    className={`h-14 px-6 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all ${listadoDate === format(new Date(), 'yyyy-MM-dd') ? 'bg-black text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+                                >
+                                    Hoy
+                                </button>
+                                <div className="relative h-14">
+                                    <CalendarIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <input 
+                                        type="date"
+                                        value={listadoDate}
+                                        onChange={(e) => setListadoDate(e.target.value)}
+                                        className="h-full pl-12 pr-6 bg-gray-50 border-none rounded-[1.5rem] font-bold outline-none focus:ring-2 focus:ring-black transition-all text-sm"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         {loading ? (
@@ -533,6 +558,24 @@ ${qrUrl}`);
                                                     <Check className="w-4 h-4" /> Aceptar
                                                 </button>
                                                 <button
+                                                    onClick={async () => { 
+                                                        const wa = (t.clienteWhatsapp || t.whatsapp || '').replace(/\D/g, '');
+                                                        if (wa) {
+                                                            const cliente = await clienteService.getClienteByTelefono(currentTenant, wa);
+                                                            if (cliente) {
+                                                                setSelectedClienteForCredits(cliente);
+                                                                setIsCreditsModalOpen(true);
+                                                            } else {
+                                                                toast.error("No se encontró ficha de cliente para este teléfono");
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-100 text-amber-700 font-black text-[10px] uppercase tracking-widest hover:bg-amber-200 transition-all"
+                                                    title="Sumar Créditos"
+                                                >
+                                                    <Zap className="w-4 h-4" /> Créditos
+                                                </button>
+                                                <button
                                                     onClick={() => { setModalData({ turno: t }); setIsModalOpen(true); }}
                                                     className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all"
                                                 >
@@ -586,6 +629,18 @@ ${qrUrl}`);
                             toast.error("Error al guardar el turno");
                         }
                     }}
+                />
+                <AddCreditsModal 
+                    isOpen={isCreditsModalOpen}
+                    onClose={() => {
+                        setIsCreditsModalOpen(false);
+                        setSelectedClienteForCredits(null);
+                    }}
+                    onSave={() => {
+                        if (activeTab === 'pendientes') loadPendientes();
+                    }}
+                    cliente={selectedClienteForCredits}
+                    tenantId={currentTenant}
                 />
             </div>
         </AdminLayout>
