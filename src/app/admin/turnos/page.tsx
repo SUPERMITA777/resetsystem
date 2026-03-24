@@ -113,7 +113,16 @@ export default function TurnosPage() {
                     toast.success(`${costo} créditos descontados`);
                 }
                 
-                await claseService.incrementInscriptos(currentTenant, turno.claseId);
+                const clase = await claseService.getClaseById(currentTenant, turno.claseId);
+                if (clase) {
+                    const matchingHorario = (clase.horarios || []).find(h => h.fecha === turno.fecha && h.hora === turno.horaInicio);
+                    if (matchingHorario) {
+                        await claseService.incrementInscriptos(currentTenant, turno.claseId, matchingHorario.id);
+                    } else {
+                        // Fallback if no matching horario found (unlikely if valid turno)
+                        console.warn("No se encontró el horario coincidente para incrementar inscriptos");
+                    }
+                }
             }
 
             toast.success("Turno aceptado y confirmado");
