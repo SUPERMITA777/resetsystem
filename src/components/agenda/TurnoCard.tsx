@@ -20,6 +20,11 @@ export interface TurnoData {
     profesionalNombre?: string;
     ajustePrecio?: number;
     motivoSaldo?: string;
+    claseId?: string; // New
+    claseInfo?: {    // New for intelligent agenda
+        inscriptosCount: number;
+        cupo: number;
+    };
     subtratamientosSnap?: Array<{
         id: string;
         nombre: string;
@@ -44,9 +49,10 @@ interface TurnoCardProps {
     disabled?: boolean;
     interval?: number; // minutos por celda
     onClick?: (e: React.MouseEvent) => void;
+    onInscriptosClick?: (claseId: string) => void; // New
 }
 
-export function TurnoCard({ turno, disabled = false, interval, onClick }: TurnoCardProps) {
+export function TurnoCard({ turno, disabled = false, interval, onClick, onInscriptosClick }: TurnoCardProps) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: turno.id,
         data: turno,
@@ -71,7 +77,14 @@ export function TurnoCard({ turno, disabled = false, interval, onClick }: TurnoC
     };
 
     const status = (turno as any).status || 'RESERVADO';
-    const bgColor = statusColors[status as keyof typeof statusColors] || 'bg-black';
+    let bgColor = statusColors[status as keyof typeof statusColors] || 'bg-black';
+
+    // Inteligencia de Clases
+    const isClase = !!turno.claseId;
+    if (isClase && turno.claseInfo) {
+        const isFull = turno.claseInfo.inscriptosCount >= turno.claseInfo.cupo;
+        bgColor = isFull ? 'bg-green-600' : 'bg-orange-400';
+    }
 
     return (
         <div
@@ -83,12 +96,29 @@ export function TurnoCard({ turno, disabled = false, interval, onClick }: TurnoC
             className={`absolute left-0 right-0 mx-0.5 rounded-md px-1.5 py-1 text-[9px] text-white shadow-xl transition-all pointer-events-auto flex flex-col overflow-hidden
         ${disabled ? 'cursor-not-allowed opacity-60 bg-gray-300 grayscale' : `cursor-grab active:cursor-grabbing hover:brightness-110 ${bgColor}`}
         ${isDragging ? 'z-50 opacity-80 ring-2 ring-white scale-105' : 'z-10'}
+        ${isClase ? 'border-l-4 border-white/30' : ''}
       `}
         >
-            <div className="font-black truncate leading-none uppercase tracking-tighter">{turno.clienteAbreviado}</div>
+            <div className="flex justify-between items-start w-full">
+                <div className="font-black truncate leading-none uppercase tracking-tighter flex-1">
+                    {turno.clienteAbreviado}
+                </div>
+                {isClase && turno.claseInfo && (
+                    <div 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onInscriptosClick && turno.claseId) onInscriptosClick(turno.claseId);
+                        }}
+                        className="bg-white/20 hover:bg-white/40 px-1 rounded flex items-center gap-0.5 cursor-pointer transition-colors ml-1"
+                        title="Ver inscriptos"
+                    >
+                        <span className="font-black">{turno.claseInfo.inscriptosCount}/{turno.claseInfo.cupo}</span>
+                    </div>
+                )}
+            </div>
             {heightPx >= 25 && (
                 <div className="truncate leading-tight mt-1 opacity-90 font-bold flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-white/50" />
+                    {!isClase && <span className="w-1 h-1 rounded-full bg-white/50" />}
                     {turno.tratamientoAbreviado}
                 </div>
             )}

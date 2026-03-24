@@ -8,7 +8,10 @@ import { format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMo
 import { es } from "date-fns/locale";
 import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
+import { TurnoClaseModal } from "@/components/agenda/TurnoClaseModal";
+import { InscriptosModal } from "@/components/admin/clases/InscriptosModal";
 import { AgendaSettingsModal } from "@/components/agenda/AgendaSettingsModal";
+import { claseService, Clase } from "@/lib/services/claseService";
 import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { getBoxNames, setBoxName } from "@/lib/services/boxNamesService";
@@ -18,6 +21,7 @@ import toast, { Toaster } from "react-hot-toast";
 export default function AgendaPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isClaseModalOpen, setIsClaseModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [view, setView] = useState<'diaria' | 'semanal' | 'mensual'>('diaria');
     const [turnos, setTurnos] = useState<TurnoData[]>([]);
@@ -35,6 +39,10 @@ export default function AgendaPage() {
         turno: null
     });
     const [boxNames, setBoxNames] = useState<Record<string, string>>({});
+    
+    // Inscriptos Modal
+    const [isInscriptosModalOpen, setIsInscriptosModalOpen] = useState(false);
+    const [selectedClaseForInscriptos, setSelectedClaseForInscriptos] = useState<Clase | null>(null);
 
     // In production, current tenant would come from auth context
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -53,9 +61,7 @@ export default function AgendaPage() {
             let turnosDb: TurnoData[] = [];
             if (currentView === 'diaria') {
                 const dateString = format(date, 'yyyy-MM-dd');
-                console.log('[Agenda] Daily view query date:', dateString);
                 turnosDb = await getTurnosPorFecha(currentTenant, dateString);
-                console.log('[Agenda] Daily view turnos found:', turnosDb.length, turnosDb.map(t => ({ id: t.id, fecha: t.fecha, boxId: t.boxId, horaInicio: t.horaInicio })));
             } else if (currentView === 'semanal') {
                 const start = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
                 const end = format(endOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -66,7 +72,21 @@ export default function AgendaPage() {
                 turnosDb = await getTurnosPorRango(currentTenant, start, end);
             }
 
-            setTurnos(turnosDb as TurnoData[]);
+            // Cargar clases para cruzar datos de cupo
+            const clasesDb = await claseService.getClases(currentTenant);
+
+            // Enriquecer turnos con info de clase
+            const turnosEnriquecidos = turnosDb.map((t: TurnoData) => {
+                if (t.claseId) {
+                    const clase = clasesDb.find(c => c.id === t.claseId);
+                    if (clase) {
+                        return { ...t, claseInfo: { inscriptosCount: clase.inscriptosCount, cupo: clase.cupo } };
+                    }
+                }
+                return t;
+            });
+
+            setTurnos(turnosEnriquecidos);
 
             // Load box names for the current date (daily view)
             if (currentView === 'diaria') {
@@ -284,7 +304,18 @@ export default function AgendaPage() {
                         }}
                         onTurnoClick={(turno) => {
                             setModalInitialData({ fecha: turno.fecha, boxId: turno.boxId, hora: turno.horaInicio, turno });
-                            setIsModalOpen(true);
+                            if (turno.claseId) {
+                                setIsClaseModalOpen(true);
+                            } else {
+                                setIsModalOpen(true);
+                            }
+                        }}
+                        onInscriptosClick={async (claseId) => {
+                            const clase = await claseService.getClaseById(currentTenant, claseId);
+                            if (clase) {
+                                setSelectedClaseForInscriptos(clase);
+                                setIsInscriptosModalOpen(true);
+                            }
                         }}
                     />
                 </div>
@@ -301,11 +332,26 @@ export default function AgendaPage() {
                 agendaConfig={agendaConfig}
             />
 
+            <TurnoClaseModal
+                isOpen={isClaseModalOpen}
+                onClose={() => setIsClaseModalOpen(false)}
+                onSave={handleCrearTurno}
+                editTurno={modalInitialData.turno || null}
+                agendaConfig={agendaConfig}
+            />
+
             <AgendaSettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 currentConfig={agendaConfig}
                 onSave={handleSaveSettings}
+            />
+
+            <InscriptosModal
+                isOpen={isInscriptosModalOpen}
+                onClose={() => setIsInscriptosModalOpen(false)}
+                clase={selectedClaseForInscriptos}
+                tenantId={currentTenant}
             />
         </AdminLayout>
     );

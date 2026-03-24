@@ -28,11 +28,12 @@ interface AgendaGridProps {
     currentDate: Date;
     onCellClick: (date: string, boxId: string, hora: string) => void;
     onTurnoClick: (turno: TurnoData) => void;
+    onInscriptosClick?: (claseId: string) => void;
     boxNames?: Record<string, string>;
     onBoxNameChange?: (boxId: string, name: string) => void;
 }
 
-export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate, onCellClick, onTurnoClick, boxNames = {}, onBoxNameChange }: AgendaGridProps) {
+export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, currentDate, onCellClick, onTurnoClick, onInscriptosClick, boxNames = {}, onBoxNameChange }: AgendaGridProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [localTurnos, setLocalTurnos] = useState<TurnoData[]>(turnos);
     const { isStaff, staffId } = useAuth();
@@ -299,6 +300,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                                                 e.stopPropagation();
                                                                 onTurnoClick(turno);
                                                             }}
+                                                            onInscriptosClick={onInscriptosClick}
                                                         />
                                                     ))}
                                                 </div>
