@@ -90,26 +90,21 @@ export default function TurnosPage() {
         }
     };
 
-    const copyQrToClipboard = async (url: string) => {
-        try {
-            const response = await fetch(url);
-            const blob = await response.blob();
-            // Convert to PNG if it's not already, as ClipboardItem has best support for PNG
-            const item = new ClipboardItem({ [blob.type]: blob });
-            await navigator.clipboard.write([item]);
-            toast.success("¡Imagen QR copiada al portapapeles! Ya puedes pegarla (Ctrl+V) en WhatsApp.");
-        } catch (err) {
-            console.error(err);
-            toast.error("No se pudo copiar la imagen. Intenta con clic derecho -> copiar imagen.");
-            // Fallback: Open in new tab
-            window.open(url, '_blank');
+    const generateCheckinCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing chars like 0, O, 1, I
+        let result = '';
+        for (let i = 0; i < 4; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
+        return result;
     };
 
     const handleAceptarTurno = async (turno: TurnoDB) => {
         try {
             // 1. Lógica de Créditos - Verificar ANTES de cambiar el estado
             let clienteId = '';
+            const checkinCode = turno.claseId ? generateCheckinCode() : null;
+            
             if (turno.claseId) {
                 const wa = (turno.clienteWhatsapp || turno.whatsapp || '').replace(/\D/g, '');
                 if (wa) {
@@ -143,24 +138,21 @@ export default function TurnosPage() {
             }
 
             // 2. Si pasó los créditos (o no es clase), actualizar estado
-            await updateTurno(currentTenant, turno.id, { status: 'CONFIRMADO' });
+            await updateTurno(currentTenant, turno.id, { 
+                status: 'CONFIRMADO',
+                ...(checkinCode ? { checkinCode } : {})
+            });
             
             // 3. Incrementar inscriptos si es clase
             if (turno.claseId) {
                 const clase = await claseService.getClaseById(currentTenant, turno.claseId);
-                let selectedHorarioId = '';
                 if (clase) {
                     const matchingHorario = (clase.horarios || []).find(h => h.fecha === turno.fecha && h.hora === turno.horaInicio);
                     if (matchingHorario) {
-                        selectedHorarioId = matchingHorario.id;
                         await claseService.incrementInscriptos(currentTenant, turno.claseId, matchingHorario.id);
                     }
                 }
 
-                // Generar QR para la confirmación
-                const qrData = encodeURIComponent(`CLASE|${turno.id}|${turno.claseId}|${selectedHorarioId}`);
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&format=jpg&data=${qrData}`;
-                
                 const clienteWa = turno.clienteWhatsapp || turno.whatsapp || '';
                 if (clienteWa) {
                     const msg = encodeURIComponent(`✅ ¡Tu clase de ${turno.tratamientoAbreviado} ha sido confirmada!
@@ -168,14 +160,11 @@ export default function TurnosPage() {
 ⏰ Hora: ${turno.horaInicio}
 👤 Cliente: ${turno.clienteAbreviado}
 
-⚠️ IMPORTANTE: Estamos enviando tu pase QR. Si no aparece la imagen abajo, por favor avísanos.`);
+🔑 Tu código de acceso es: *${checkinCode}*
+Preséntalo al profesor al llegar.`);
                     
                     // Abrir WhatsApp
                     window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
-                    
-                    // Copiar QR automáticamente para que el usuario solo tenga que dar CTRL+V
-                    toast("Copiando QR al portapapeles...", { icon: '⏳' });
-                    setTimeout(() => copyQrToClipboard(qrUrl), 1000);
                 }
             } else {
                 // For non-class turnos, just open WhatsApp link

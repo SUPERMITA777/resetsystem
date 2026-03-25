@@ -47,6 +47,7 @@ export interface TurnoDB {
     metodoPagoSaldo?: 'EFECTIVO' | 'TRANSFERENCIA';
     claseId?: string;       // Link to group class
     valorCreditos?: number; // Credit cost if it's a class
+    checkinCode?: string;   // 4-digit alphanumeric code for attendance
 }
 
 // Actualizar un turno completo

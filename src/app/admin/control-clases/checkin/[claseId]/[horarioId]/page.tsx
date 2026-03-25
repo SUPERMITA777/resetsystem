@@ -24,8 +24,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     const [alumnos, setAlumnos] = useState<TurnoDB[]>([]);
     const [clase, setClase] = useState<Clase | null>(null);
     const [loading, setLoading] = useState(true);
-    const [scanMode, setScanMode] = useState(false);
-    const [scanInput, setScanInput] = useState("");
+    const [bgStatus, setBgStatus] = useState<'default' | 'success' | 'error'>('default');
+    const [codeInput, setCodeInput] = useState("");
 
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
@@ -56,81 +56,95 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
     const handleCheckin = async (turnoId: string) => {
         try {
-            const loader = toast.loading("Registrando asistencia...");
             await updateTurno(tenantId, turnoId, { status: 'COMPLETADO' });
-            toast.success("Asistencia confirmada", { id: loader });
             loadData();
         } catch (error) {
             toast.error("Error al registrar asistencia");
         }
     };
 
-    const handleScanSubmit = (e: React.FormEvent) => {
+    const handleCodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // QR Data format: CLASE|turnoId|claseId|horarioId
-        const parts = scanInput.split('|');
-        if (parts[0] === 'CLASE' && parts[1]) {
-            const turnoId = parts[1];
-            const target = alumnos.find(a => a.id === turnoId);
-            if (target) {
-                handleCheckin(turnoId);
-                setScanInput("");
-                setScanMode(false);
-            } else {
-                toast.error("Alumno no encontrado en esta sesión");
-            }
+        const code = codeInput.toUpperCase().trim();
+        
+        // Buscar alumno que coincida con el código (y que no esté ya COMPLETADO)
+        const target = alumnos.find(a => a.checkinCode === code && a.status !== 'COMPLETADO');
+
+        if (target) {
+            setBgStatus('success');
+            await handleCheckin(target.id);
+            toast.success(`¡Bienvenida ${target.clienteAbreviado}!`);
+            setCodeInput("");
+            setTimeout(() => setBgStatus('default'), 2000);
         } else {
-            toast.error("QR inválido o formato incorrecto");
+            setBgStatus('error');
+            toast.error("Código incorrecto o alumno ya registrado");
+            setTimeout(() => setBgStatus('default'), 2000);
         }
     };
 
     return (
         <AdminLayout>
-            <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
-                <Link href="/admin/control-clases" className="flex items-center gap-2 text-gray-400 hover:text-black font-black uppercase tracking-widest text-[10px] transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Volver al listado
-                </Link>
+            <div className={`min-h-screen transition-colors duration-500 ${
+                bgStatus === 'success' ? 'bg-emerald-500' : 
+                bgStatus === 'error' ? 'bg-red-500' : 'bg-transparent'
+            }`}>
+                <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pt-8 pb-20 px-4">
+                    <Link href="/admin/control-clases" className={`flex items-center gap-2 font-black uppercase tracking-widest text-[10px] transition-colors ${bgStatus !== 'default' ? 'text-white' : 'text-gray-400 hover:text-black'}`}>
+                        <ArrowLeft className="w-4 h-4" /> Volver al listado
+                    </Link>
 
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">{clase?.nombre || "Cargando..."}</h1>
-                        <p className="text-gray-400 text-xs font-black uppercase tracking-[0.3em] mt-3">
-                            HOY {horarioId} HS • {alumnos.length} inscritos
-                        </p>
-                    </div>
-                </div>
-
-                {/* Scan Simulator / Input */}
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-50">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <QrCode className="w-4 h-4 text-orange-500" /> Registro de Asistencia
-                        </h2>
-                        <button 
-                            onClick={() => setScanMode(!scanMode)}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${scanMode ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-400 hover:text-black'}`}
-                        >
-                            {scanMode ? "Cerrar Scanner" : "Escanear QR"}
-                        </button>
+                    <div className="flex justify-between items-start">
+                        <div className={bgStatus !== 'default' ? 'text-white' : ''}>
+                            <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">{clase?.nombre || "Cargando..."}</h1>
+                            <p className={`text-xs font-black uppercase tracking-[0.3em] mt-3 ${bgStatus !== 'default' ? 'text-white/80' : 'text-gray-400'}`}>
+                                HOY {horarioId} HS • {alumnos.length} inscritos
+                            </p>
+                        </div>
                     </div>
 
-                    {scanMode && (
-                        <form onSubmit={handleScanSubmit} className="mb-8 p-6 bg-orange-50 rounded-3xl border border-orange-100 animate-in zoom-in duration-300">
-                            <p className="text-xs font-black text-orange-800 uppercase tracking-widest mb-3">Escanea el código del alumno</p>
-                            <div className="flex gap-2">
+                    {/* Alphanumeric Code Input */}
+                    <div className={`${bgStatus !== 'default' ? 'bg-white/10 backdrop-blur-md border-white/20' : 'bg-white border-gray-50'} rounded-[2.5rem] p-8 shadow-xl border transition-all`}>
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className={`text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${bgStatus !== 'default' ? 'text-white' : 'text-gray-400'}`}>
+                                <QrCode className="w-4 h-4" /> Registro por Código
+                            </h2>
+                        </div>
+
+                        <form onSubmit={handleCodeSubmit} className="max-w-md mx-auto space-y-6">
+                            <p className={`text-center text-sm font-black uppercase tracking-widest ${bgStatus !== 'default' ? 'text-white' : 'text-gray-500'}`}>
+                                Ingresa el código de 4 dígitos
+                            </p>
+                            <div className="flex flex-col gap-4">
                                 <input 
                                     autoFocus
-                                    placeholder="Datos del QR..."
-                                    value={scanInput}
-                                    onChange={e => setScanInput(e.target.value)}
-                                    className="flex-1 h-14 px-6 bg-white border-none rounded-2xl font-bold text-sm shadow-inner outline-none focus:ring-2 focus:ring-orange-500/20"
+                                    maxLength={4}
+                                    placeholder="####"
+                                    value={codeInput}
+                                    onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                                    className={`h-24 w-full text-center text-5xl font-black rounded-3xl outline-none transition-all shadow-inner tracking-[0.5em] pl-[0.5em] ${
+                                        bgStatus === 'success' ? 'bg-white text-emerald-600' :
+                                        bgStatus === 'error' ? 'bg-white text-red-600' :
+                                        'bg-gray-50 text-gray-900 focus:ring-4 focus:ring-black/5'
+                                    }`}
                                 />
-                                <Button type="submit" className="h-14 px-8 bg-black text-white font-black uppercase tracking-widest text-xs rounded-2xl">Confirmar</Button>
+                                <Button 
+                                    type="submit" 
+                                    className={`h-16 w-full font-black uppercase tracking-[0.2em] text-sm rounded-2xl shadow-xl active:scale-95 transition-all ${
+                                        bgStatus === 'success' ? 'bg-white text-emerald-600 hover:bg-gray-100' :
+                                        bgStatus === 'error' ? 'bg-white text-red-600 hover:bg-gray-100' :
+                                        'bg-black text-white hover:bg-gray-800'
+                                    }`}
+                                >
+                                    Validar Acceso
+                                </Button>
                             </div>
                         </form>
-                    )}
+                    </div>
 
-                    <div className="divide-y divide-gray-100">
+                    <div className={`${bgStatus !== 'default' ? 'bg-white/10 backdrop-blur-md border-white/20' : 'bg-white border-gray-50'} rounded-[2.5rem] p-8 shadow-xl border transition-all`}>
+                        <h3 className={`text-[10px] font-black uppercase tracking-widest mb-6 ${bgStatus !== 'default' ? 'text-white' : 'text-gray-400'}`}>Lista de Alumnos</h3>
+                        <div className="divide-y divide-gray-100/10">
                         {loading ? (
                             <div className="py-20 text-center text-gray-300 font-bold uppercase tracking-widest text-xs animate-pulse">Cargando alumnos...</div>
                         ) : alumnos.length === 0 ? (
@@ -171,6 +185,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </div>
+</AdminLayout>
     );
 }
