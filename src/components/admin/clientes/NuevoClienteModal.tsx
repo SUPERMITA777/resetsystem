@@ -21,7 +21,7 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         telefono: "",
         notas: "",
         // Créditos fields
-        creditos: 1,
+        creditos: 0,
         montoPagado: 0,
         metodoPago: "EFECTIVO",
         duracionDias: 30,
