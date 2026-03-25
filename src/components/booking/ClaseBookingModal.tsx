@@ -41,7 +41,7 @@ export function ClaseBookingModal({ isOpen, onClose, clase, horario, tenantId, t
                 fecha: horario.fecha,
                 horaInicio: horario.hora,
                 clienteAbreviado: formData.nombre.slice(0, 10),
-                tratamientoAbreviado: "CLASE",
+                tratamientoAbreviado: clase.nombre.slice(0, 20),
                 subtratamientoAbreviado: clase.nombre.slice(0, 20),
                 duracionMinutos: clase.duracion || 60,
                 boxId: clase.boxId || "salon-grupal",

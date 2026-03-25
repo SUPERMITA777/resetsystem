@@ -83,7 +83,12 @@ export default function AgendaPage() {
                         // Buscar el horario específico para este turno
                         const horario = clase.horarios?.find(h => h.fecha === t.fecha && h.hora === t.horaInicio);
                         const count = horario ? (horario.inscriptosCount || 0) : 0;
-                        return { ...t, claseInfo: { inscriptosCount: count, cupo: clase.cupo } };
+                        return { 
+                            ...t, 
+                            tratamientoAbreviado: clase.nombre, 
+                            clienteAbreviado: clase.nombre,
+                            claseInfo: { inscriptosCount: count, cupo: clase.cupo } 
+                        };
                     }
                 }
                 return t;
