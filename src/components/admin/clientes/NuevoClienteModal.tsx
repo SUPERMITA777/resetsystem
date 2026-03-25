@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { clienteService } from "@/lib/services/clienteService";
-import { X, Save, User, Phone, Mail, FileText, Zap, DollarSign, Wallet, Cake } from "lucide-react";
+import { X, Save, User, Phone, Mail, FileText, Zap, DollarSign, Wallet, Cake, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface NuevoClienteModalProps {
@@ -24,8 +24,10 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
         creditos: 1,
         montoPagado: 0,
         metodoPago: "EFECTIVO",
+        duracionDias: 30,
         fechaNacimiento: ""
     });
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
 
@@ -75,11 +77,12 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                     monto: formData.montoPagado,
                     metodo: formData.metodoPago,
                     fecha: new Date().toISOString().split('T')[0]
-                });
+                }, formData.duracionDias);
             }
             
             toast.success("Cliente creado exitosamente", { id: loadingToast });
-            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 1, montoPagado: 0, metodoPago: "EFECTIVO", fechaNacimiento: "" });
+            setFormData({ nombre: "", apellido: "", email: "", telefono: "", notas: "", creditos: 1, montoPagado: 0, metodoPago: "EFECTIVO", duracionDias: 30, fechaNacimiento: "" });
+
             onSave();
             onClose();
         } catch (error: any) {
@@ -210,7 +213,21 @@ export function NuevoClienteModal({ isOpen, onClose, onSave, tenantId }: NuevoCl
                                         />
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Vencimiento (Días)</label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input
+                                            type="number"
+                                            value={formData.duracionDias}
+                                            onChange={e => setFormData({ ...formData, duracionDias: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-white border border-gray-100 rounded-2xl pl-10 pr-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-black transition-all outline-none shadow-sm"
+                                            placeholder="Días"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+
                             
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Medio de Pago</label>

@@ -23,8 +23,10 @@ export function AddCreditsModal({ isOpen, onClose, onSave, cliente, tenantId }: 
         amount: 10,
         monto: 0,
         metodo: "EFECTIVO",
-        fecha: new Date().toISOString().split('T')[0]
+        fecha: new Date().toISOString().split('T')[0],
+        duracionDias: 30
     });
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +38,7 @@ export function AddCreditsModal({ isOpen, onClose, onSave, cliente, tenantId }: 
                 monto: formData.monto,
                 metodo: formData.metodo,
                 fecha: formData.fecha
-            });
+            }, formData.duracionDias);
             toast.success(`Se cargaron ${formData.amount} créditos a ${cliente.nombre}`);
             onSave();
             onClose();
@@ -72,19 +74,35 @@ export function AddCreditsModal({ isOpen, onClose, onSave, cliente, tenantId }: 
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid gap-4">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Cantidad de Créditos</Label>
-                            <div className="relative">
-                                <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                                <Input 
-                                    type="number" 
-                                    value={formData.amount}
-                                    onChange={(e) => setFormData({...formData, amount: parseInt(e.target.value)})}
-                                    className="h-14 pl-12 rounded-2xl font-black text-xl border-gray-100 focus:ring-black transition-all"
-                                    required
-                                />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Cantidad de Créditos</Label>
+                                <div className="relative">
+                                    <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                                    <Input 
+                                        type="number" 
+                                        value={formData.amount}
+                                        onChange={(e) => setFormData({...formData, amount: parseInt(e.target.value)})}
+                                        className="h-14 pl-12 rounded-2xl font-black text-xl border-gray-100 focus:ring-black transition-all"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Vencimiento (Días)</Label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                                    <Input 
+                                        type="number" 
+                                        value={formData.duracionDias}
+                                        onChange={(e) => setFormData({...formData, duracionDias: parseInt(e.target.value) || 0})}
+                                        className="h-14 pl-12 rounded-2xl font-black text-xl border-gray-100 focus:ring-black transition-all"
+                                        required
+                                    />
+                                </div>
                             </div>
                         </div>
+
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
