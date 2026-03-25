@@ -90,6 +90,22 @@ export default function TurnosPage() {
         }
     };
 
+    const copyQrToClipboard = async (url: string) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            // Convert to PNG if it's not already, as ClipboardItem has best support for PNG
+            const item = new ClipboardItem({ [blob.type]: blob });
+            await navigator.clipboard.write([item]);
+            toast.success("¡Imagen QR copiada al portapapeles! Ya puedes pegarla (Ctrl+V) en WhatsApp.");
+        } catch (err) {
+            console.error(err);
+            toast.error("No se pudo copiar la imagen. Intenta con clic derecho -> copiar imagen.");
+            // Fallback: Open in new tab
+            window.open(url, '_blank');
+        }
+    };
+
     const handleAceptarTurno = async (turno: TurnoDB) => {
         try {
             // 1. Lógica de Créditos - Verificar ANTES de cambiar el estado
@@ -152,9 +168,14 @@ export default function TurnosPage() {
 ⏰ Hora: ${turno.horaInicio}
 👤 Cliente: ${turno.clienteAbreviado}
 
-Presenta este código QR al llegar (haz clic para ver tu pase):
-${qrUrl}`);
+⚠️ IMPORTANTE: Estamos enviando tu pase QR. Si no aparece la imagen abajo, por favor avísanos.`);
+                    
+                    // Abrir WhatsApp
                     window.open(`https://wa.me/${clienteWa.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                    
+                    // Copiar QR automáticamente para que el usuario solo tenga que dar CTRL+V
+                    toast("Copiando QR al portapapeles...", { icon: '⏳' });
+                    setTimeout(() => copyQrToClipboard(qrUrl), 1000);
                 }
             } else {
                 // For non-class turnos, just open WhatsApp link
