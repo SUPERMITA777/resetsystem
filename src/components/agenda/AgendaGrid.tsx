@@ -262,7 +262,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                         {/* Columna de Horas */}
                         <div className="w-20 shrink-0 flex flex-col border-r border-gray-100 bg-gray-50/30 sticky left-0 z-20">
                             {HORAS.map(hora => (
-                                <div key={hora} className="flex-1 border-b border-gray-50 flex items-center justify-center text-[9px] font-bold text-gray-400 bg-gray-50/50 min-h-[20px]">
+                                <div key={hora} className="flex-1 border-b border-gray-50 flex items-center justify-center text-[9px] font-bold text-gray-400 bg-gray-50/50 min-h-[32px]">
                                     {hora}
                                 </div>
                             ))}
@@ -289,7 +289,7 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                                 fecha={format(col.date, 'yyyy-MM-dd')}
                                                 onClick={() => onCellClick(format(col.date, 'yyyy-MM-dd'), view === 'diaria' ? col.id : 'box-1', hora)}
                                             >
-                                                <div className="h-5 w-full relative group/cell">
+                                                <div className="h-8 w-full relative group/cell">
                                                     {turnosEnCelda.map(turno => (
                                                         <TurnoCard
                                                             key={turno.id}
@@ -344,7 +344,7 @@ function CurrentTimeIndicator({ config, HORAS }: { config: any, HORAS: string[] 
     if (currentH === endH && currentM > 0) return null;
 
     const minutesSinceStart = (currentH - startH) * 60 + (currentM - startM);
-    const pixelPerMinute = 20 / config.intervalo; // h-5 = 20px
+    const pixelPerMinute = 32 / config.intervalo; // h-8 = 32px
     const top = minutesSinceStart * pixelPerMinute;
 
     return (

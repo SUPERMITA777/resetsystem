@@ -25,7 +25,7 @@ export function AgendaCell({ boxId, hora, fecha, children, onClick }: AgendaCell
         <div
             ref={setNodeRef}
             onClick={onClick}
-            className={`flex-1 border-b border-r border-gray-50 relative transition-colors cursor-pointer min-h-[20px]
+            className={`flex-1 border-b border-r border-gray-50 relative transition-colors cursor-pointer min-h-[32px]
         ${isOver ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'}
       `}
         >

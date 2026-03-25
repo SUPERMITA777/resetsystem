@@ -102,7 +102,7 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
         >
             <div className="flex justify-between items-start w-full">
                 <div className="font-black truncate leading-none uppercase tracking-tighter flex-1">
-                    {turno.clienteAbreviado}
+                    {isClase ? turno.tratamientoAbreviado : turno.clienteAbreviado}
                 </div>
                 {isClase && turno.claseInfo && (
                     <div 
@@ -117,9 +117,9 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
                     </div>
                 )}
             </div>
-            {heightPercent >= 125 && (
+            {heightPercent >= 125 && !isClase && (
                 <div className="truncate leading-tight mt-1 opacity-90 font-bold flex items-center gap-1">
-                    {!isClase && <span className="w-1 h-1 rounded-full bg-white/50" />}
+                    <span className="w-1 h-1 rounded-full bg-white/50" />
                     {turno.tratamientoAbreviado}
                 </div>
             )}
