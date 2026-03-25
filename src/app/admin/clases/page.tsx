@@ -12,6 +12,9 @@ import { InscriptosModal } from "@/components/admin/clases/InscriptosModal";
 import toast, { Toaster } from "react-hot-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ClasesPublicConfigModal } from "@/components/admin/clases/ClasesPublicConfigModal";
+import { getTenant, TenantData } from "@/lib/services/tenantService";
+import { Settings } from "lucide-react";
 
 export default function ClasesAdminPage() {
     const { tenantId } = useAuth();
@@ -24,23 +27,29 @@ export default function ClasesAdminPage() {
     // Inscriptos Modal state
     const [isInscriptosModalOpen, setIsInscriptosModalOpen] = useState(false);
     const [claseForInscriptos, setClaseForInscriptos] = useState<Clase | null>(null);
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+    const [tenant, setTenant] = useState<TenantData | null>(null);
 
-    const loadClases = async () => {
+    const loadData = async () => {
         if (!tenantId) return;
         setLoading(true);
         try {
-            const data = await claseService.getClases(tenantId);
-            setClases(data);
+            const [classesData, tenantData] = await Promise.all([
+                claseService.getClases(tenantId),
+                getTenant(tenantId)
+            ]);
+            setClases(classesData);
+            setTenant(tenantData);
         } catch (error: any) {
-            console.error("Error cargando clases:", error);
-            toast.error("Error al cargar las clases. " + (error.message || ""));
+            console.error("Error cargando datos:", error);
+            toast.error("Error al cargar los datos. " + (error.message || ""));
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadClases();
+        loadData();
     }, [tenantId]);
 
     const handleDelete = async (clase: Clase) => {
@@ -50,7 +59,7 @@ export default function ClasesAdminPage() {
         try {
             await claseService.deleteClase(tenantId, clase.id);
             toast.success("Clase eliminada");
-            loadClases();
+            loadData();
         } catch (error) {
             toast.error("Error al eliminar la clase");
         }
@@ -74,10 +83,18 @@ export default function ClasesAdminPage() {
                         <Button
                             onClick={() => window.open(`/salon/${tenantId}/clases`, "_blank")}
                             variant="outline"
-                            className="rounded-2xl h-14 px-6 font-bold uppercase tracking-widest border-2 hover:bg-gray-50 transition-all border-gray-100"
+                            className="rounded-2xl h-14 px-6 font-bold uppercase tracking-widest border-2 hover:bg-gray-50 transition-all border-gray-100 hidden md:flex"
                         >
                             <ExternalLink className="w-5 h-5 mr-3" />
                             Ver Web Pública
+                        </Button>
+                        <Button
+                            onClick={() => setIsConfigModalOpen(true)}
+                            variant="outline"
+                            className="rounded-2xl h-14 px-6 font-bold uppercase tracking-widest border-2 hover:bg-gray-50 transition-all border-gray-100"
+                        >
+                            <Settings className="w-5 h-5 mr-3" />
+                            Configurar
                         </Button>
                         <Button 
                             onClick={() => { setSelectedClase(null); setIsModalOpen(true); }}
@@ -214,8 +231,15 @@ export default function ClasesAdminPage() {
                 <ClaseModal 
                     isOpen={isModalOpen}
                     onClose={() => { setIsModalOpen(false); setSelectedClase(null); }}
-                    onSave={loadClases}
+                    onSave={loadData}
                     clase={selectedClase}
+                />
+
+                <ClasesPublicConfigModal 
+                    isOpen={isConfigModalOpen}
+                    onClose={() => setIsConfigModalOpen(false)}
+                    tenant={tenant}
+                    onSaveSuccess={loadData}
                 />
 
                 <InscriptosModal

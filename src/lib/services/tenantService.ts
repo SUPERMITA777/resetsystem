@@ -24,6 +24,11 @@ export interface TenantData {
         instagram?: string;
         whatsapp?: string;
     };
+    config_clases?: {
+        public_title?: string;
+        public_subtitle?: string;
+        public_description?: string;
+    };
 }
 
 const COLLECTION_NAME = "tenants";

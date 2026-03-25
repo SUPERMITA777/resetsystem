@@ -143,7 +143,14 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                             COMPLETADO: 'bg-blue-50 text-blue-700 border-blue-200',
                                             CANCELADO: 'bg-red-50 text-red-700 border-red-200'
                                         };
-                                        const colorClass = statusColors[t.status as keyof typeof statusColors] || statusColors.RESERVADO;
+                                        let colorClass = statusColors[t.status as keyof typeof statusColors] || statusColors.RESERVADO;
+                                        
+                                        if (t.claseId && t.claseInfo) {
+                                            const isFull = t.claseInfo.inscriptosCount >= t.claseInfo.cupo;
+                                            colorClass = isFull 
+                                                ? 'bg-emerald-500 text-white border-emerald-600' 
+                                                : 'bg-orange-500 text-white border-orange-600';
+                                        }
                                         
                                         return (
                                             <div 

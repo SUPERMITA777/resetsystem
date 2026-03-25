@@ -95,7 +95,12 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
             {...listeners}
             {...attributes}
             className={`absolute left-0 right-0 mx-0.5 rounded-md px-1.5 py-1 text-[9px] text-white shadow-xl transition-all pointer-events-auto flex flex-col overflow-hidden
-        ${disabled ? 'cursor-not-allowed opacity-60 bg-gray-300 grayscale' : `cursor-grab active:cursor-grabbing hover:brightness-110 ${bgColor}`}
+        ${disabled
+                ? isClase
+                    ? `cursor-not-allowed opacity-60 ${bgColor}`
+                    : 'cursor-not-allowed opacity-60 bg-gray-300 grayscale'
+                : `cursor-grab active:cursor-grabbing hover:brightness-110 ${bgColor}`
+            }
         ${isDragging ? 'z-50 opacity-80 ring-2 ring-white scale-105' : 'z-10'}
         ${isClase ? 'border-l-4 border-white/30' : ''}
       `}

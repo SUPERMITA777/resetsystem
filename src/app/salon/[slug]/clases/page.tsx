@@ -68,8 +68,17 @@ export default function PublicClasesPage() {
                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-premium-soft border border-[#f4d0d9]/30">
                         <Calendar className="w-10 h-10 text-[#D4A5B2]" />
                     </div>
-                    <h2 className="text-4xl font-serif italic text-[#7b5460] mb-2 tracking-tight leading-none uppercase">Cronograma de Clases</h2>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Encuentra el momento perfecto para renovarte</p>
+                    <h2 className="text-4xl font-serif italic text-[#7b5460] mb-2 tracking-tight leading-none uppercase">
+                        {tenant.config_clases?.public_title || "Cronograma de Clases"}
+                    </h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">
+                        {tenant.config_clases?.public_subtitle || "Encuentra el momento perfecto para renovarte"}
+                    </p>
+                    {tenant.config_clases?.public_description && (
+                        <p className="mt-6 text-sm text-gray-500 font-medium leading-relaxed max-w-sm mx-auto">
+                            {tenant.config_clases.public_description}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-6">
