@@ -6,19 +6,22 @@ import { use } from "react";
 import { getInscriptosPorClaseYHorario, updateTurno, TurnoDB } from "@/lib/services/agendaService";
 import { claseService, Clase } from "@/lib/services/claseService";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, XCircle, Clock, User, Phone, ArrowLeft, QrCode, Search } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, User, Phone, ArrowLeft, QrCode, Search, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface CheckinPageProps {
     params: Promise<{
         claseId: string;
+        fecha: string;
         horarioId: string;
     }>;
 }
 
 export default function CheckinPage({ params }: CheckinPageProps) {
-    const { claseId, horarioId: rawHorarioId } = use(params);
+    const { claseId, fecha, horarioId: rawHorarioId } = use(params);
     const horarioId = rawHorarioId.replace('-', ':'); // reverse transformation if needed
     
     const [alumnos, setAlumnos] = useState<TurnoDB[]>([]);
@@ -31,13 +34,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
     useEffect(() => {
         loadData();
-    }, [claseId, horarioId]);
+    }, [claseId, fecha, horarioId]);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const [data, claseInfo] = await Promise.all([
-                getInscriptosPorClaseYHorario(tenantId, claseId, hoyStr(), horarioId),
+                getInscriptosPorClaseYHorario(tenantId, claseId, fecha, horarioId),
                 claseService.getClaseById(tenantId, claseId)
             ]);
             setAlumnos(data);
@@ -48,10 +51,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         } finally {
             setLoading(false);
         }
-    };
-
-    const hoyStr = () => {
-        return new Date().toISOString().split('T')[0];
     };
 
     const handleCheckin = async (turnoId: string) => {
@@ -97,9 +96,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     <div className="flex justify-between items-start">
                         <div className={bgStatus !== 'default' ? 'text-white' : ''}>
                             <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">{clase?.nombre || "Cargando..."}</h1>
-                            <p className={`text-xs font-black uppercase tracking-[0.3em] mt-3 ${bgStatus !== 'default' ? 'text-white/80' : 'text-gray-400'}`}>
-                                HOY {horarioId} HS • {alumnos.length} inscritos
-                            </p>
+                            <div className={`flex items-center gap-3 mt-3 ${bgStatus !== 'default' ? 'text-white/80' : 'text-gray-400'}`}>
+                                <p className="text-xs font-black uppercase tracking-[0.3em] flex items-center gap-1">
+                                    <CalendarIcon className="w-3 h-3" /> {format(parseISO(fecha), "dd/MM", { locale: es })}
+                                </p>
+                                <p className="text-xs font-black uppercase tracking-[0.3em] flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> {horarioId} HS
+                                </p>
+                                <p className="text-xs font-black uppercase tracking-[0.3em] flex items-center gap-1">
+                                    <Users className="w-3 h-3" /> {alumnos.length} inscritos
+                                </p>
+                            </div>
                         </div>
                     </div>
 

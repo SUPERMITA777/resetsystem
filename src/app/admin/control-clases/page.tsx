@@ -4,58 +4,63 @@ import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { claseService, Clase } from "@/lib/services/claseService";
 import { getTurnosPorFecha, TurnoDB } from "@/lib/services/agendaService";
-import { format } from "date-fns";
+import { format, addDays, startOfToday, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { QrCode, Users, Clock, ChevronRight, Search } from "lucide-react";
+import { QrCode, Users, Clock, ChevronRight, Search, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function ControlClasesPage() {
-    const [clasesHoy, setClasesHoy] = useState<any[]>([]);
+    const [clasesList, setClasesList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<string>(format(startOfToday(), 'yyyy-MM-dd'));
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
-    const hoyStr = format(new Date(), 'yyyy-MM-dd');
 
     useEffect(() => {
         loadClases();
-    }, []);
+    }, [selectedDate]);
 
     const loadClases = async () => {
         setLoading(true);
         try {
-            // Obtener todos los turnos de tipo clase para hoy
-            const turnos = await getTurnosPorFecha(tenantId, hoyStr);
-            const turnosClase = turnos.filter(t => !!t.claseId);
-
-            // Agrupar por clase y horario
-            const grupos: Record<string, any> = {};
-            turnosClase.forEach(t => {
-                const key = `${t.claseId}-${t.horaInicio}`;
-                if (!grupos[key]) {
-                    grupos[key] = {
-                        claseId: t.claseId,
-                        nombre: t.tratamientoAbreviado,
-                        hora: t.horaInicio,
-                        inscriptos: 0,
-                        id: key
-                    };
-                }
-                grupos[key].inscriptos++;
-            });
-
-            // Cargar datos de la clase para obtener el cupo
+            // Cargar datos de la clase para obtener el cupo y horarios definidos
             const clasesDb = await claseService.getClases(tenantId);
-            const final = Object.values(grupos).map(g => {
-                const c = clasesDb.find(cl => cl.id === g.claseId);
-                return { ...g, cupo: c?.cupo || 0 };
+            
+            // Si no hay fecha seleccionada (TODAS), mostramos todas las sesiones programadas
+            // Si hay fecha, filtramos por esa fecha.
+            
+            const sessions: any[] = [];
+            
+            clasesDb.forEach(clase => {
+                if (clase.status === 'active' && clase.horarios) {
+                    clase.horarios.forEach(h => {
+                        if (!selectedDate || h.fecha === selectedDate) {
+                            sessions.push({
+                                claseId: clase.id,
+                                nombre: clase.nombre,
+                                hora: h.hora,
+                                fecha: h.fecha,
+                                inscriptos: h.inscriptosCount || 0,
+                                cupo: clase.cupo,
+                                id: `${clase.id}-${h.fecha}-${h.hora}`
+                            });
+                        }
+                    });
+                }
             });
 
-            setClasesHoy(final.sort((a, b) => a.hora.localeCompare(b.hora)));
+            setClasesList(sessions.sort((a, b) => `${a.fecha} ${a.hora}`.localeCompare(`${b.fecha} ${b.hora}`)));
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
     };
+
+    const dateFilters = [
+        { label: 'TODAS', value: '' },
+        { label: 'HOY', value: format(startOfToday(), 'yyyy-MM-dd') },
+        { label: 'MAÑANA', value: format(addDays(startOfToday(), 1), 'yyyy-MM-dd') },
+    ];
 
     return (
         <AdminLayout>
@@ -64,7 +69,7 @@ export default function ControlClasesPage() {
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter leading-none">Control de Clases</h1>
                         <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.3em] mt-3 flex items-center gap-2">
-                             <Clock className="w-3 h-3" /> {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+                             <Clock className="w-3 h-3" /> {selectedDate ? format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es }) : "Todas las Clases"}
                         </p>
                     </div>
                     <Link 
@@ -76,33 +81,64 @@ export default function ControlClasesPage() {
                     </Link>
                 </div>
 
+                {/* Filtros de Fecha */}
+                <div className="flex bg-white p-2 rounded-[2rem] shadow-premium-soft border border-gray-100 gap-2 overflow-x-auto no-scrollbar">
+                    {dateFilters.map((filter) => (
+                        <button
+                            key={filter.label}
+                            onClick={() => setSelectedDate(filter.value)}
+                            className={`px-8 h-14 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
+                                selectedDate === filter.value 
+                                    ? 'bg-black text-white shadow-lg' 
+                                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                            }`}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
+                    <div className="relative">
+                        <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <input 
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className={`pl-10 pr-4 h-14 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all outline-none border-none ${
+                                !dateFilters.some(f => f.value === selectedDate && f.value !== '') && selectedDate !== ''
+                                    ? 'bg-black text-white shadow-lg' 
+                                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                            }`}
+                        />
+                    </div>
+                </div>
+
                 <div className="grid gap-4">
                     <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-100 border border-gray-50">
                         <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-orange-500" /> Clases Programadas para Hoy
+                            <Users className="w-4 h-4 text-orange-500" /> {selectedDate ? `Clases Programadas para el ${format(parseISO(selectedDate), "dd/MM")}` : "Todas las Clases Programadas"}
                         </h2>
 
                         {loading ? (
                             <div className="py-20 text-center text-gray-300 font-bold uppercase tracking-widest text-xs animate-pulse">Cargando agenda...</div>
-                        ) : clasesHoy.length === 0 ? (
+                        ) : clasesList.length === 0 ? (
                             <div className="py-20 text-center">
                                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Clock className="w-8 h-8 text-gray-200" />
                                 </div>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay clases programadas para hoy</p>
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay clases programadas para esta fecha</p>
                             </div>
                         ) : (
                             <div className="grid gap-3">
-                                {clasesHoy.map((clase) => (
+                                {clasesList.map((clase) => (
                                     <Link 
                                         key={clase.id}
-                                        href={`/admin/control-clases/checkin/${clase.claseId}/${clase.hora.replace(':', '-')}`}
+                                        href={`/admin/control-clases/checkin/${clase.claseId}/${clase.fecha}/${clase.hora.replace(':', '-')}`}
                                         className="group flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-black hover:bg-white transition-all"
                                     >
                                         <div className="flex items-center gap-6">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm group-hover:bg-black group-hover:text-white transition-colors">
-                                                <span className="text-[10px] font-black uppercase opacity-40">Hora</span>
-                                                <span className="text-lg font-black">{clase.hora}</span>
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm group-hover:bg-black group-hover:text-white transition-colors text-center px-1">
+                                                {!selectedDate && <span className="text-[8px] font-black uppercase opacity-40">{format(parseISO(clase.fecha), "dd/MM")}</span>}
+                                                <span className="text-[8px] font-black uppercase opacity-40">{selectedDate ? "Hora" : ""}</span>
+                                                <span className="text-md font-black">{clase.hora}</span>
                                             </div>
                                             <div>
                                                 <h3 className="text-lg font-black text-gray-900 group-hover:text-black uppercase tracking-tight">{clase.nombre}</h3>
@@ -110,6 +146,11 @@ export default function ControlClasesPage() {
                                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
                                                         <Users className="w-3 h-3" /> {clase.inscriptos} de {clase.cupo}
                                                     </span>
+                                                    {!selectedDate && (
+                                                        <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1">
+                                                            <CalendarIcon className="w-3 h-3" /> {format(parseISO(clase.fecha), "EEEE d", { locale: es })}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
