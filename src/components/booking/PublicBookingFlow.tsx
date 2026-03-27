@@ -14,6 +14,9 @@ interface PublicBookingFlowProps {
 }
 
 export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
+    const params = useParams();
+    const tenantId = params.slug as string || 'resetspa';
+    
     const [step, setStep] = useState<'categories' | 'services' | 'details' | 'success'>('categories');
     const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
     const [subtratamientos, setSubtratamientos] = useState<Subtratamiento[]>([]);
@@ -24,8 +27,6 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
     // Form states
     const [name, setName] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
-
-    const tenantId = 'resetspa'; // En un entorno real, vendría del slug
 
     useEffect(() => {
         async function loadCategories() {
@@ -41,7 +42,7 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
             }
         }
         loadCategories();
-    }, []);
+    }, [tenantId]);
 
     const handleCategorySelect = async (t: Tratamiento) => {
         setSelectedTratamiento(t);
@@ -85,7 +86,7 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
             await addDoc(collection(db, 'tenants', tenantId, 'leads_whatsapp'), leadData);
 
             // 2. Preparar mensaje de WhatsApp
-            const message = `✨ ¡Nuevo pedido de turno en RESET SYSTEM! ✨\n\n👤 Cliente: ${name}\n📱 WhatsApp: https://wa.me/${whatsapp.replace(/\D/g, '')}\n💆 Servicio: ${selectedTratamiento?.nombre} > ${selectedService?.nombre}\n💰 Precio: $${selectedService?.precio}\n\nPor favor, confirme este turno en su panel de gestión.`;
+            const message = `✨ ¡Nuevo pedido de turno en ${tenantName}! ✨\n\n👤 Cliente: ${name}\n📱 WhatsApp: https://wa.me/${whatsapp.replace(/\D/g, '')}\n💆 Servicio: ${selectedTratamiento?.nombre} > ${selectedService?.nombre}\n💰 Precio: $${selectedService?.precio}\n\nPor favor, confirme este turno en su panel de gestión.`;
             const encodedMessage = encodeURIComponent(message);
             const waLink = `https://wa.me/5491112345678?text=${encodedMessage}`; // Número del salón mockeado
 
@@ -100,25 +101,30 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
     };
 
     if (loading) {
-        return <div className="p-12 text-center animate-pulse text-gray-500">Cargando catálogo...</div>;
+        return <div className="p-12 text-center animate-pulse text-gray-400 font-black uppercase tracking-widest text-xs">Cargando catálogo...</div>;
     }
 
     if (step === 'categories') {
         return (
             <div className="space-y-6">
-                <h2 className="text-xl font-heading font-bold">Elige un Tratamiento</h2>
+                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Elige un Tratamiento</h2>
                 <div className="grid gap-4">
                     {tratamientos.map(t => (
                         <Card
                             key={t.id}
-                            className="p-4 flex justify-between items-center hover:shadow-md cursor-pointer transition-all border-l-4 border-l-[var(--primary)]"
+                            className="p-6 flex justify-between items-center hover:shadow-xl cursor-pointer transition-all border-l-4 border-l-tenant-accent rounded-[2rem] bg-white group"
                             onClick={() => handleCategorySelect(t)}
                         >
-                            <div>
-                                <h3 className="font-bold">{t.nombre}</h3>
-                                {t.descripcion && <p className="text-xs text-gray-500">{t.descripcion}</p>}
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center font-black text-xl text-gray-300 group-hover:bg-tenant-primary group-hover:text-white transition-all">
+                                    {t.nombre.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-gray-900 uppercase tracking-tight text-lg leading-none">{t.nombre}</h3>
+                                    {t.descripcion && <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2 leading-relaxed">{t.descripcion}</p>}
+                                </div>
                             </div>
-                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                            <ChevronRight className="w-6 h-6 text-gray-300 group-hover:text-tenant-primary transition-all" />
                         </Card>
                     ))}
                 </div>
@@ -129,23 +135,23 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
     if (step === 'services') {
         return (
             <div className="space-y-6">
-                <Button variant="ghost" size="sm" onClick={() => setStep('categories')}>← Volver</Button>
-                <h2 className="text-xl font-heading font-bold">{selectedTratamiento?.nombre}</h2>
+                <button onClick={() => setStep('categories')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black flex items-center gap-2">← Volver</button>
+                <h2 className="text-2xl font-black uppercase tracking-tight text-gray-900">{selectedTratamiento?.nombre}</h2>
                 <div className="grid gap-3">
                     {subtratamientos.map(s => (
                         <Card
                             key={s.id}
-                            className="p-4 flex justify-between items-center hover:shadow-md cursor-pointer transition-all"
+                            className="p-6 flex justify-between items-center hover:shadow-xl cursor-pointer transition-all rounded-[2rem] bg-white group border-2 border-transparent hover:border-tenant-accent"
                             onClick={() => handleServiceSelect(s)}
                         >
                             <div>
-                                <h3 className="font-semibold">{s.nombre}</h3>
-                                <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-xs font-bold text-[var(--primary)]">${s.precio}</span>
-                                    <span className="text-xs text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" /> {s.duracion_minutos} min</span>
+                                <h3 className="font-black text-gray-900 uppercase tracking-tight text-lg leading-none">{s.nombre}</h3>
+                                <div className="flex items-center gap-4 mt-3">
+                                    <span className="text-sm font-black text-tenant-primary">${s.precio}</span>
+                                    <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center gap-1"><Clock className="w-3 h-3" /> {s.duracion_minutos} min</span>
                                 </div>
                             </div>
-                            <Button size="sm" className="rounded-full">Elegir</Button>
+                            <Button size="sm" className="rounded-2xl h-12 px-6 bg-black text-white font-black uppercase tracking-widest text-[10px] shadow-lg group-hover:bg-tenant-primary transition-all">Elegir</Button>
                         </Card>
                     ))}
                 </div>
@@ -156,31 +162,31 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
     if (step === 'details') {
         return (
             <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                <Button variant="ghost" size="sm" onClick={() => setStep('services')}>← Volver</Button>
+                <button onClick={() => setStep('services')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black flex items-center gap-2">← Volver</button>
 
-                <div className="bg-[var(--secondary)]/20 p-6 rounded-2xl border border-[var(--primary)]/10">
-                    <h3 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-2">Resumen de tu elección</h3>
-                    <p className="text-lg font-bold">{selectedTratamiento?.nombre} &gt; {selectedService?.nombre}</p>
-                    <p className="text-2xl font-bold mt-2 text-[var(--foreground)]">${selectedService?.precio}</p>
+                <div className="bg-tenant-secondary p-8 rounded-[2.5rem] border border-tenant-accent/20">
+                    <h3 className="text-[10px] font-black text-tenant-primary uppercase tracking-[0.2em] mb-4">Resumen de tu elección</h3>
+                    <p className="text-2xl font-black text-gray-900 uppercase tracking-tight">{selectedTratamiento?.nombre} &gt; {selectedService?.nombre}</p>
+                    <p className="text-3xl font-black mt-4 text-tenant-primary tracking-tight">${selectedService?.precio}</p>
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-heading font-bold">Tus Datos de Contacto</h3>
+                <div className="space-y-6">
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Tus Datos de Contacto</h3>
                     <div className="space-y-4">
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><User className="w-5 h-5" /></span>
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"><User className="w-5 h-5" /></span>
                             <input
-                                className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-6 focus:ring-2 focus:ring-[var(--primary)] outline-none transition-all"
+                                className="w-full bg-gray-50 border-none rounded-[1.5rem] h-16 pl-14 pr-6 focus:ring-2 focus:ring-tenant-primary outline-none transition-all font-bold"
                                 placeholder="Nombre y Apellido"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                             />
                         </div>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Smartphone className="w-5 h-5" /></span>
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"><Smartphone className="w-5 h-5" /></span>
                             <input
-                                className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-6 focus:ring-2 focus:ring-[var(--primary)] outline-none transition-all"
-                                placeholder="Tu WhatsApp (con código de área)"
+                                className="w-full bg-gray-50 border-none rounded-[1.5rem] h-16 pl-14 pr-6 focus:ring-2 focus:ring-tenant-primary outline-none transition-all font-bold"
+                                placeholder="Tu WhatsApp (ej: +54 9 11 ...)"
                                 value={whatsapp}
                                 onChange={(e) => setWhatsapp(e.target.value)}
                             />
@@ -189,7 +195,7 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
                 </div>
 
                 <Button
-                    className="w-full h-16 text-lg rounded-2xl shadow-lg shadow-[var(--primary)]/20 font-bold"
+                    className="w-full h-20 text-[11px] rounded-[1.5rem] shadow-2xl shadow-tenant-primary/20 bg-black text-white font-black uppercase tracking-[0.2em] hover:bg-tenant-primary active:scale-95 transition-all"
                     onClick={handleRequestTurno}
                 >
                     PEDIR TURNO POR WHATSAPP

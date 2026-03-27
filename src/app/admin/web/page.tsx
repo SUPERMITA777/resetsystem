@@ -26,9 +26,15 @@ export default function WebConfigPage() {
     const [config, setConfig] = useState({
         nombre_salon: '',
         logo_url: '',
-        hero_image_url: '',
         tema_visual: 'nude' as TenantData['tema_visual'],
-        layout_type: 'classic', // classic, modern, minimal
+        
+        // Web Config specific
+        layout_type: 'classic' as 'classic' | 'modern' | 'minimal',
+        primary_color: '#000000',
+        secondary_color: '#ffffff',
+        accent_color: '#D4A5B2',
+        hero_image_url: '',
+        font_family: 'sans' as 'serif' | 'sans' | 'mono',
         
         public_title: '',
         public_subtitle: '',
@@ -58,9 +64,14 @@ export default function WebConfigPage() {
                 setConfig({
                     nombre_salon: data.nombre_salon || '',
                     logo_url: data.logo_url || '',
-                    hero_image_url: (data as any).hero_image_url || '',
                     tema_visual: data.tema_visual || 'nude',
-                    layout_type: (data as any).layout_type || 'classic',
+                    
+                    layout_type: data.web_config?.layout_type || 'classic',
+                    primary_color: data.web_config?.primary_color || (data.tema_visual === 'nude' ? '#7b5460' : data.tema_visual === 'lavender' ? '#9381FF' : '#7D9D9C'),
+                    secondary_color: data.web_config?.secondary_color || '#faf9f9',
+                    accent_color: data.web_config?.accent_color || (data.tema_visual === 'nude' ? '#D4A5B2' : data.tema_visual === 'lavender' ? '#B8B8FF' : '#B4CFB0'),
+                    hero_image_url: data.web_config?.hero_image_url || '',
+                    font_family: data.web_config?.font_family || 'sans',
                     
                     public_title: data.config_clases?.public_title || "Cronograma de Clases",
                     public_subtitle: data.config_clases?.public_subtitle || "Encuentra el momento perfecto para renovarte",
@@ -72,8 +83,8 @@ export default function WebConfigPage() {
                     instagram: data.datos_contacto?.instagram || '',
                     whatsapp: data.datos_contacto?.whatsapp || '',
                     
-                    seo_title: (data as any).seo_title || data.nombre_salon,
-                    seo_description: (data as any).seo_description || data.datos_contacto?.descripcion || '',
+                    seo_title: data.web_config?.seo_title || data.nombre_salon,
+                    seo_description: data.web_config?.seo_description || data.datos_contacto?.descripcion || '',
                 });
             }
         } catch (error) {
@@ -89,9 +100,17 @@ export default function WebConfigPage() {
             await createOrUpdateTenant(tenantId, {
                 nombre_salon: config.nombre_salon,
                 logo_url: config.logo_url,
-                hero_image_url: config.hero_image_url,
                 tema_visual: config.tema_visual,
-                layout_type: config.layout_type,
+                web_config: {
+                    layout_type: config.layout_type,
+                    primary_color: config.primary_color,
+                    secondary_color: config.secondary_color,
+                    accent_color: config.accent_color,
+                    hero_image_url: config.hero_image_url,
+                    seo_title: config.seo_title,
+                    seo_description: config.seo_description,
+                    font_family: config.font_family,
+                },
                 config_clases: {
                     public_title: config.public_title,
                     public_subtitle: config.public_subtitle,
@@ -104,9 +123,7 @@ export default function WebConfigPage() {
                     instagram: config.instagram,
                     whatsapp: config.whatsapp,
                 },
-                seo_title: config.seo_title,
-                seo_description: config.seo_description,
-            } as any);
+            });
             
             toast.success("Configuración web guardada con éxito");
         } catch (error) {
@@ -259,41 +276,103 @@ export default function WebConfigPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                    <div className="space-y-6">
-                                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Tema Visual</Label>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {[
-                                                { id: 'nude', label: 'Nude & Rose Gold', color: 'bg-[#D4A5B2]' },
-                                                { id: 'lavender', label: 'Minimalist Lavender', color: 'bg-[#9381FF]' },
-                                                { id: 'sage', label: 'Sage & Cream', color: 'bg-[#7D9D9C]' }
-                                            ].map((theme) => (
-                                                <button
-                                                    key={theme.id}
-                                                    onClick={() => setConfig({...config, tema_visual: theme.id as any})}
-                                                    className={`w-full p-5 rounded-2xl border-2 transition-all flex items-center justify-between group ${
-                                                        config.tema_visual === theme.id ? 'border-black bg-gray-50' : 'border-gray-100 hover:border-gray-200'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-full shadow-inner ${theme.color} transition-transform group-hover:scale-110`} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">{theme.label}</span>
-                                                    </div>
-                                                    {config.tema_visual === theme.id && <Check className="w-4 h-4" />}
-                                                </button>
-                                            ))}
+                                    <div className="space-y-8">
+                                        <div>
+                                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Preajustes de Tema</Label>
+                                            <div className="grid grid-cols-1 gap-3 mt-3">
+                                                {[
+                                                    { id: 'nude', label: 'Nude & Rose Gold', color: 'bg-[#D4A5B2]', primary: '#7b5460', accent: '#D4A5B2' },
+                                                    { id: 'lavender', label: 'Minimalist Lavender', color: 'bg-[#9381FF]', primary: '#9381FF', accent: '#B8B8FF' },
+                                                    { id: 'sage', label: 'Sage & Cream', color: 'bg-[#7D9D9C]', primary: '#7D9D9C', accent: '#B4CFB0' }
+                                                ].map((theme) => (
+                                                    <button
+                                                        key={theme.id}
+                                                        type="button"
+                                                        onClick={() => setConfig({
+                                                            ...config, 
+                                                            tema_visual: theme.id as any,
+                                                            primary_color: theme.primary,
+                                                            accent_color: theme.accent
+                                                        })}
+                                                        className={`w-full p-5 rounded-2xl border-2 transition-all flex items-center justify-between group ${
+                                                            config.tema_visual === theme.id ? 'border-black bg-gray-50' : 'border-gray-100 hover:border-gray-200'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-10 h-10 rounded-full shadow-inner ${theme.color} transition-transform group-hover:scale-110`} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">{theme.label}</span>
+                                                        </div>
+                                                        {config.tema_visual === theme.id && <Check className="w-4 h-4" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Tipografía Principal</Label>
+                                            <div className="grid grid-cols-3 gap-3 mt-3">
+                                                {[
+                                                    { id: 'serif', label: 'Serif', font: 'font-serif' },
+                                                    { id: 'sans', label: 'Sans-Serif', font: 'font-sans' },
+                                                    { id: 'mono', label: 'Monospace', font: 'font-mono' }
+                                                ].map((f) => (
+                                                    <button
+                                                        key={f.id}
+                                                        type="button"
+                                                        onClick={() => setConfig({...config, font_family: f.id as any})}
+                                                        className={`p-4 rounded-2xl border-2 transition-all text-center ${
+                                                            config.font_family === f.id ? 'border-black bg-black text-white' : 'border-gray-100 bg-white text-gray-400 hover:border-gray-200'
+                                                        }`}
+                                                    >
+                                                        <span className={`text-xl block mb-1 ${f.font}`}>Aa</span>
+                                                        <span className="text-[8px] font-black uppercase tracking-widest">{f.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-6">
-                                        <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100 h-full flex flex-col items-center justify-center text-center gap-6">
-                                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-premium-soft border border-gray-100">
-                                                <Sparkles className="w-10 h-10 text-black animate-pulse" />
+                                    <div className="space-y-8">
+                                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Colores Personalizados</Label>
+                                        
+                                        <div className="grid grid-cols-1 gap-6">
+                                            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-[11px] font-black uppercase tracking-widest">Color Primario</h4>
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase">Títulos y elementos destacados</p>
+                                                </div>
+                                                <input 
+                                                    type="color" 
+                                                    value={config.primary_color}
+                                                    onChange={e => setConfig({...config, primary_color: e.target.value})}
+                                                    className="w-12 h-12 rounded-xl cursor-pointer border-none bg-transparent"
+                                                />
                                             </div>
-                                            <div>
-                                                <h4 className="text-[11px] font-black uppercase tracking-widest mb-2">Tipografía Premium</h4>
-                                                <p className="text-[10px] text-gray-400 font-bold leading-relaxed uppercase tracking-widest">
-                                                    Los temas incluyen tipografías seleccionadas por diseñadores para elevar la percepción de tu marca.
-                                                </p>
+
+                                            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-[11px] font-black uppercase tracking-widest">Color de Acento</h4>
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase">Botones y llamadas a la acción</p>
+                                                </div>
+                                                <input 
+                                                    type="color" 
+                                                    value={config.accent_color}
+                                                    onChange={e => setConfig({...config, accent_color: e.target.value})}
+                                                    className="w-12 h-12 rounded-xl cursor-pointer border-none bg-transparent"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-[11px] font-black uppercase tracking-widest">Color de Fondo</h4>
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase">Fondo general de la web</p>
+                                                </div>
+                                                <input 
+                                                    type="color" 
+                                                    value={config.secondary_color}
+                                                    onChange={e => setConfig({...config, secondary_color: e.target.value})}
+                                                    className="w-12 h-12 rounded-xl cursor-pointer border-none bg-transparent"
+                                                />
                                             </div>
                                         </div>
                                     </div>
