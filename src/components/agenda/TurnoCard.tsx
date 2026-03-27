@@ -83,8 +83,9 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
     // Inteligencia de Clases: Naranja (incompleto), Verde (completo)
     const isClase = !!turno.claseId;
     let textColor = 'text-white';
+    let isFull = false;
     if (isClase && turno.claseInfo) {
-        const isFull = turno.claseInfo.inscriptosCount >= turno.claseInfo.cupo;
+        isFull = turno.claseInfo.inscriptosCount >= turno.claseInfo.cupo;
         bgColor = isFull ? 'bg-emerald-100' : 'bg-orange-100';
         textColor = isFull ? 'text-emerald-700' : 'text-orange-700';
     }
