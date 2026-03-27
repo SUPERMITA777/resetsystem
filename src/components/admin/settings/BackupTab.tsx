@@ -123,7 +123,7 @@ export function BackupTab({ tenantId }: BackupTabProps) {
                         <div className="pt-4 flex flex-col gap-4">
                             <Button 
                                 onClick={handleToggleOffline}
-                                variant={isOfflineEnabled ? "outline" : "black"}
+                                variant={isOfflineEnabled ? "outline" : "default"}
                                 className="rounded-2xl h-12 px-8 font-bold uppercase tracking-widest self-start transition-all hover:scale-105"
                             >
                                 {isOfflineEnabled ? "Desactivar Protección" : "Activar en esta Terminal"}
