@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
-import { Users, CalendarCheck, TrendingUp, Globe, ArrowRight } from "lucide-react";
+import { Users, CalendarCheck, TrendingUp, Globe, ArrowRight, Smartphone } from "lucide-react";
 import { WebConfigModal } from "@/components/admin/web/WebConfigModal";
 import { Button } from "@/components/ui/Button";
 
