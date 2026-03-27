@@ -8,6 +8,7 @@ import { ChevronRight, Smartphone, User, Clock, CheckCircle2 } from 'lucide-reac
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useParams } from 'next/navigation';
 
 interface PublicBookingFlowProps {
     tenantName: string;
