@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
-import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight } from "lucide-react";
+import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle } from "lucide-react";
 import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
 import Head from "next/head";
 
