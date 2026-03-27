@@ -6,7 +6,7 @@ import {
     Globe, Layout as LayoutIcon, Palette, Image as ImageIcon,
     MessageSquare, Save, ChevronRight, Check, Sparkles,
     Instagram, Phone, MapPin, Search, Smartphone, Eye,
-    Type, ExternalLink
+    Type
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -176,7 +176,7 @@ export default function WebConfigPage() {
                             className="flex-1 md:flex-none h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] border-2 hover:bg-gray-50 transition-all flex items-center gap-2"
                         >
                             <Eye className="w-4 h-4" />
-                            Previsualizar
+                            Ver mi Web
                         </Button>
                         <Button 
                             onClick={handleSave}
@@ -591,8 +591,7 @@ export default function WebConfigPage() {
                             variant="outline" 
                             className="h-16 px-12 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] border-2 hover:bg-black hover:text-white transition-all shadow-xl active:scale-95"
                         >
-                            Ver Landing Page
-                            <ExternalLink className="w-4 h-4 ml-3" />
+                            Ver mi Web Pública
                         </Button>
                     </div>
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300">Cualquier cambio guardado se reflejará instantáneamente</p>
