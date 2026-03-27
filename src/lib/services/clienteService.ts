@@ -1,4 +1,5 @@
 import { db } from "../firebase";
+import { addIngresoCredito } from "./reportesService";
 import {
     collection,
     doc,
@@ -114,6 +115,20 @@ export const clienteService = {
             fechaVencimiento,
             createdAt: serverTimestamp()
         });
+
+        // Registrar ingreso en reportes
+        try {
+            await addIngresoCredito(tenantId, {
+                clienteId: id,
+                clienteNombre: (snap.data() as Cliente).nombre + ' ' + ((snap.data() as Cliente).apellido || ''),
+                monto: paymentData.monto,
+                metodo: paymentData.metodo as "EFECTIVO" | "TRANSFERENCIA",
+                cantidad: amount,
+                fecha: paymentData.fecha || new Date().toISOString().split('T')[0]
+            });
+        } catch (error) {
+            console.error("Error al registrar ingreso de créditos en reporte:", error);
+        }
         
         return newCredits;
     },

@@ -12,7 +12,8 @@ import { es } from "date-fns/locale";
 import { getTurnosPorFecha, getTurnosPorRango, TurnoDB } from "@/lib/services/agendaService";
 import {
     getEgresosDelDia, getEgresosDelPeriodo, addEgreso, deleteEgreso,
-    buildResumen, EgresoData, ResumenReporte
+    getIngresosCreditosDelDia, getIngresosCreditosDelPeriodo,
+    buildResumen, EgresoData, ResumenReporte, IngresoCredito
 } from "@/lib/services/reportesService";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -265,6 +266,7 @@ export default function ReportesPage() {
     const [diaFecha, setDiaFecha] = useState(new Date());
     const [diaTurnos, setDiaTurnos] = useState<TurnoDB[]>([]);
     const [diaEgresos, setDiaEgresos] = useState<EgresoData[]>([]);
+    const [diaIngresosCreditos, setDiaIngresosCreditos] = useState<IngresoCredito[]>([]);
     const [diaResumen, setDiaResumen] = useState<ResumenReporte | null>(null);
     const [diaLoading, setDiaLoading] = useState(false);
 
@@ -272,6 +274,7 @@ export default function ReportesPage() {
     const [mesDate, setMesDate] = useState(new Date());
     const [mesTurnos, setMesTurnos] = useState<TurnoDB[]>([]);
     const [mesEgresos, setMesEgresos] = useState<EgresoData[]>([]);
+    const [mesIngresosCreditos, setMesIngresosCreditos] = useState<IngresoCredito[]>([]);
     const [mesResumen, setMesResumen] = useState<ResumenReporte | null>(null);
     const [mesLoading, setMesLoading] = useState(false);
 
@@ -282,13 +285,15 @@ export default function ReportesPage() {
         setDiaLoading(true);
         try {
             const fechaStr = format(fecha, "yyyy-MM-dd");
-            const [turnos, egresos] = await Promise.all([
+            const [turnos, egresos, creditos] = await Promise.all([
                 getTurnosPorFecha(currentTenant, fechaStr),
                 getEgresosDelDia(currentTenant, fechaStr),
+                getIngresosCreditosDelDia(currentTenant, fechaStr),
             ]);
             setDiaTurnos(turnos);
             setDiaEgresos(egresos);
-            setDiaResumen(buildResumen(turnos, egresos));
+            setDiaIngresosCreditos(creditos);
+            setDiaResumen(buildResumen(turnos, egresos, creditos));
         } catch {
             toast.error("Error al cargar el reporte diario");
         } finally {
@@ -302,13 +307,15 @@ export default function ReportesPage() {
         try {
             const inicio = format(startOfMonth(fecha), "yyyy-MM-dd");
             const fin = format(endOfMonth(fecha), "yyyy-MM-dd");
-            const [turnos, egresos] = await Promise.all([
+            const [turnos, egresos, creditos] = await Promise.all([
                 getTurnosPorRango(currentTenant, inicio, fin),
                 getEgresosDelPeriodo(currentTenant, inicio, fin),
+                getIngresosCreditosDelPeriodo(currentTenant, inicio, fin),
             ]);
             setMesTurnos(turnos);
             setMesEgresos(egresos);
-            setMesResumen(buildResumen(turnos, egresos));
+            setMesIngresosCreditos(creditos);
+            setMesResumen(buildResumen(turnos, egresos, creditos));
         } catch {
             toast.error("Error al cargar el reporte mensual");
         } finally {
@@ -327,7 +334,7 @@ export default function ReportesPage() {
             const nuevo: EgresoData = { id, motivo, monto, metodo, fecha: fechaStr };
             const updated = [...diaEgresos, nuevo];
             setDiaEgresos(updated);
-            setDiaResumen(buildResumen(diaTurnos, updated));
+            setDiaResumen(buildResumen(diaTurnos, updated, diaIngresosCreditos));
             toast.success("Egreso registrado");
         } catch {
             toast.error("Error al guardar el egreso");
@@ -340,7 +347,7 @@ export default function ReportesPage() {
             await deleteEgreso(currentTenant, egresoId);
             const updated = diaEgresos.filter(e => e.id !== egresoId);
             setDiaEgresos(updated);
-            setDiaResumen(buildResumen(diaTurnos, updated));
+            setDiaResumen(buildResumen(diaTurnos, updated, diaIngresosCreditos));
             toast.success("Egreso eliminado");
         } catch {
             toast.error("Error al eliminar el egreso");
@@ -358,16 +365,20 @@ export default function ReportesPage() {
         while (cursor <= fin) {
             const weekEnd = addDays(cursor, 6);
             const wLabel = `Sem ${weekNum}`;
-            const wTurnos = mesTurnos.filter(t => t.fecha >= format(cursor, "yyyy-MM-dd") && t.fecha <= format(weekEnd > fin ? fin : weekEnd, "yyyy-MM-dd"));
-            const wEgresos = mesEgresos.filter(e => e.fecha >= format(cursor, "yyyy-MM-dd") && e.fecha <= format(weekEnd > fin ? fin : weekEnd, "yyyy-MM-dd"));
-            const ing = buildResumen(wTurnos, wEgresos).ingresos.total;
-            const eg = buildResumen(wTurnos, wEgresos).egresos.total;
-            weeks.push({ label: wLabel, ingresos: ing, egresos: eg });
+            const wRangeStart = format(cursor, "yyyy-MM-dd");
+            const wRangeEnd = format(weekEnd > fin ? fin : weekEnd, "yyyy-MM-dd");
+            
+            const wTurnos = mesTurnos.filter(t => t.fecha >= wRangeStart && t.fecha <= wRangeEnd);
+            const wEgresos = mesEgresos.filter(e => e.fecha >= wRangeStart && e.fecha <= wRangeEnd);
+            const wCreditos = mesIngresosCreditos.filter(c => c.fecha >= wRangeStart && c.fecha <= wRangeEnd);
+            
+            const res = buildResumen(wTurnos, wEgresos, wCreditos);
+            weeks.push({ label: wLabel, ingresos: res.ingresos.total, egresos: res.egresos.total });
             cursor = addDays(weekEnd, 1);
             weekNum++;
         }
         return weeks;
-    }, [mesTurnos, mesEgresos, mesDate]);
+    }, [mesTurnos, mesEgresos, mesIngresosCreditos, mesDate]);
 
     const loading = tab === "diario" ? diaLoading : mesLoading;
 
@@ -449,7 +460,7 @@ export default function ReportesPage() {
                                         <SummaryCard
                                             label="Ingresos"
                                             value={formatCurrency(diaResumen.ingresos.total)}
-                                            sub={`${diaResumen.totalTurnos} turnos`}
+                                            sub={`${diaResumen.totalTurnos} turnos + ${diaResumen.creditos.items.length} créditos`}
                                             icon={ArrowUpCircle}
                                             color="bg-emerald-50 text-emerald-800"
                                         />
@@ -488,6 +499,20 @@ export default function ReportesPage() {
                                             <>
                                                 <MetodoRow label="Efectivo" icon={Banknote} monto={diaResumen.ingresos.efectivo} color="bg-amber-50 text-amber-600" />
                                                 <MetodoRow label="Transferencia" icon={CreditCard} monto={diaResumen.ingresos.transferencia} color="bg-purple-50 text-purple-600" />
+                                                
+                                                {/* Detalle de créditos si existen */}
+                                                {diaResumen.creditos.total > 0 && (
+                                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Detalle Carga Créditos</h3>
+                                                        {diaResumen.creditos.items.map((c, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center py-1">
+                                                                <span className="text-xs text-gray-500">{c.clienteNombre} ({c.cantidad} PTR)</span>
+                                                                <span className="text-xs font-bold text-gray-700">{formatCurrency(c.monto)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
                                                 <div className="flex items-center justify-between pt-3 mt-1">
                                                     <span className="text-xs font-black uppercase tracking-widest text-gray-400">Total</span>
                                                     <span className="font-black text-emerald-600 text-lg">{formatCurrency(diaResumen.ingresos.total)}</span>
@@ -584,7 +609,7 @@ export default function ReportesPage() {
                                         <SummaryCard
                                             label="Ingresos"
                                             value={formatCurrency(mesResumen.ingresos.total)}
-                                            sub={`${mesResumen.totalTurnos} turnos`}
+                                            sub={`${mesResumen.totalTurnos} turnos + ${mesResumen.creditos.items.length} créditos`}
                                             icon={TrendingUp}
                                             color="bg-emerald-50 text-emerald-800"
                                         />

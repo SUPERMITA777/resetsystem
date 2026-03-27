@@ -31,8 +31,19 @@ export interface ResumenPagos {
 export interface ResumenReporte {
     ingresos: ResumenPagos;
     egresos: ResumenPagos & { items: EgresoData[] };
+    creditos: ResumenPagos & { items: any[] }; // Nuevos ingresos por créditos
     totalTurnos: number;
     balance: number;
+}
+
+export interface IngresoCredito {
+    id: string;
+    clienteId: string;
+    clienteNombre: string;
+    monto: number;
+    metodo: "EFECTIVO" | "TRANSFERENCIA";
+    cantidad: number;
+    fecha: string; // YYYY-MM-DD
 }
 
 // ──────────────────────────────────────────────
@@ -123,14 +134,69 @@ export async function deleteEgreso(
 }
 
 // ──────────────────────────────────────────────
+// Ingresos por Créditos
+// ──────────────────────────────────────────────
+
+export async function getIngresosCreditosDelDia(
+    tenantId: string,
+    fecha: string
+): Promise<IngresoCredito[]> {
+    const q = query(
+        collection(db, `tenants/${tenantId}/ingresos_creditos`),
+        where("fecha", "==", fecha)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as IngresoCredito));
+}
+
+export async function getIngresosCreditosDelPeriodo(
+    tenantId: string,
+    fechaInicio: string,
+    fechaFin: string
+): Promise<IngresoCredito[]> {
+    const q = query(
+        collection(db, `tenants/${tenantId}/ingresos_creditos`),
+        where("fecha", ">=", fechaInicio),
+        where("fecha", "<=", fechaFin)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as IngresoCredito));
+}
+
+export async function addIngresoCredito(
+    tenantId: string,
+    ingreso: Omit<IngresoCredito, "id">
+): Promise<string> {
+    const ref = await addDoc(
+        collection(db, `tenants/${tenantId}/ingresos_creditos`),
+        ingreso
+    );
+    return ref.id;
+}
+
+// ──────────────────────────────────────────────
 // Resumen consolidado
 // ──────────────────────────────────────────────
 
 export function buildResumen(
     turnos: TurnoDB[],
-    egresos: EgresoData[]
+    egresos: EgresoData[],
+    ingresosCreditos: IngresoCredito[] = []
 ): ResumenReporte {
-    const ingresos = calcularIngresos(turnos);
+    const ingresosTurnos = calcularIngresos(turnos);
+
+    let cEfectivo = 0;
+    let cTransferencia = 0;
+    for (const c of ingresosCreditos) {
+        if (c.metodo === "EFECTIVO") cEfectivo += c.monto;
+        else cTransferencia += c.monto;
+    }
+
+    const ingresos = {
+        efectivo: ingresosTurnos.efectivo + cEfectivo,
+        transferencia: ingresosTurnos.transferencia + cTransferencia,
+        total: ingresosTurnos.total + cEfectivo + cTransferencia
+    };
 
     let eEfectivo = 0;
     let eTransferencia = 0;
@@ -148,6 +214,12 @@ export function buildResumen(
             transferencia: eTransferencia,
             total: eTotal,
             items: egresos,
+        },
+        creditos: {
+            efectivo: cEfectivo,
+            transferencia: cTransferencia,
+            total: cEfectivo + cTransferencia,
+            items: ingresosCreditos
         },
         totalTurnos: turnos.length,
         balance: ingresos.total - eTotal,
