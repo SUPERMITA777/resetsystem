@@ -85,13 +85,40 @@ export const claseService = {
         return null;
     },
 
-    async incrementInscriptos(tenantId: string, id: string, horarioId: string) {
+    async rescheduleSession(tenantId: string, claseId: string, oldFecha: string, oldHora: string, newFecha: string, newHora: string, newBoxId?: string) {
+        const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, claseId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+            const clase = snap.data() as Clase;
+            // 1. Actualizar el horario en el documento de la Clase
+            const updatedHorarios = (clase.horarios || []).map(h => 
+                (h.fecha === oldFecha && h.hora === oldHora) ? { ...h, fecha: newFecha, hora: newHora } : h
+            );
+            
+            const updateData: any = { horarios: updatedHorarios };
+            if (newBoxId) updateData.boxId = newBoxId;
+            
+            await updateDoc(ref, updateData);
+
+            // 2. Actualizar todos los turnos de alumnos vinculados a esta sesión en la Agenda
+            const { getInscriptosPorClaseYHorario, updateTurnoPosicion } = await import("./agendaService");
+            const inscriptos = await getInscriptosPorClaseYHorario(tenantId, claseId, oldFecha, oldHora);
+            
+            const updates = inscriptos.map(async (alumno) => {
+                await updateTurnoPosicion(tenantId, alumno.id, newBoxId || alumno.boxId, newHora, newFecha);
+            });
+            
+            await Promise.all(updates);
+        }
+    },
+
+    async incrementInscriptos(tenantId: string, id: string, horarioId: string, amount: number = 1) {
         const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, id);
         const snap = await getDoc(ref);
         if (snap.exists()) {
             const clase = snap.data() as Clase;
             const updatedHorarios = (clase.horarios || []).map(h => 
-                h.id === horarioId ? { ...h, inscriptosCount: (h.inscriptosCount || 0) + 1 } : h
+                h.id === horarioId ? { ...h, inscriptosCount: (h.inscriptosCount || 0) + amount } : h
             );
             await updateDoc(ref, { horarios: updatedHorarios });
         }

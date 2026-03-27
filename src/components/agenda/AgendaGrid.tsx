@@ -148,8 +148,8 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                         if (t.claseId && t.claseInfo) {
                                             const isFull = t.claseInfo.inscriptosCount >= t.claseInfo.cupo;
                                             colorClass = isFull 
-                                                ? 'bg-emerald-500 text-white border-emerald-600' 
-                                                : 'bg-orange-500 text-white border-orange-600';
+                                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+                                                : 'bg-orange-100 text-orange-700 border-orange-200';
                                         }
                                         
                                         return (

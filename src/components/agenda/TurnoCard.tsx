@@ -82,9 +82,11 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
 
     // Inteligencia de Clases: Naranja (incompleto), Verde (completo)
     const isClase = !!turno.claseId;
+    let textColor = 'text-white';
     if (isClase && turno.claseInfo) {
         const isFull = turno.claseInfo.inscriptosCount >= turno.claseInfo.cupo;
-        bgColor = isFull ? 'bg-green-500' : 'bg-orange-500';
+        bgColor = isFull ? 'bg-emerald-100' : 'bg-orange-100';
+        textColor = isFull ? 'text-emerald-700' : 'text-orange-700';
     }
 
     return (
@@ -94,7 +96,7 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
             onClick={onClick}
             {...listeners}
             {...attributes}
-            className={`absolute left-0 right-0 mx-0.5 rounded-md px-1.5 py-1 text-[9px] text-white shadow-xl transition-all pointer-events-auto flex flex-col overflow-hidden
+            className={`absolute left-0 right-0 mx-0.5 rounded-md px-1.5 py-1 text-[9px] ${textColor} shadow-xl transition-all pointer-events-auto flex flex-col overflow-hidden
         ${disabled
                 ? isClase
                     ? `cursor-not-allowed opacity-60 ${bgColor}`
@@ -106,7 +108,7 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
       `}
         >
             <div className="flex justify-between items-start w-full">
-                <div className="font-black truncate leading-none uppercase tracking-tighter flex-1">
+                <div className={`${isClase ? 'font-bold' : 'font-black'} truncate leading-none uppercase tracking-tighter flex-1`}>
                     {isClase ? turno.tratamientoAbreviado : turno.clienteAbreviado}
                 </div>
                 {isClase && turno.claseInfo && (
@@ -115,10 +117,10 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
                             e.stopPropagation();
                             if (onInscriptosClick && turno.claseId) onInscriptosClick(turno.claseId);
                         }}
-                        className="bg-white/20 hover:bg-white/40 px-1 rounded flex items-center gap-0.5 cursor-pointer transition-colors ml-1"
+                        className={`${isFull ? 'bg-emerald-200/50' : 'bg-orange-200/50'} hover:bg-white/40 px-1 rounded flex items-center gap-0.5 cursor-pointer transition-colors ml-1`}
                         title="Ver inscriptos"
                     >
-                        <span className="font-black">{turno.claseInfo.inscriptosCount}/{turno.claseInfo.cupo}</span>
+                        <span className="font-bold">{turno.claseInfo.inscriptosCount}/{turno.claseInfo.cupo}</span>
                     </div>
                 )}
             </div>

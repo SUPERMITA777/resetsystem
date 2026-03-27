@@ -10,7 +10,9 @@ import { AgendaGrid } from "@/components/agenda/AgendaGrid";
 import { NuevoTurnoModal } from "@/components/agenda/NuevoTurnoModal";
 import { TurnoClaseModal } from "@/components/agenda/TurnoClaseModal";
 import { InscriptosModal } from "@/components/admin/clases/InscriptosModal";
+import { AddCreditsModal } from "@/components/admin/clientes/AddCreditsModal";
 import { AgendaSettingsModal } from "@/components/agenda/AgendaSettingsModal";
+import { clienteService, Cliente } from "@/lib/services/clienteService";
 import { claseService, Clase } from "@/lib/services/claseService";
 import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, updateTurnoPosicion } from "@/lib/services/agendaService";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
@@ -44,6 +46,10 @@ export default function AgendaPage() {
     const [isInscriptosModalOpen, setIsInscriptosModalOpen] = useState(false);
     const [selectedClaseForInscriptos, setSelectedClaseForInscriptos] = useState<Clase | null>(null);
 
+    // Add Credits Modal
+    const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+    const [selectedClienteForCredits, setSelectedClienteForCredits] = useState<Cliente | null>(null);
+
     // In production, current tenant would come from auth context
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
@@ -75,26 +81,58 @@ export default function AgendaPage() {
             // Cargar clases para cruzar datos de cupo
             const clasesDb = await claseService.getClases(currentTenant);
 
-            // Enriquecer turnos con info de clase
-            const turnosEnriquecidos = turnosDb.map((t: TurnoData) => {
-                if (t.claseId) {
-                    const clase = clasesDb.find(c => c.id === t.claseId);
-                    if (clase) {
-                        // Buscar el horario específico para este turno
-                        const horario = clase.horarios?.find(h => h.fecha === t.fecha && h.hora === t.horaInicio);
-                        const count = horario ? (horario.inscriptosCount || 0) : 0;
-                        return { 
-                            ...t, 
-                            tratamientoAbreviado: clase.nombre, 
-                            clienteAbreviado: clase.nombre,
-                            claseInfo: { inscriptosCount: count, cupo: clase.cupo } 
-                        };
-                    }
+            // 1. Generar "Turnos de Clase" virtuales a partir de los horarios definidos en las clases
+            const classSessions: TurnoData[] = [];
+            clasesDb.forEach(clase => {
+                if (clase.status === 'active' && clase.horarios) {
+                    clase.horarios.forEach(h => {
+                        // Verificar si el horario cae dentro del rango de la vista actual
+                        let isInView = false;
+                        if (currentView === 'diaria') {
+                            isInView = h.fecha === format(date, 'yyyy-MM-dd');
+                        } else if (currentView === 'semanal') {
+                            const start = startOfWeek(date, { weekStartsOn: 1 });
+                            const end = endOfWeek(date, { weekStartsOn: 1 });
+                            const hDate = new Date(h.fecha + 'T12:00:00');
+                            isInView = hDate >= start && hDate <= end;
+                        } else if (currentView === 'mensual') {
+                            const start = startOfMonth(date);
+                            const end = endOfMonth(date);
+                            const hDate = new Date(h.fecha + 'T12:00:00');
+                            isInView = hDate >= start && hDate <= end;
+                        }
+
+                        if (isInView) {
+                            classSessions.push({
+                                id: `session-${clase.id}-${h.fecha}-${h.hora}`, // ID virtual único
+                                claseId: clase.id,
+                                fecha: h.fecha,
+                                horaInicio: h.hora,
+                                boxId: clase.boxId || 'box-1',
+                                duracionMinutos: clase.duracion || 60,
+                                clienteAbreviado: clase.nombre,
+                                tratamientoAbreviado: clase.nombre,
+                                claseInfo: {
+                                    inscriptosCount: h.inscriptosCount || 0,
+                                    cupo: clase.cupo
+                                },
+                                status: 'CONFIRMADO',
+                                profesionalId: clase.profesionalId,
+                                profesionalNombre: clase.profesionalNombre
+                            } as TurnoData);
+                        }
+                    });
                 }
-                return t;
             });
 
-            setTurnos(turnosEnriquecidos);
+            // 2. Filtrar turnos regulares para NO mostrar duplicados de alumnos que ya están en una clase
+            // ya que ahora mostramos la "Sesión de Clase" como un bloque único
+            const turnosRegulares = turnosDb.filter(t => !t.claseId);
+
+            // 3. Combinar turnos regulares con las sesiones de clase
+            const turnosFinales = [...turnosRegulares, ...classSessions];
+
+            setTurnos(turnosFinales);
 
             // Load box names for the current date (daily view)
             if (currentView === 'diaria') {
@@ -164,13 +202,22 @@ export default function AgendaPage() {
 
     const handleMoverTurno = async (turnoId: string, newBoxId: string, newHoraInicio: string, newFecha: string) => {
         try {
+            const turno = turnos.find(t => t.id === turnoId);
+            
             // Optimistic update
             setTurnos(prev => prev.map(t =>
                 t.id === turnoId ? { ...t, boxId: newBoxId, horaInicio: newHoraInicio, fecha: newFecha } : t
             ));
 
-            await updateTurnoPosicion(currentTenant, turnoId, newBoxId, newHoraInicio, newFecha);
-            toast.success("Turno actualizado");
+            if (turno?.id.startsWith('session-') && turno.claseId) {
+                // Es una sesión de clase (virtual)
+                await claseService.rescheduleSession(currentTenant, turno.claseId, turno.fecha, turno.horaInicio, newFecha, newHoraInicio, newBoxId);
+                toast.success("Sesión de clase y alumnos reprogramados");
+            } else {
+                // Es un turno regular
+                await updateTurnoPosicion(currentTenant, turnoId, newBoxId, newHoraInicio, newFecha);
+                toast.success("Turno actualizado");
+            }
         } catch (error) {
             console.error(error);
             toast.error("Error al mover el turno. Restaurando...");
@@ -344,6 +391,10 @@ export default function AgendaPage() {
                 isOpen={isClaseModalOpen}
                 onClose={() => setIsClaseModalOpen(false)}
                 onSave={handleCrearTurno}
+                onRequestCredits={(cliente) => {
+                    setSelectedClienteForCredits(cliente);
+                    setIsCreditsModalOpen(true);
+                }}
                 editTurno={modalInitialData.turno || null}
                 agendaConfig={agendaConfig}
             />
@@ -359,6 +410,19 @@ export default function AgendaPage() {
                 isOpen={isInscriptosModalOpen}
                 onClose={() => setIsInscriptosModalOpen(false)}
                 clase={selectedClaseForInscriptos}
+                tenantId={currentTenant}
+            />
+
+            <AddCreditsModal 
+                isOpen={isCreditsModalOpen}
+                onClose={() => {
+                    setIsCreditsModalOpen(false);
+                    setSelectedClienteForCredits(null);
+                }}
+                onSave={() => {
+                    loadData(currentDate, view);
+                }}
+                cliente={selectedClienteForCredits}
                 tenantId={currentTenant}
             />
         </AdminLayout>

@@ -32,7 +32,7 @@ export function SalonEditModal({ isOpen, onClose, tenant, onUpdate }: SalonEditM
             setFormData({
                 nombre_salon: tenant.nombre_salon,
                 status: tenant.status || 'active',
-                activeUntil: tenant.activeUntil,
+                activeUntil: tenant.activeUntil || null,
                 config_boxes: tenant.config_boxes,
                 datos_contacto: { ...tenant.datos_contacto }
             });

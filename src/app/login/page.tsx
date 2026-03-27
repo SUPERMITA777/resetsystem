@@ -38,12 +38,17 @@ export default function LoginPage() {
             // Role based redirect
             if (profile?.role === 'superadmin') {
                 router.push("/superadmin");
-            } else if (profile?.role === 'staff') {
+            } else if (profile?.role === 'staff' || profile?.role === 'salon_admin') {
                 if (profile?.tenantId) {
                     localStorage.setItem('currentTenant', profile.tenantId);
                 }
-                router.push("/profesional/dashboard");
+                if (profile?.role === 'staff') {
+                    router.push("/profesional/dashboard");
+                } else {
+                    router.push("/admin/dashboard");
+                }
             } else {
+                // Fallback for any other roles
                 if (profile?.tenantId) {
                     localStorage.setItem('currentTenant', profile.tenantId);
                 }

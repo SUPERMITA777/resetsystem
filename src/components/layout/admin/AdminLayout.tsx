@@ -14,7 +14,9 @@ export function AdminLayout({ children, topbarContent }: { children: React.React
         let activeTenant = localStorage.getItem("currentTenant") || "resetspa";
 
         // FORCED TENANT ISOLATION: 
-        if (role === 'salon_admin' && userTenantId) {
+        // Si el usuario es superadmin, permitimos que use el tenant que está en localStorage (seteado al hacer click en "Ver Panel")
+        // Si no es superadmin, forzamos su tenantId asignado en el perfil.
+        if (role && role !== 'superadmin' && userTenantId) {
             activeTenant = userTenantId;
             localStorage.setItem("currentTenant", activeTenant);
         }
