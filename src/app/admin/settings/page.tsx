@@ -5,13 +5,14 @@ import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { UsersManagementTab } from "@/components/admin/settings/UsersManagementTab";
-import { Store, Users, Save, Phone, Image as ImageIcon } from "lucide-react";
+import { BackupTab } from "@/components/admin/settings/BackupTab";
+import { Store, Users, Save, Phone, Image as ImageIcon, ShieldAlert } from "lucide-react";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { LogoUploader } from "@/components/ui/LogoUploader";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'salon' | 'users'>('salon');
+    const [activeTab, setActiveTab] = useState<'salon' | 'users' | 'backup'>('salon');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -104,6 +105,13 @@ export default function SettingsPage() {
                     >
                         <Users className="w-4 h-4" />
                         Gestión de Usuarios
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('backup')}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'backup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <ShieldAlert className="w-4 h-4 text-red-500" />
+                        Backup
                     </button>
                 </div>
 
@@ -254,9 +262,13 @@ export default function SettingsPage() {
                         </div>
                     )}
                 </div>
-            ) : (
+            ) : activeTab === 'users' ? (
                     <div className="animate-in slide-in-from-bottom-4 duration-500">
                         <UsersManagementTab tenantId={tenantId} />
+                    </div>
+                ) : (
+                    <div className="animate-in slide-in-from-bottom-4 duration-500">
+                        <BackupTab tenantId={tenantId} />
                     </div>
                 )}
             </div>
