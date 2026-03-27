@@ -6,7 +6,7 @@ import { use } from "react";
 import { getInscriptosPorClaseYHorario, updateTurno, TurnoDB } from "@/lib/services/agendaService";
 import { claseService, Clase } from "@/lib/services/claseService";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, XCircle, Clock, User, Phone, ArrowLeft, QrCode, Search, Calendar as CalendarIcon } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, User, Phone, ArrowLeft, QrCode, Search, Calendar as CalendarIcon, Users } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { format, parseISO } from "date-fns";
