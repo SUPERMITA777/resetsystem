@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Users, CalendarCheck, TrendingUp, Globe, ArrowRight } from "lucide-react";
