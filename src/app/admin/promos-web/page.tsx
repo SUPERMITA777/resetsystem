@@ -42,6 +42,8 @@ export default function PromosWebPage() {
     const [selectedPromo, setSelectedPromo] = useState<PromoWeb | null>(null);
     const [premios, setPremios] = useState<Premio[]>([]);
     const [ganadores, setGanadores] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'ganado_en', direction: 'desc' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -78,6 +80,60 @@ export default function PromosWebPage() {
     }, []);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+    const sortedAndFilteredGanadores = React.useMemo(() => {
+        let result = [...ganadores];
+
+        // Filter
+        if (searchTerm) {
+            const lowSearch = searchTerm.toLowerCase();
+            result = result.filter(g =>
+                g.nombre?.toLowerCase().includes(lowSearch) ||
+                g.whatsapp?.includes(lowSearch)
+            );
+        }
+
+        // Sort
+        if (sortConfig) {
+            result.sort((a, b) => {
+                let valA: any = "";
+                let valB: any = "";
+
+                switch (sortConfig.key) {
+                    case 'nombre':
+                        valA = a.nombre?.toLowerCase() || "";
+                        valB = b.nombre?.toLowerCase() || "";
+                        break;
+                    case 'whatsapp':
+                        valA = a.whatsapp || "";
+                        valB = b.whatsapp || "";
+                        break;
+                    case 'premio':
+                        valA = a.premioNombre?.toLowerCase() || "";
+                        valB = b.premioNombre?.toLowerCase() || "";
+                        break;
+                    case 'fecha':
+                        valA = a.ganado_en?.seconds || 0;
+                        valB = b.ganado_en?.seconds || 0;
+                        break;
+                }
+
+                if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return result;
+    }, [ganadores, searchTerm, sortConfig]);
+
+    const requestSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const landingUrl = selectedPromo?.short_code
         ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${selectedPromo.short_code}`
@@ -427,27 +483,85 @@ export default function PromosWebPage() {
                         {/* GANADORES TAB */}
                         {tab === "ganadores" && (
                             <div className="space-y-4">
-                                {ganadores.length === 0 && (
+                                <div className="flex justify-between items-center gap-4">
+                                    <div className="relative flex-1 max-w-sm">
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar ganador o whatsapp..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full bg-white border border-gray-100 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-pink-300 transition-all shadow-sm"
+                                        />
+                                        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                        {sortedAndFilteredGanadores.length} ganadores
+                                    </p>
+                                </div>
+
+                                {sortedAndFilteredGanadores.length === 0 && (
                                     <div className="text-center py-16 bg-gray-50 rounded-3xl text-gray-400">
                                         <Trophy className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                        <p className="font-medium">Aún no hay ganadores.</p>
-                                        <p className="text-sm">Cuando alguien juegue, aparecerá aquí. 🎉</p>
+                                        <p className="font-medium">{searchTerm ? "No se encontraron resultados." : "Aún no hay ganadores."}</p>
+                                        <p className="text-sm">{searchTerm ? "Intentá con otro nombre o número." : "Cuando alguien juegue, aparecerá aquí. 🎉"}</p>
                                     </div>
                                 )}
-                                {ganadores.length > 0 && (
+                                {sortedAndFilteredGanadores.length > 0 && (
                                     <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="border-b border-gray-50 bg-gray-50">
-                                                    <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Nombre</th>
-                                                    <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400">WhatsApp</th>
-                                                    <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Premio</th>
-                                                    <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Fecha</th>
+                                                    <th 
+                                                        onClick={() => requestSort('nombre')}
+                                                        className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 cursor-pointer hover:text-pink-500 transition-colors group"
+                                                    >
+                                                        <div className="flex items-center gap-1">
+                                                            Nombre
+                                                            <span className={`opacity-0 group-hover:opacity-100 ${sortConfig?.key === 'nombre' ? 'opacity-100 text-pink-500' : ''}`}>
+                                                                {sortConfig?.key === 'nombre' && sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                                            </span>
+                                                        </div>
+                                                    </th>
+                                                    <th 
+                                                        onClick={() => requestSort('whatsapp')}
+                                                        className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 cursor-pointer hover:text-pink-500 transition-colors group"
+                                                    >
+                                                        <div className="flex items-center gap-1">
+                                                            WhatsApp
+                                                            <span className={`opacity-0 group-hover:opacity-100 ${sortConfig?.key === 'whatsapp' ? 'opacity-100 text-pink-500' : ''}`}>
+                                                                {sortConfig?.key === 'whatsapp' && sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                                            </span>
+                                                        </div>
+                                                    </th>
+                                                    <th 
+                                                        onClick={() => requestSort('premio')}
+                                                        className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 cursor-pointer hover:text-pink-500 transition-colors group"
+                                                    >
+                                                        <div className="flex items-center gap-1">
+                                                            Premio
+                                                            <span className={`opacity-0 group-hover:opacity-100 ${sortConfig?.key === 'premio' ? 'opacity-100 text-pink-500' : ''}`}>
+                                                                {sortConfig?.key === 'premio' && sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                                            </span>
+                                                        </div>
+                                                    </th>
+                                                    <th 
+                                                        onClick={() => requestSort('fecha')}
+                                                        className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 cursor-pointer hover:text-pink-500 transition-colors group"
+                                                    >
+                                                        <div className="flex items-center gap-1">
+                                                            Fecha
+                                                            <span className={`opacity-0 group-hover:opacity-100 ${sortConfig?.key === 'fecha' ? 'opacity-100 text-pink-500' : ''}`}>
+                                                                {sortConfig?.key === 'fecha' && sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                                            </span>
+                                                        </div>
+                                                    </th>
                                                     <th className="px-5 py-3"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {ganadores.map((g, i) => (
+                                                {sortedAndFilteredGanadores.map((g, i) => (
                                                     <tr key={i} className="border-b border-gray-50 hover:bg-pink-50/30 transition-colors">
                                                         <td className="px-5 py-3 font-medium">{g.nombre}</td>
                                                         <td className="px-5 py-3 text-gray-500 font-mono text-xs">{g.whatsapp}</td>
