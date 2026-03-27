@@ -242,7 +242,7 @@ export default function WebConfigPage() {
                                     ].map((layout) => (
                                         <div 
                                             key={layout.id}
-                                            onClick={() => setConfig({...config, layout_type: layout.id})}
+                                            onClick={() => setConfig({...config, layout_type: layout.id as 'classic' | 'modern' | 'minimal'})}
                                             className={`relative p-8 rounded-[2.5rem] border-2 transition-all cursor-pointer group ${
                                                 config.layout_type === layout.id ? 'border-black bg-gray-50' : 'border-gray-50 hover:border-gray-200'
                                             }`}
