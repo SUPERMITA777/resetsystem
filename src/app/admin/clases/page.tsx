@@ -10,7 +10,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { ClaseModal } from "@/components/admin/clases/ClaseModal";
 import { InscriptosModal } from "@/components/admin/clases/InscriptosModal";
 import toast, { Toaster } from "react-hot-toast";
-import { format } from "date-fns";
+import { format, addDays, startOfToday, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ClasesPublicConfigModal } from "@/components/admin/clases/ClasesPublicConfigModal";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
@@ -23,6 +23,7 @@ export default function ClasesAdminPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClase, setSelectedClase] = useState<Clase | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedDate, setSelectedDate] = useState<string>(format(startOfToday(), 'yyyy-MM-dd'));
 
     // Inscriptos Modal state
     const [isInscriptosModalOpen, setIsInscriptosModalOpen] = useState(false);
@@ -65,9 +66,17 @@ export default function ClasesAdminPage() {
         }
     };
 
-    const filteredClases = clases.filter(c => 
-        c.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredClases = clases.filter(c => {
+        const matchesSearch = c.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesDate = !selectedDate || (c.horarios || []).some(h => h.fecha === selectedDate);
+        return matchesSearch && matchesDate;
+    });
+
+    const dateFilters = [
+        { label: 'TODAS', value: '' },
+        { label: 'HOY', value: format(startOfToday(), 'yyyy-MM-dd') },
+        { label: 'MAÑANA', value: format(addDays(startOfToday(), 1), 'yyyy-MM-dd') },
+    ];
 
     return (
         <AdminLayout>
@@ -106,20 +115,47 @@ export default function ClasesAdminPage() {
                     </div>
                 </div>
 
-                <div className="flex bg-white p-2 rounded-[2rem] shadow-premium-soft border border-gray-100 gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                        <input 
-                            className="w-full h-14 pl-14 pr-6 bg-gray-50/50 border-none rounded-[1.5rem] font-bold outline-none focus:ring-2 focus:ring-black transition-all" 
-                            placeholder="Buscar clase por nombre..." 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="flex bg-white p-2 rounded-[2rem] shadow-premium-soft border border-gray-100 gap-2 flex-1 w-full">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                            <input 
+                                className="w-full h-14 pl-14 pr-6 bg-gray-50/50 border-none rounded-[1.5rem] font-bold outline-none focus:ring-2 focus:ring-black transition-all" 
+                                placeholder="Buscar clase por nombre..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
-                    <Button variant="ghost" className="h-14 px-6 rounded-[1.5rem] font-bold text-gray-400">
-                        <Filter className="w-5 h-5 mr-2" />
-                        Filtros
-                    </Button>
+
+                    <div className="flex bg-white p-2 rounded-[2rem] shadow-premium-soft border border-gray-100 gap-2 overflow-x-auto no-scrollbar max-w-full">
+                        {dateFilters.map((filter) => (
+                            <button
+                                key={filter.label}
+                                onClick={() => setSelectedDate(filter.value)}
+                                className={`px-6 h-14 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
+                                    selectedDate === filter.value 
+                                        ? 'bg-black text-white shadow-lg' 
+                                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                }`}
+                            >
+                                {filter.label}
+                            </button>
+                        ))}
+                        <div className="relative">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input 
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className={`pl-10 pr-4 h-14 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all outline-none border-none ${
+                                    !dateFilters.some(f => f.value === selectedDate && f.value !== '') && selectedDate !== ''
+                                        ? 'bg-black text-white shadow-lg' 
+                                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                }`}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -168,15 +204,22 @@ export default function ClasesAdminPage() {
                                     <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
                                         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Programación</span>
                                         <span className="text-sm font-bold text-gray-700">
-                                            {clase.horarios?.length || 0} Horarios
+                                            {selectedDate 
+                                                ? (clase.horarios?.filter(h => h.fecha === selectedDate).length || 0) + " Turnos Hoy"
+                                                : (clase.horarios?.length || 0) + " Horarios"
+                                            }
                                         </span>
                                     </div>
                                     <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
-                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Próxima</span>
+                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">
+                                            {selectedDate ? "Horario" : "Próxima"}
+                                        </span>
                                         <span className="text-sm font-bold text-gray-700">
-                                            {clase.horarios && clase.horarios.length > 0 
-                                                ? format(new Date(clase.horarios[0].fecha + 'T12:00:00'), "dd/MM", { locale: es }) + " " + clase.horarios[0].hora
-                                                : "Sin fecha"
+                                            {selectedDate 
+                                                ? (clase.horarios?.find(h => h.fecha === selectedDate)?.hora || "Sin turno")
+                                                : (clase.horarios && clase.horarios.length > 0 
+                                                    ? format(parseISO(clase.horarios[0].fecha), "dd/MM", { locale: es }) + " " + clase.horarios[0].hora
+                                                    : "Sin fecha")
                                             }
                                         </span>
                                     </div>
@@ -195,8 +238,15 @@ export default function ClasesAdminPage() {
 
                                 <div className="space-y-3 pt-4 border-t border-gray-50">
                                     {(() => {
-                                        const totalInscriptos = (clase.horarios || []).reduce((acc, h) => acc + (h.inscriptosCount || 0), 0);
-                                        const totalCupos = (clase.horarios || []).length * clase.cupo;
+                                        const schedulesForDate = selectedDate 
+                                            ? (clase.horarios || []).filter(h => h.fecha === selectedDate)
+                                            : (clase.horarios || []);
+                                        
+                                        const totalInscriptos = schedulesForDate.reduce((acc, h) => acc + (h.inscriptosCount || 0), 0);
+                                        const totalCupos = selectedDate 
+                                            ? (schedulesForDate.length * clase.cupo)
+                                            : ((clase.horarios || []).length * clase.cupo);
+
                                         return (
                                             <div 
                                                 onClick={() => { setClaseForInscriptos(clase); setIsInscriptosModalOpen(true); }}
@@ -204,7 +254,9 @@ export default function ClasesAdminPage() {
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <Users className="w-4 h-4" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Inscriptos Totales:</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                                        {selectedDate ? "Inscriptos Hoy:" : "Inscriptos Totales:"}
+                                                    </span>
                                                 </div>
                                                 <span className="text-sm font-black">{totalInscriptos} alumnos</span>
                                             </div>
