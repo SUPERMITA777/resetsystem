@@ -1,6 +1,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { 
+    initializeFirestore, 
+    persistentLocalCache, 
+    persistentMultipleTabManager,
+    memoryLocalCache
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -14,25 +19,24 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
+
+// Determinar el cache de Firestore
+let firestoreCache;
+if (typeof window !== 'undefined') {
+    // Si estamos en el navegador, usamos persistencia multi-pestaña por defecto
+    // Esto evita el error de "Failed to obtain exclusive access"
+    firestoreCache = persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+    });
+} else {
+    // En el servidor (SSR), usamos cache en memoria
+    firestoreCache = memoryLocalCache();
+}
+
 const db = initializeFirestore(app, {
+    localCache: firestoreCache,
     experimentalForceLongPolling: true,
 });
-
-// Habilitar persistencia offline si está activada en localStorage
-if (typeof window !== 'undefined') {
-    const isOfflineEnabled = localStorage.getItem('offline_persistence_enabled') === 'true';
-    if (isOfflineEnabled) {
-        enableIndexedDbPersistence(db).catch((err) => {
-            if (err.code === 'failed-precondition') {
-                // Multiple tabs open, persistence can only be enabled in one tab at a time.
-                console.warn('Persistence failed: Multiple tabs open');
-            } else if (err.code === 'unimplemented') {
-                // The current browser does not support all of the features required to enable persistence
-                console.warn('Persistence failed: Browser not supported');
-            }
-        });
-    }
-}
 
 const storage = getStorage(app);
 

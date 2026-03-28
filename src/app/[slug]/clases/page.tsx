@@ -10,6 +10,8 @@ import { ClaseBookingModal } from "@/components/booking/ClaseBookingModal";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function PublicClasesPage() {
     const params = useParams();
@@ -23,22 +25,27 @@ export default function PublicClasesPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        async function loadData() {
-            if (!slug) return;
-            try {
-                const tenantData = await getTenant(slug);
-                if (tenantData) {
-                    setTenant(tenantData);
-                    const classesData = await claseService.getClases(slug);
+        if (!slug) return;
+        
+        console.log("Iniciando listener para clases del salón:", slug);
+        const unsubscribe = onSnapshot(doc(db, "tenants", slug), (docSnap) => {
+            if (docSnap.exists()) {
+                const tenantData = docSnap.data() as TenantData;
+                console.log("Datos del salón actualizados (Real-time):", tenantData);
+                setTenant(tenantData);
+                
+                // Fetch classes separately as they are a collection
+                claseService.getClases(slug).then(classesData => {
                     setClases(classesData);
-                }
-            } catch (error) {
-                console.error("Error loading data", error);
-            } finally {
-                setLoading(false);
+                });
             }
-        }
-        loadData();
+            setLoading(false);
+        }, (error) => {
+            console.error("Error en onSnapshot (tenant):", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [slug]);
 
     if (loading) {

@@ -6,6 +6,8 @@ import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
 import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle } from "lucide-react";
 import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function SalonPublicPage() {
     const params = useParams();
@@ -14,22 +16,25 @@ export default function SalonPublicPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function loadTenant() {
-            if (!slug) return;
-            console.log("Cargando web pública para slug:", slug);
-            try {
-                const data = await getTenant(slug);
-                console.log("Datos del salón recibidos:", data);
-                if (data) {
-                    setTenant(data);
-                }
-            } catch (error) {
-                console.error("Error loading tenant", error);
-            } finally {
-                setLoading(false);
+        if (!slug) return;
+        
+        console.log("Iniciando listener para salón:", slug);
+        const unsubscribe = onSnapshot(doc(db, "tenants", slug), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data() as TenantData;
+                console.log("Datos del salón actualizados (Real-time):", data);
+                setTenant(data);
+            } else {
+                console.warn("El salón no existe en Firestore:", slug);
+                setTenant(null);
             }
-        }
-        loadTenant();
+            setLoading(false);
+        }, (error) => {
+            console.error("Error en onSnapshot:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [slug]);
 
     if (loading) {
