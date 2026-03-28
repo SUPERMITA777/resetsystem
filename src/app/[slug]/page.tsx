@@ -8,6 +8,8 @@ import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, S
 import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { PublicNavbar } from "@/components/layout/public/Navbar";
+import { PublicFooter } from "@/components/layout/public/Footer";
 
 export default function SalonPublicPage() {
     const params = useParams();
@@ -75,7 +77,18 @@ export default function SalonPublicPage() {
             --tenant-primary: ${primary};
             --tenant-accent: ${accent};
             --tenant-secondary: ${secondary};
+            
+            /* Sincronizar con variables globales usadas por componentes */
+            --primary: ${primary} !important;
+            --accent: ${accent} !important;
+            --background: ${secondary} !important;
+            --foreground: ${primary} !important;
         }
+        
+        body {
+            background-color: var(--tenant-secondary) !important;
+        }
+
         .tenant-font { 
             font-family: ${
                 font === 'serif' ? 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' : 
@@ -83,15 +96,17 @@ export default function SalonPublicPage() {
                 font === 'display' ? '"Playfair Display", serif' :
                 font === 'elegant' ? '"Montserrat", sans-serif' :
                 'inherit'
-            }; 
+            } !important; 
             ${font === 'elegant' ? 'letter-spacing: 0.05em;' : ''}
         }
-        .bg-tenant-primary { background-color: var(--tenant-primary); }
-        .bg-tenant-accent { background-color: var(--tenant-accent); }
-        .bg-tenant-secondary { background-color: var(--tenant-secondary); }
-        .text-tenant-primary { color: var(--tenant-primary); }
-        .text-tenant-accent { color: var(--tenant-accent); }
-        .border-tenant-accent { border-color: var(--tenant-accent); }
+        
+        /* Overrides para asegurar que los componentes usen los colores del salón */
+        .text-tenant-primary, .text-\[var\(--primary\)\] { color: var(--tenant-primary) !important; }
+        .text-tenant-accent, .text-\[var\(--accent\)\] { color: var(--tenant-accent) !important; }
+        .bg-tenant-primary, .bg-\[var\(--primary\)\] { background-color: var(--tenant-primary) !important; }
+        .bg-tenant-accent, .bg-\[var\(--accent\)\] { background-color: var(--tenant-accent) !important; }
+        .bg-tenant-secondary, .bg-\[var\(--secondary\)\] { background-color: var(--tenant-secondary) !important; }
+        .border-tenant-accent, .border-\[var\(--accent\)\] { border-color: var(--tenant-accent) !important; }
         
         ${bgImage ? `
         .tenant-bg-image {
@@ -104,12 +119,22 @@ export default function SalonPublicPage() {
     `;
 
     const renderLayout = () => {
+        const commonElements = (
+            <>
+                <PublicNavbar 
+                    salonName={tenant.nombre_salon} 
+                    logoUrl={tenant.logo_url} 
+                />
+            </>
+        );
+
         switch (layout) {
             case 'modern':
                 return (
                     <div className={`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-700 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                        {commonElements}
                         {/* Modern Layout: Hero Full Screen */}
-                        <section className="relative h-[70vh] w-full overflow-hidden flex items-center justify-center">
+                        <section className="relative h-[70vh] w-full overflow-hidden flex items-center justify-center pt-20">
                             {config.hero_image_url ? (
                                 <img src={config.hero_image_url} className="absolute inset-0 w-full h-full object-cover" alt="Hero" />
                             ) : (
@@ -118,9 +143,6 @@ export default function SalonPublicPage() {
                             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
                             
                             <div className="relative z-10 text-center px-6 max-w-4xl animate-in slide-in-from-bottom-10 duration-1000">
-                                {tenant.logo_url && (
-                                    <img src={tenant.logo_url} className="w-24 h-24 rounded-full mx-auto mb-8 border-4 border-white/20 shadow-2xl" alt="Logo" />
-                                )}
                                 <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none mb-6">
                                     {tenant.config_clases?.public_title || tenant.nombre_salon}
                                 </h1>
@@ -145,58 +167,32 @@ export default function SalonPublicPage() {
                                 <PublicBookingFlow tenantName={tenant.nombre_salon} />
                             </div>
                         </main>
-
-                        <footer className="py-20 px-6 text-center bg-white/80 backdrop-blur-md border-t border-gray-100">
-                            <div className="max-w-4xl mx-auto space-y-10">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div className="space-y-3">
-                                        <MapPin className="w-6 h-6 mx-auto text-tenant-accent" />
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Ubicación</p>
-                                        <p className="text-sm font-bold">{tenant.datos_contacto?.direccion || "Próximamente"}</p>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <Instagram className="w-6 h-6 mx-auto text-tenant-accent" />
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Instagram</p>
-                                        <p className="text-sm font-bold">@{tenant.datos_contacto?.instagram || "resetsystem"}</p>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <Phone className="w-6 h-6 mx-auto text-tenant-accent" />
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">WhatsApp</p>
-                                        <p className="text-sm font-bold">{tenant.datos_contacto?.whatsapp || "No disponible"}</p>
-                                    </div>
-                                </div>
-                                <p className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-300">© 2026 {tenant.nombre_salon} • Powered by RESETSYSTEM</p>
-                            </div>
-                        </footer>
+                        <PublicFooter logoUrl={tenant.logo_url} />
                     </div>
                 );
             case 'minimal':
                 return (
-                    <div className={`min-h-screen bg-white tenant-font flex flex-col items-center justify-center p-6 animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
-                        <header className="text-center mb-16">
-                            {tenant.logo_url && (
-                                <img src={tenant.logo_url} className="w-20 h-20 rounded-full mx-auto mb-8 shadow-sm" alt="Logo" />
-                            )}
-                            <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-2">{tenant.nombre_salon}</h1>
-                            <div className="w-12 h-1 bg-tenant-accent mx-auto rounded-full" />
-                        </header>
-                        
-                        <main className="w-full max-w-xl bg-white/80 backdrop-blur-md p-8 rounded-[2rem] shadow-xl border border-white/20">
-                            <PublicBookingFlow tenantName={tenant.nombre_salon} />
-                        </main>
-                        
-                        <footer className="mt-20 flex gap-6 grayscale opacity-40">
-                            {tenant.datos_contacto?.instagram && <Instagram className="w-5 h-5" />}
-                            {tenant.datos_contacto?.whatsapp && <Phone className="w-5 h-5" />}
-                            <MapPin className="w-5 h-5" />
-                        </footer>
+                    <div className={`min-h-screen bg-white tenant-font flex flex-col animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                        {commonElements}
+                        <div className="flex-1 flex flex-col items-center justify-center p-6 pt-32">
+                            <header className="text-center mb-16">
+                                <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-2">{tenant.nombre_salon}</h1>
+                                <div className="w-12 h-1 bg-tenant-accent mx-auto rounded-full" />
+                            </header>
+                            
+                            <main className="w-full max-w-xl bg-white/80 backdrop-blur-md p-8 rounded-[2rem] shadow-xl border border-white/20">
+                                <PublicBookingFlow tenantName={tenant.nombre_salon} />
+                            </main>
+                        </div>
+                        <PublicFooter logoUrl={tenant.logo_url} />
                     </div>
                 );
             default: // Classic
                 return (
                     <div className={`min-h-screen flex flex-col bg-tenant-secondary tenant-font animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                        {commonElements}
                         {/* Classic Layout: Soft cover and centered logo */}
-                        <header className="relative bg-white pt-24 pb-16 px-6 text-center shadow-sm rounded-b-[4rem] overflow-hidden">
+                        <header className="relative bg-white pt-40 pb-16 px-6 text-center shadow-sm rounded-b-[4rem] overflow-hidden">
                             {config.hero_image_url && (
                                 <img src={config.hero_image_url} className="absolute inset-0 w-full h-full object-cover opacity-10 blur-sm scale-110" alt="Bg" />
                             )}
@@ -220,15 +216,19 @@ export default function SalonPublicPage() {
                             </div>
                         </header>
 
-                        <main className="flex-1 max-w-2xl w-full mx-auto p-6 flex flex-col gap-10 mt-10">
+                        <main className="flex-1 max-w-4xl w-full mx-auto p-6 flex flex-col gap-10 mt-10">
+                            {/* Titulo de Tratamientos similar a la foto */}
+                            <div className="text-center mb-8">
+                                <h2 className="text-5xl md:text-7xl font-serif italic leading-none uppercase text-tenant-primary">
+                                    <span className="not-italic text-tenant-accent">Tratamientos</span>
+                                </h2>
+                            </div>
+                            
                             <div className="bg-white/90 backdrop-blur-xl rounded-[3rem] p-10 shadow-premium-soft border border-white/20">
                                 <PublicBookingFlow tenantName={tenant.nombre_salon} />
                             </div>
                         </main>
-                        
-                        <footer className="py-12 text-center opacity-30 grayscale">
-                             <p className="text-[9px] font-black uppercase tracking-[0.4em]">Powered by RESETSYSTEM</p>
-                        </footer>
+                        <PublicFooter logoUrl={tenant.logo_url} />
                     </div>
                 );
         }
