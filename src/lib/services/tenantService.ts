@@ -38,7 +38,7 @@ export interface TenantData {
         background_image_url?: string;
         seo_title?: string;
         seo_description?: string;
-        font_family?: 'serif' | 'sans' | 'mono';
+        font_family?: 'serif' | 'sans' | 'mono' | 'display' | 'elegant';
     };
 }
 
