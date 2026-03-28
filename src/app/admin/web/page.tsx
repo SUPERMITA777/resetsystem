@@ -34,7 +34,8 @@ export default function WebConfigPage() {
         secondary_color: '#ffffff',
         accent_color: '#D4A5B2',
         hero_image_url: '',
-        font_family: 'sans' as 'serif' | 'sans' | 'mono',
+        background_image_url: '',
+        font_family: 'sans' as 'serif' | 'sans' | 'mono' | 'display' | 'elegant',
         
         public_title: '',
         public_subtitle: '',
@@ -71,7 +72,8 @@ export default function WebConfigPage() {
                     secondary_color: data.web_config?.secondary_color || '#faf9f9',
                     accent_color: data.web_config?.accent_color || (data.tema_visual === 'nude' ? '#D4A5B2' : data.tema_visual === 'lavender' ? '#B8B8FF' : '#B4CFB0'),
                     hero_image_url: data.web_config?.hero_image_url || '',
-                    font_family: data.web_config?.font_family || 'sans',
+                    background_image_url: data.web_config?.background_image_url || '',
+                    font_family: (data.web_config?.font_family as any) || 'sans',
                     
                     public_title: data.config_clases?.public_title || "Cronograma de Clases",
                     public_subtitle: data.config_clases?.public_subtitle || "Encuentra el momento perfecto para renovarte",
@@ -107,6 +109,7 @@ export default function WebConfigPage() {
                     secondary_color: config.secondary_color,
                     accent_color: config.accent_color,
                     hero_image_url: config.hero_image_url,
+                    background_image_url: config.background_image_url,
                     seo_title: config.seo_title,
                     seo_description: config.seo_description,
                     font_family: config.font_family,
@@ -134,7 +137,7 @@ export default function WebConfigPage() {
         }
     };
 
-    const previewUrl = `/salon/${tenantId}`;
+    const previewUrl = `/${tenantId}`;
 
     const sections = [
         { id: 'layout', icon: <LayoutIcon />, title: "Estructura & Layout", desc: "Elige entre diferentes plantillas para tu página principal." },
@@ -310,11 +313,13 @@ export default function WebConfigPage() {
 
                                         <div>
                                             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Tipografía Principal</Label>
-                                            <div className="grid grid-cols-3 gap-3 mt-3">
+                                            <div className="grid grid-cols-5 gap-3 mt-3">
                                                 {[
                                                     { id: 'serif', label: 'Serif', font: 'font-serif' },
                                                     { id: 'sans', label: 'Sans-Serif', font: 'font-sans' },
-                                                    { id: 'mono', label: 'Monospace', font: 'font-mono' }
+                                                    { id: 'mono', label: 'Monospace', font: 'font-mono' },
+                                                    { id: 'display', label: 'Display', font: 'font-serif italic' },
+                                                    { id: 'elegant', label: 'Elegante', font: 'font-sans tracking-widest' }
                                                 ].map((f) => (
                                                     <button
                                                         key={f.id}
@@ -325,7 +330,7 @@ export default function WebConfigPage() {
                                                         }`}
                                                     >
                                                         <span className={`text-xl block mb-1 ${f.font}`}>Aa</span>
-                                                        <span className="text-[8px] font-black uppercase tracking-widest">{f.label}</span>
+                                                        <span className="text-[8px] font-black uppercase tracking-widest leading-none block h-4">{f.label}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -414,7 +419,19 @@ export default function WebConfigPage() {
                                             label="Portada"
                                             aspectRatio="video"
                                         />
-                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-2">Formato recomendado: JPG/WebP (1920x1080px)</p>
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-2">Banner principal. Formato recomendado: JPG/WebP (1920x1080px)</p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Imagen de Fondo (General)</Label>
+                                        <GenericImageUploader 
+                                            tenantId={tenantId}
+                                            currentImage={config.background_image_url}
+                                            onImageChange={url => setConfig({...config, background_image_url: url})}
+                                            label="Fondo"
+                                            aspectRatio="video"
+                                        />
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-2">Se muestra como fondo de la página. Formato recomendado: JPG suave/textura.</p>
                                     </div>
                                 </div>
 
@@ -575,26 +592,27 @@ export default function WebConfigPage() {
                 </div>
 
                 {/* Live Preview / Landing Page Link */}
-                <div className="bg-gradient-to-br from-gray-50 to-white rounded-[4rem] p-16 border border-gray-100 text-center space-y-8 shadow-premium-soft">
+                <div className="bg-gradient-to-br from-gray-900 to-black rounded-[4rem] p-16 border border-white/5 text-center space-y-8 shadow-2xl">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center shadow-2xl">
+                        <div className="w-20 h-20 bg-white text-black rounded-full flex items-center justify-center shadow-2xl">
                             <Smartphone className="w-10 h-10" />
                         </div>
                         <div className="space-y-2">
-                            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400">Experiencia Digital</p>
-                            <h2 className="text-4xl font-black uppercase tracking-tighter">Mira cómo luce tu web ahora mismo</h2>
+                            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Presencia Web</p>
+                            <h2 className="text-4xl font-black uppercase tracking-tighter text-white">Tu web está lista para vender</h2>
                         </div>
                     </div>
-                    <div className="flex justify-center gap-4 pt-4">
-                        <Button 
-                            onClick={() => window.open(previewUrl, '_blank')}
-                            variant="outline" 
-                            className="h-16 px-12 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] border-2 hover:bg-black hover:text-white transition-all shadow-xl active:scale-95"
-                        >
-                            Ver mi Web Pública
-                        </Button>
+                    <div className="flex flex-col items-center gap-4">
+                        <p className="text-white/50 text-sm font-medium max-w-md mx-auto">
+                            Puedes acceder a tu sitio público en cualquier momento desde el botón <b>"VER MI WEB"</b> del panel lateral izquierdo.
+                        </p>
+                        <div className="flex items-center gap-2 px-6 py-3 bg-white/5 rounded-full border border-white/10">
+                            <Globe className="w-3 h-3 text-white/40" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">URL de tu salón:</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">{window.location.origin}/{tenantId}</span>
+                        </div>
                     </div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300">Cualquier cambio guardado se reflejará instantáneamente</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20">Cualquier cambio guardado se reflejará instantáneamente</p>
                 </div>
             </div>
         </AdminLayout>

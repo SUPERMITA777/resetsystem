@@ -307,13 +307,13 @@ export function WebConfigModal({ isOpen, onClose, tenantId, onSaveSuccess }: Web
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black uppercase tracking-tight">Tu Web Pública</h4>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">resetsystem.vercel.app/salon/{tenantId}</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">resetsystem.vercel.app/{tenantId}</p>
                                     </div>
                                     <Button 
-                                        type="button"
-                                        onClick={() => window.open(`/salon/${tenantId}`, '_blank')}
-                                        variant="outline"
-                                        className="rounded-2xl border-gray-200 hover:bg-white transition-all text-[10px] font-black uppercase tracking-widest px-8"
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="mt-4 rounded-xl border-[#9381FF] text-[#9381FF] hover:bg-[#9381FF] hover:text-white transition-all w-full h-11 text-[10px] font-black uppercase tracking-widest"
+                                        onClick={() => window.open(`/${tenantId}`, '_blank')}
                                     >
                                         Previsualizar
                                     </Button>

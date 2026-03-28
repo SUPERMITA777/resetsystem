@@ -90,7 +90,7 @@ export default function ClasesAdminPage() {
                     </div>
                     <div className="flex gap-4">
                         <Button
-                            onClick={() => window.open(`/salon/${tenantId}/clases`, "_blank")}
+                            onClick={() => window.open(`/${tenantId}/clases`, "_blank")}
                             variant="outline"
                             className="rounded-2xl h-14 px-6 font-bold uppercase tracking-widest border-2 hover:bg-gray-50 transition-all border-gray-100 hidden md:flex"
                         >

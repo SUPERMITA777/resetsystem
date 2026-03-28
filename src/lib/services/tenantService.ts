@@ -35,6 +35,7 @@ export interface TenantData {
         secondary_color?: string;
         accent_color?: string;
         hero_image_url?: string;
+        background_image_url?: string;
         seo_title?: string;
         seo_description?: string;
         font_family?: 'serif' | 'sans' | 'mono';

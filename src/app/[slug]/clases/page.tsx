@@ -56,6 +56,7 @@ export default function PublicClasesPage() {
     const accent = config.accent_color || '#D4A5B2';
     const secondary = config.secondary_color || '#faf9f9';
     const font = config.font_family || 'sans';
+    const bgImage = config.background_image_url;
 
     // Dynamic styles based on tenant configuration
     const customStyles = `
@@ -64,21 +65,39 @@ export default function PublicClasesPage() {
             --tenant-accent: ${accent};
             --tenant-secondary: ${secondary};
         }
-        .tenant-font { font-family: ${font === 'serif' ? 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' : font === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' : 'inherit'}; }
+        .tenant-font { 
+            font-family: ${
+                font === 'serif' ? 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' : 
+                font === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' : 
+                font === 'display' ? '"Playfair Display", serif' :
+                font === 'elegant' ? '"Montserrat", sans-serif' :
+                'inherit'
+            }; 
+            ${font === 'elegant' ? 'letter-spacing: 0.05em;' : ''}
+        }
         .bg-tenant-primary { background-color: var(--tenant-primary); }
         .bg-tenant-accent { background-color: var(--tenant-accent); }
         .bg-tenant-secondary { background-color: var(--tenant-secondary); }
         .text-tenant-primary { color: var(--tenant-primary); }
         .text-tenant-accent { color: var(--tenant-accent); }
         .border-tenant-accent { border-color: var(--tenant-accent); }
+
+        ${bgImage ? `
+        .tenant-bg-image {
+            background-image: url('${bgImage}');
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+        }
+        ` : ''}
     `;
 
     return (
-        <div className="min-h-screen bg-tenant-secondary flex flex-col tenant-font">
+        <div className={`min-h-screen bg-tenant-secondary flex flex-col tenant-font ${bgImage ? 'tenant-bg-image' : ''}`}>
             <style dangerouslySetInnerHTML={{ __html: customStyles }} />
             <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-40 border-b border-tenant-accent/20">
                 <div className="max-w-xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href={`/salon/${slug}`} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                    <Link href={`/${slug}`} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
                         <ChevronLeft className="w-5 h-5 text-gray-400" />
                     </Link>
                     <h1 className="text-lg font-black uppercase tracking-tighter text-tenant-primary">{tenant.nombre_salon}</h1>
@@ -115,7 +134,7 @@ export default function PublicClasesPage() {
                             if (availableHorarios.length === 0) return null;
 
                             return (
-                                <div key={clase.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-tenant-accent/10 transition-all duration-300">
+                                <div key={clase.id} className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-white/20 transition-all duration-300">
                                     {/* Imagen Principal */}
                                     <div 
                                         className="relative h-64 w-full cursor-pointer group"

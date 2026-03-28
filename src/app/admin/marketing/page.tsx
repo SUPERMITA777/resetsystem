@@ -191,8 +191,8 @@ export default function MarketingPage() {
 
                     <div className="p-6 bg-[#F8F7FF] rounded-3xl border border-[#E6E6FA] text-center">
                         <h3 className="font-bold text-[#9381FF] mb-2 uppercase tracking-tighter text-xs">Tu Web es:</h3>
-                        <p className="text-sm font-mono truncate mb-4">resetsystem.vercel.app/salon/resetspa</p>
-                        <Button className="w-full rounded-full" variant="outline" onClick={() => window.open('/salon/resetspa', '_blank')}>
+                        <p className="text-sm font-mono truncate mb-4">resetsystem.vercel.app/{tenantId}</p>
+                        <Button className="w-full rounded-full" variant="outline" onClick={() => window.open(`/${tenantId}`, '_blank')}>
                             Ver mi Página <Globe className="ml-2 w-4 h-4" />
                         </Button>
                     </div>
