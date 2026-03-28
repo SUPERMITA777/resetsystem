@@ -12,12 +12,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { GenericImageUploader } from "@/components/ui/GenericImageUploader";
 import toast, { Toaster } from "react-hot-toast";
 
 type ConfigSection = 'layout' | 'appearance' | 'multimedia' | 'contact' | 'seo';
 
 export default function WebConfigPage() {
+    const { tenantId: authTenantId, role } = useAuth();
     const [tenantId, setTenantId] = useState("resetspa");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -52,10 +54,12 @@ export default function WebConfigPage() {
     });
 
     useEffect(() => {
-        const id = localStorage.getItem('currentTenant') || 'resetspa';
+        // Priorizar el tenantId de useAuth si no es superadmin, o el de localStorage si lo es
+        const id = (role === 'superadmin' ? localStorage.getItem('currentTenant') : authTenantId) || localStorage.getItem('currentTenant') || 'resetspa';
+        console.log("WebConfigPage: Usando tenantId:", id);
         setTenantId(id);
         loadTenantData(id);
-    }, []);
+    }, [authTenantId, role]);
 
     const loadTenantData = async (id: string) => {
         setLoading(true);
@@ -97,7 +101,12 @@ export default function WebConfigPage() {
     };
 
     const handleSave = async () => {
+        if (!tenantId) {
+            toast.error("Error: No se pudo identificar el salón");
+            return;
+        }
         setSaving(true);
+        console.log("Guardando configuración para:", tenantId, config);
         try {
             await createOrUpdateTenant(tenantId, {
                 nombre_salon: config.nombre_salon,
@@ -129,8 +138,9 @@ export default function WebConfigPage() {
             });
             
             toast.success("Configuración web guardada con éxito");
+            console.log("Guardado exitoso!");
         } catch (error) {
-            console.error(error);
+            console.error("Error al guardar:", error);
             toast.error("Error al guardar la configuración");
         } finally {
             setSaving(false);

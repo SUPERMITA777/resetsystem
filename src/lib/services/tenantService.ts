@@ -45,6 +45,7 @@ export interface TenantData {
 const COLLECTION_NAME = "tenants";
 
 export async function createOrUpdateTenant(slug: string, data: Partial<TenantData>) {
+    console.log(`Firestore: Guardando en tenants/${slug}:`, data);
     const tenantRef = doc(db, COLLECTION_NAME, slug);
     await setDoc(tenantRef, data, { merge: true });
 }

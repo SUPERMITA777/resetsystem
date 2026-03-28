@@ -30,8 +30,16 @@ export function WebConfigModal({ isOpen, onClose, tenantId, onSaveSuccess }: Web
     const [config, setConfig] = useState({
         nombre_salon: '',
         logo_url: '',
-        hero_image_url: '',
         tema_visual: 'nude' as TenantData['tema_visual'],
+        
+        // Web Config specific
+        layout_type: 'classic' as 'classic' | 'modern' | 'minimal',
+        primary_color: '#000000',
+        secondary_color: '#ffffff',
+        accent_color: '#D4A5B2',
+        hero_image_url: '',
+        background_image_url: '',
+        font_family: 'sans' as 'serif' | 'sans' | 'mono' | 'display' | 'elegant',
         
         public_title: 'Cronograma de Clases',
         public_subtitle: 'Encuentra el momento perfecto para renovarte',
@@ -58,8 +66,15 @@ export function WebConfigModal({ isOpen, onClose, tenantId, onSaveSuccess }: Web
                 setConfig({
                     nombre_salon: data.nombre_salon || '',
                     logo_url: data.logo_url || '',
-                    hero_image_url: (data as any).hero_image_url || '',
                     tema_visual: data.tema_visual || 'nude',
+                    
+                    layout_type: data.web_config?.layout_type || 'classic',
+                    primary_color: data.web_config?.primary_color || (data.tema_visual === 'nude' ? '#7b5460' : data.tema_visual === 'lavender' ? '#9381FF' : '#7D9D9C'),
+                    secondary_color: data.web_config?.secondary_color || '#faf9f9',
+                    accent_color: data.web_config?.accent_color || (data.tema_visual === 'nude' ? '#D4A5B2' : data.tema_visual === 'lavender' ? '#B8B8FF' : '#B4CFB0'),
+                    hero_image_url: data.web_config?.hero_image_url || '',
+                    background_image_url: data.web_config?.background_image_url || '',
+                    font_family: (data.web_config?.font_family as any) || 'sans',
                     
                     public_title: data.config_clases?.public_title || "Cronograma de Clases",
                     public_subtitle: data.config_clases?.public_subtitle || "Encuentra el momento perfecto para renovarte",
@@ -86,8 +101,16 @@ export function WebConfigModal({ isOpen, onClose, tenantId, onSaveSuccess }: Web
             await createOrUpdateTenant(tenantId, {
                 nombre_salon: config.nombre_salon,
                 logo_url: config.logo_url,
-                hero_image_url: config.hero_image_url,
                 tema_visual: config.tema_visual,
+                web_config: {
+                    layout_type: config.layout_type,
+                    primary_color: config.primary_color,
+                    secondary_color: config.secondary_color,
+                    accent_color: config.accent_color,
+                    hero_image_url: config.hero_image_url,
+                    background_image_url: config.background_image_url,
+                    font_family: config.font_family,
+                },
                 config_clases: {
                     public_title: config.public_title,
                     public_subtitle: config.public_subtitle,
@@ -99,10 +122,10 @@ export function WebConfigModal({ isOpen, onClose, tenantId, onSaveSuccess }: Web
                     telefono: config.telefono,
                     instagram: config.instagram,
                     whatsapp: config.whatsapp,
-                }
-            } as any);
+                },
+            });
             
-            toast.success("Configuración web actualizada");
+            toast.success("Configuración web guardada con éxito");
             onSaveSuccess();
             onClose();
         } catch (error) {

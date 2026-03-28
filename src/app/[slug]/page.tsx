@@ -16,8 +16,10 @@ export default function SalonPublicPage() {
     useEffect(() => {
         async function loadTenant() {
             if (!slug) return;
+            console.log("Cargando web pública para slug:", slug);
             try {
                 const data = await getTenant(slug);
+                console.log("Datos del salón recibidos:", data);
                 if (data) {
                     setTenant(data);
                 }
