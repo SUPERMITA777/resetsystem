@@ -29,12 +29,18 @@ export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange }:
 
         {/* Logo center on mobile, left on desktop */}
         <div className="flex items-center gap-3 shrink-0 group cursor-pointer mx-auto md:mx-0">
-          <div className="relative w-24 h-9 md:w-32 md:h-12">
-            <img
-              src={logoUrl || "/logo.png"}
-              alt={displayName}
-              className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
-            />
+          <div className="relative flex items-center gap-3 h-9 md:h-12">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={displayName}
+                className="w-auto h-full object-contain transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <span className="text-lg md:text-xl font-black uppercase tracking-tighter text-[var(--primary)]">
+                {displayName}
+              </span>
+            )}
           </div>
         </div>
 

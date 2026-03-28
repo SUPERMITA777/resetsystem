@@ -24,8 +24,14 @@ export default function SalonPublicPage() {
         const unsubscribe = onSnapshot(doc(db, "tenants", slug), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as TenantData;
-                console.log("Datos del salón actualizados (Real-time):", data);
+                console.log("Datos del salón recibidos (Real-time):", data);
+                console.log("Web Config actual:", data.web_config);
                 setTenant(data);
+                
+                // Actualizar título de la página
+                if (data.nombre_salon) {
+                    document.title = `${data.nombre_salon} | RESETSYSTEM`;
+                }
             } else {
                 console.warn("El salón no existe en Firestore:", slug);
                 setTenant(null);
@@ -64,8 +70,8 @@ export default function SalonPublicPage() {
     }
 
     const config = tenant.web_config || {};
-    const primary = config.primary_color || '#000000';
-    const accent = config.accent_color || '#D4A5B2';
+    const primary = config.primary_color || (tenant.tema_visual === 'nude' ? '#7b5460' : tenant.tema_visual === 'lavender' ? '#9381FF' : '#7D9D9C');
+    const accent = config.accent_color || (tenant.tema_visual === 'nude' ? '#D4A5B2' : tenant.tema_visual === 'lavender' ? '#B8B8FF' : '#B4CFB0');
     const secondary = config.secondary_color || '#faf9f9';
     const font = config.font_family || 'sans';
     const layout = config.layout_type || 'classic';
@@ -73,20 +79,22 @@ export default function SalonPublicPage() {
 
     // Dynamic styles based on tenant configuration
     const customStyles = `
-        :root {
-            --tenant-primary: ${primary};
-            --tenant-accent: ${accent};
-            --tenant-secondary: ${secondary};
+        :root, .theme-nude, .theme-lavender, .theme-sage {
+            --tenant-primary: ${primary} !important;
+            --tenant-accent: ${accent} !important;
+            --tenant-secondary: ${secondary} !important;
             
             /* Sincronizar con variables globales usadas por componentes */
             --primary: ${primary} !important;
             --accent: ${accent} !important;
             --background: ${secondary} !important;
             --foreground: ${primary} !important;
+            --border-soft: rgba(0, 0, 0, 0.05) !important;
         }
         
         body {
             background-color: var(--tenant-secondary) !important;
+            color: var(--tenant-primary) !important;
         }
 
         .tenant-font { 
@@ -101,13 +109,20 @@ export default function SalonPublicPage() {
         }
         
         /* Overrides para asegurar que los componentes usen los colores del salón */
-        .text-tenant-primary, .text-\[var\(--primary\)\] { color: var(--tenant-primary) !important; }
+        .text-tenant-primary, .text-\[var\(--primary\)\], .text-\[var\(--foreground\)\] { color: var(--tenant-primary) !important; }
         .text-tenant-accent, .text-\[var\(--accent\)\] { color: var(--tenant-accent) !important; }
-        .bg-tenant-primary, .bg-\[var\(--primary\)\] { background-color: var(--tenant-primary) !important; }
+        .bg-tenant-primary, .bg-\[var\(--primary\)\], .bg-\[var\(--foreground\)\] { background-color: var(--tenant-primary) !important; }
         .bg-tenant-accent, .bg-\[var\(--accent\)\] { background-color: var(--tenant-accent) !important; }
-        .bg-tenant-secondary, .bg-\[var\(--secondary\)\] { background-color: var(--tenant-secondary) !important; }
+        .bg-tenant-secondary, .bg-\[var\(--background\)\], .bg-\[var\(--secondary\)\] { background-color: var(--tenant-secondary) !important; }
         .border-tenant-accent, .border-\[var\(--accent\)\] { border-color: var(--tenant-accent) !important; }
         
+        /* Glass effect overrides */
+        .glass {
+            background-color: rgba(255, 255, 255, 0.4) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
         ${bgImage ? `
         .tenant-bg-image {
             background-image: url('${bgImage}');
