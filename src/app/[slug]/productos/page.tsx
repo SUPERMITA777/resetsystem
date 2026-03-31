@@ -15,8 +15,10 @@ export default function PublicProductosPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
+        setIsClient(true);
         async function load() {
             if (!slug) {
                 setDebugInfo({ slug: "null", page: "productos" });
