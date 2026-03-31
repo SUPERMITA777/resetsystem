@@ -169,9 +169,19 @@ export default function PublicClasesPage() {
                                         className="bg-white p-10 rounded-[3.5rem] shadow-premium-soft border border-gray-100 space-y-8 cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-500 group"
                                         onClick={() => handleClaseSelect(clase)}
                                     >
-                                        <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-4xl group-hover:bg-black group-hover:text-white transition-all duration-500 shadow-inner">
-                                            {clase.nombre.charAt(0)}
-                                        </div>
+                                        {clase.imagenes && clase.imagenes.length > 0 ? (
+                                            <div className="w-full h-48 rounded-[2.5rem] overflow-hidden mb-6">
+                                                <img 
+                                                    src={clase.imagenes[0]} 
+                                                    alt={clase.nombre} 
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-4xl group-hover:bg-black group-hover:text-white transition-all duration-500 shadow-inner mb-6">
+                                                {clase.nombre.charAt(0)}
+                                            </div>
+                                        )}
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-[10px] font-black uppercase tracking-widest text-tenant-accent px-3 py-1 bg-tenant-accent/10 rounded-lg">
@@ -181,14 +191,10 @@ export default function PublicClasesPage() {
                                             <h3 className="text-3xl font-black uppercase tracking-tighter leading-none group-hover:translate-x-1 transition-transform">{clase.nombre}</h3>
                                             <p className="text-sm text-gray-400 leading-relaxed font-medium line-clamp-3 uppercase tracking-tighter">{clase.detalle || "Una experiencia revitalizante diseñada para resetear tu cuerpo y mente."}</p>
                                         </div>
-                                        <div className="pt-8 border-t border-gray-50 flex items-center justify-between">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Inversión</span>
-                                                <span className="font-black text-2xl tracking-tighter text-gray-900">${clase.valorCreditos || 0}</span>
-                                            </div>
-                                            <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-tenant-accent group-hover:text-white transition-all duration-500">
-                                                <ArrowRight className="w-6 h-6" />
-                                            </div>
+                                        <div className="pt-8 border-t border-gray-50">
+                                            <Button className="w-full h-14 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl group-hover:bg-tenant-accent transition-all duration-500">
+                                                CONSULTAR HORARIOS
+                                            </Button>
                                         </div>
                                     </Card>
                                 ))}
