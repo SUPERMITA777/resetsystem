@@ -14,34 +14,36 @@ export default function PublicClasesPage() {
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [debugInfo, setDebugInfo] = useState<any>(null);
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
         async function load() {
             if (!slug) {
-                setDebugInfo({ slug: "null", page: "clases" });
                 setLoading(false);
                 return;
             }
             
-            console.log("DEBUG: Loading clases for:", slug);
-            setDebugInfo({ slug, page: "clases", status: "loading" });
+            console.log("Cargando clases para:", slug);
 
             try {
                 const data = await getTenant(slug);
                 if (data) {
                     setTenant(data);
-                    setDebugInfo((prev: any) => ({ ...prev, status: "ready" }));
+                    
+                    // Actualizar título y meta tags
+                    const webConfig = data.web_config;
+                    const seoTitle = `Clases - ${data.nombre_salon} | RESETSYSTEM`;
+                    const seoDesc = webConfig?.seo_description || data.datos_contacto?.descripcion || 'Reserva tu lugar en nuestras sesiones grupales';
+                    document.title = seoTitle;
+                    
+                    let metaDesc = document.querySelector('meta[name="description"]');
+                    if (metaDesc) metaDesc.setAttribute('content', seoDesc);
                 } else {
                     setError("Salón no encontrado.");
-                    setDebugInfo((prev: any) => ({ ...prev, status: "not_found" }));
                 }
             } catch (err: any) {
-                console.error("DEBUG Error:", err);
                 setError(`Error de conexión: ${err.message}`);
-                setDebugInfo((prev: any) => ({ ...prev, status: "error", msg: err.message }));
             } finally {
                 setLoading(false);
             }
@@ -61,9 +63,6 @@ export default function PublicClasesPage() {
             <XCircle className="w-12 h-12 text-red-500 mb-4" />
             <h1 className="text-xl font-black uppercase mb-2">Hubo un problema</h1>
             <p className="text-gray-500 text-sm mb-8">{error || "No pudimos encontrar la información del salón."}</p>
-            <div className="p-4 bg-white border border-gray-100 rounded-2xl text-[8px] font-mono text-gray-400 max-w-xs break-all">
-                DEBUG: {JSON.stringify(debugInfo)}
-            </div>
             <Button className="mt-8 bg-black text-white px-8 rounded-xl h-12 uppercase text-[10px] font-black tracking-widest" onClick={() => window.location.reload()}>Reintentar</Button>
         </div>
     );

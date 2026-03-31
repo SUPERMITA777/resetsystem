@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
 
 const db = initializeFirestore(app, {
     localCache: firestoreCache,
-    experimentalForceLongPolling: true,
+    ...(typeof window !== 'undefined' ? { experimentalForceLongPolling: true } : {}),
 });
 
 const storage = getStorage(app);

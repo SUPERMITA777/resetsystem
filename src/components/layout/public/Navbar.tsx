@@ -19,9 +19,9 @@ export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange, s
   const pathname = usePathname();
 
   const navLinks = [
-    { name: "Tratamientos", href: slug ? `/${slug}` : "#" },
-    { name: "Clases", href: slug ? `/${slug}/clases` : "#" },
-    { name: "Productos", href: slug ? `/${slug}/productos` : "#" },
+    { name: "Tratamientos", href: slug ? `/${slug}?view=tratamientos` : "#" },
+    { name: "Clases", href: slug ? `/${slug}/clases?view=clases` : "#" },
+    { name: "Productos", href: slug ? `/${slug}/productos?view=productos` : "#" },
   ];
 
   return (
