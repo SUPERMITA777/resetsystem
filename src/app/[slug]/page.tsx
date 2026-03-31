@@ -16,28 +16,52 @@ export default function SalonPublicPage() {
     const slug = params.slug as string;
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [debugInfo, setDebugInfo] = useState<any>(null);
 
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        if (!slug) return;
+        if (!slug) {
+            console.warn("DEBUG: No slug detected in params");
+            setDebugInfo({ slug: "null or undefined", pathname });
+            setLoading(false);
+            return;
+        }
         
-        console.log("Iniciando listener para salón:", slug);
+        console.log("DEBUG: Iniciando listener para salón:", slug);
+        setDebugInfo({ slug, pathname, status: "connecting" });
+
+        // Timeout preventivo para el splash de carga
+        const timeoutId = setTimeout(() => {
+            if (loading) {
+                console.error("DEBUG: Tiempo de carga excedido (5s)");
+                setError("La conexión está tardando más de lo esperado. Verifica tu conexión o intenta recargar.");
+                setLoading(false);
+            }
+        }, 8000);
+
         const unsubscribe = onSnapshot(doc(db, "tenants", slug), (docSnap) => {
+            clearTimeout(timeoutId);
             if (docSnap.exists()) {
                 const data = docSnap.data() as TenantData;
-                console.log("Datos del salón recibidos (Real-time):", data);
+                console.log("DEBUG: Datos del salón recibidos:", data.nombre_salon);
                 setTenant(data);
+                setDebugInfo((prev: any) => ({ ...prev, status: "ready", tenantFound: true }));
 
-                // Handle default view redirection
+                // Handle default view redirection (Simplified)
                 const webConfig = data?.web_config;
                 const defaultView = webConfig?.default_view || 'tratamientos';
-                
-                if (defaultView === 'clases' && pathname === `/${slug}`) {
-                    router.push(`/${slug}/clases`);
-                } else if (defaultView === 'productos' && pathname === `/${slug}`) {
-                    router.push(`/${slug}/productos`);
+                const currentPath = window.location.pathname.replace(/\/$/, ""); 
+                const targetPath = `/${slug}`.replace(/\/$/, "");
+
+                if (currentPath === targetPath) {
+                    if (defaultView === 'clases') {
+                        router.push(`/${slug}/clases`);
+                    } else if (defaultView === 'productos') {
+                        router.push(`/${slug}/productos`);
+                    }
                 }
                 
                 // Actualizar título de la página
@@ -48,16 +72,23 @@ export default function SalonPublicPage() {
                     }
                 }
             } else {
-                console.warn("El salón no existe en Firestore:", slug);
+                console.warn("DEBUG: El salón no existe en Firestore:", slug);
                 setTenant(null);
+                setDebugInfo((prev: any) => ({ ...prev, status: "error", tenantFound: false }));
             }
             setLoading(false);
-        }, (error) => {
-            console.error("Error en onSnapshot:", error);
+        }, (err) => {
+            clearTimeout(timeoutId);
+            console.error("DEBUG: Error en onSnapshot:", err);
+            setError(`Error de base de datos: ${err.message}`);
+            setDebugInfo((prev: any) => ({ ...prev, status: "failed", error: err.message }));
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            clearTimeout(timeoutId);
+            unsubscribe();
+        };
     }, [slug, router, pathname]);
 
     if (loading) {
@@ -66,7 +97,29 @@ export default function SalonPublicPage() {
                 <div className="flex flex-col items-center gap-4">
                     <div className="animate-spin w-10 h-10 border-4 border-black border-t-transparent rounded-full shadow-lg"></div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cargando experiencia...</p>
+                    {debugInfo && (
+                        <div className="mt-8 p-4 bg-white rounded-lg border border-gray-100 text-[8px] font-mono text-gray-400 max-w-xs break-all">
+                            DEBUG: {JSON.stringify(debugInfo)}
+                        </div>
+                    )}
                 </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 bg-gray-50">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl mb-6">
+                    <XCircle className="w-10 h-10 text-orange-500" />
+                </div>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-gray-900 mb-2">Error de Conexión</h1>
+                <p className="text-gray-500 font-medium max-w-xs mx-auto text-sm">{error}</p>
+                <div className="mt-4 p-4 bg-gray-100 rounded-xl text-[10px] font-mono text-left w-full max-w-sm">
+                    <strong>Debug Info:</strong><br/>
+                    {JSON.stringify(debugInfo, null, 2)}
+                </div>
+                <Button className="mt-8 bg-black text-white px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px]" onClick={() => window.location.reload()}>Reintentar Carga</Button>
             </div>
         );
     }
