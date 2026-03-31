@@ -18,26 +18,43 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
+// ============================================================
+// INICIALIZACIÓN CONDICIONAL - SOLO EN CLIENTE
+// ============================================================
+// PROBLEMA: Next.js renderiza componentes "use client" en el servidor (SSR).
+// El SDK de Firebase cliente se cuelga en el servidor de Vercel.
+// SOLUCIÓN: Inicializar Firebase SOLO en el navegador.
+// En el servidor, exportamos null. Los componentes usan useEffect()
+// (que solo corre en el cliente) para acceder a Firebase.
+// ============================================================
 
-// Determinar la instancia de Firestore
-let db: Firestore;
+let app: any = null;
+let auth: any = null;
+let db: Firestore = null as any;
+let storage: any = null;
 
 if (typeof window !== 'undefined') {
-    // Si estamos en el navegador, usamos persistencia multi-pestaña
-    db = initializeFirestore(app, {
-        localCache: persistentLocalCache({
-            tabManager: persistentMultipleTabManager()
-        }),
-        experimentalForceLongPolling: true,
-    });
-} else {
-    // En el servidor (SSR/Serverless), usamos la configuración estándar de Firestore
-    // EVITAMOS usar initializeFirestore con opciones para prevenir el crasheo "about:blank" en Vercel
-    db = getFirestore(app);
-}
+    // CLIENTE: Inicializar todo normalmente
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
 
-const storage = getStorage(app);
+    try {
+        db = initializeFirestore(app, {
+            localCache: persistentLocalCache({
+                tabManager: persistentMultipleTabManager()
+            }),
+            experimentalForceLongPolling: true,
+        });
+    } catch {
+        db = getFirestore(app);
+    }
+
+    storage = getStorage(app);
+} else {
+    // SERVIDOR: No inicializar nada
+    // Los componentes que usan db/auth lo hacen dentro de useEffect,
+    // que NUNCA se ejecuta en el servidor.
+    console.log("[Firebase] Skipping initialization on server");
+}
 
 export { app, auth, db, storage };
