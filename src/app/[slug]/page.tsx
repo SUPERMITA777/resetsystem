@@ -162,7 +162,7 @@ export default function SalonPublicPage() {
         switch (layout) {
             case 'modern':
                 return (
-                    <div className={\`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-700 \${bgImage ? 'tenant-bg-image' : ''}\`}>
+                    <div className={`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-700 ${bgImage ? 'tenant-bg-image' : ''}`}>
                         {commonElements}
                         {/* Modern Layout: Hero Full Screen */}
                         <section className="relative h-[70vh] w-full overflow-hidden flex items-center justify-center pt-20">
@@ -203,7 +203,7 @@ export default function SalonPublicPage() {
                 );
             case 'minimal':
                 return (
-                    <div className={\`min-h-screen bg-white tenant-font flex flex-col animate-in fade-in duration-500 \${bgImage ? 'tenant-bg-image' : ''}\`}>
+                    <div className={`min-h-screen bg-white tenant-font flex flex-col animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
                         {commonElements}
                         <div className="flex-1 flex flex-col items-center justify-center p-6 pt-32">
                             <header className="text-center mb-16">
@@ -220,7 +220,7 @@ export default function SalonPublicPage() {
                 );
             default: // Classic
                 return (
-                    <div className={\`min-h-screen flex flex-col bg-tenant-secondary tenant-font animate-in fade-in duration-500 \${bgImage ? 'tenant-bg-image' : ''}\`}>
+                    <div className={`min-h-screen flex flex-col bg-tenant-secondary tenant-font animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
                         {commonElements}
                         {/* Classic Layout: Soft cover and centered logo */}
                         <header className="relative bg-white pt-40 pb-16 px-6 text-center shadow-sm rounded-b-[4rem] overflow-hidden">
