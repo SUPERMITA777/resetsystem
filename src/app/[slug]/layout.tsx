@@ -7,10 +7,10 @@ type Props = {
 };
 
 export async function generateMetadata(
-  { params }: Props,
+  props: { params: Promise<{ slug: string }> },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const slug = params.slug;
+  const { slug } = await props.params;
   
   try {
     const tenant = await getTenant(slug);

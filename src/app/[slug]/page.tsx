@@ -18,11 +18,13 @@ export default function SalonPublicPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [isClient, setIsClient] = useState(false);
 
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
+        setIsClient(true);
         if (!slug) {
             console.warn("DEBUG: No slug detected in params");
             setDebugInfo({ slug: "null or undefined", pathname });
@@ -53,14 +55,17 @@ export default function SalonPublicPage() {
                 // Handle default view redirection (Simplified)
                 const webConfig = data?.web_config;
                 const defaultView = webConfig?.default_view || 'tratamientos';
-                const currentPath = window.location.pathname.replace(/\/$/, ""); 
-                const targetPath = `/${slug}`.replace(/\/$/, "");
+                
+                if (typeof window !== 'undefined') {
+                    const currentPath = window.location.pathname.replace(/\/$/, ""); 
+                    const targetPath = `/${slug}`.replace(/\/$/, "");
 
-                if (currentPath === targetPath) {
-                    if (defaultView === 'clases') {
-                        router.push(`/${slug}/clases`);
-                    } else if (defaultView === 'productos') {
-                        router.push(`/${slug}/productos`);
+                    if (currentPath === targetPath) {
+                        if (defaultView === 'clases') {
+                            router.push(`/${slug}/clases`);
+                        } else if (defaultView === 'productos') {
+                            router.push(`/${slug}/productos`);
+                        }
                     }
                 }
                 
