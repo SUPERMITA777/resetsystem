@@ -69,12 +69,33 @@ export default function SalonPublicPage() {
                     }
                 }
                 
-                // Actualizar título de la página
+                // Actualizar título y meta tags de la página
                 if (data?.nombre_salon) {
                     const seoTitle = webConfig?.seo_title || `${data.nombre_salon} | RESETSYSTEM`;
-                    if (document.title !== seoTitle) {
-                        document.title = seoTitle;
-                    }
+                    const seoDesc = webConfig?.seo_description || data.datos_contacto?.descripcion || 'Reserva tu turno online';
+                    document.title = seoTitle;
+                    
+                    // Update meta description
+                    let metaDesc = document.querySelector('meta[name="description"]');
+                    if (metaDesc) metaDesc.setAttribute('content', seoDesc);
+                    
+                    // Update OG tags for social sharing
+                    const ogTitle = webConfig?.social_share_title || seoTitle;
+                    const ogDesc = webConfig?.social_share_description || seoDesc;
+                    const ogImage = webConfig?.hero_image_url || data.logo_url || '';
+                    
+                    const setMeta = (property: string, content: string) => {
+                        let el = document.querySelector(`meta[property="${property}"]`);
+                        if (!el) {
+                            el = document.createElement('meta');
+                            el.setAttribute('property', property);
+                            document.head.appendChild(el);
+                        }
+                        el.setAttribute('content', content);
+                    };
+                    setMeta('og:title', ogTitle);
+                    setMeta('og:description', ogDesc);
+                    if (ogImage) setMeta('og:image', ogImage);
                 }
             } else {
                 console.warn("DEBUG: El salón no existe en Firestore:", slug);
