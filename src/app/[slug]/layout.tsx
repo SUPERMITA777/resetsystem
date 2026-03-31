@@ -1,10 +1,10 @@
-import { Metadata, ResolvingMetadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import { getTenant } from "@/lib/services/tenantService";
 
-interface Props {
+type Props = {
   params: { slug: string };
-  children: React.ReactNode;
-}
+  searchParams: { [key: string]: string | string[] | undefined };
+};
 
 export async function generateMetadata(
   { params }: Props,
@@ -55,5 +55,9 @@ export async function generateMetadata(
 }
 
 export default function SalonLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-white">
+      {children}
+    </div>
+  );
 }

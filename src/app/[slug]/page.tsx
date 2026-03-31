@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
 import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle } from "lucide-react";
@@ -18,6 +18,7 @@ export default function SalonPublicPage() {
     const [loading, setLoading] = useState(true);
 
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!slug) return;
@@ -30,16 +31,21 @@ export default function SalonPublicPage() {
                 setTenant(data);
 
                 // Handle default view redirection
-                const defaultView = data.web_config?.default_view || 'tratamientos';
-                if (defaultView === 'clases' && window.location.pathname === `/${slug}`) {
+                const webConfig = data?.web_config;
+                const defaultView = webConfig?.default_view || 'tratamientos';
+                
+                if (defaultView === 'clases' && pathname === `/${slug}`) {
                     router.push(`/${slug}/clases`);
-                } else if (defaultView === 'productos' && window.location.pathname === `/${slug}`) {
+                } else if (defaultView === 'productos' && pathname === `/${slug}`) {
                     router.push(`/${slug}/productos`);
                 }
                 
                 // Actualizar título de la página
-                if (data.nombre_salon) {
-                    document.title = data.web_config?.seo_title || `${data.nombre_salon} | RESETSYSTEM`;
+                if (data?.nombre_salon) {
+                    const seoTitle = webConfig?.seo_title || `${data.nombre_salon} | RESETSYSTEM`;
+                    if (document.title !== seoTitle) {
+                        document.title = seoTitle;
+                    }
                 }
             } else {
                 console.warn("El salón no existe en Firestore:", slug);
@@ -52,7 +58,7 @@ export default function SalonPublicPage() {
         });
 
         return () => unsubscribe();
-    }, [slug, router]);
+    }, [slug, router, pathname]);
 
     if (loading) {
         return (
@@ -156,7 +162,7 @@ export default function SalonPublicPage() {
         switch (layout) {
             case 'modern':
                 return (
-                    <div className={`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-700 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                    <div className={\`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-700 \${bgImage ? 'tenant-bg-image' : ''}\`}>
                         {commonElements}
                         {/* Modern Layout: Hero Full Screen */}
                         <section className="relative h-[70vh] w-full overflow-hidden flex items-center justify-center pt-20">
@@ -197,7 +203,7 @@ export default function SalonPublicPage() {
                 );
             case 'minimal':
                 return (
-                    <div className={`min-h-screen bg-white tenant-font flex flex-col animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                    <div className={\`min-h-screen bg-white tenant-font flex flex-col animate-in fade-in duration-500 \${bgImage ? 'tenant-bg-image' : ''}\`}>
                         {commonElements}
                         <div className="flex-1 flex flex-col items-center justify-center p-6 pt-32">
                             <header className="text-center mb-16">
@@ -214,7 +220,7 @@ export default function SalonPublicPage() {
                 );
             default: // Classic
                 return (
-                    <div className={`min-h-screen flex flex-col bg-tenant-secondary tenant-font animate-in fade-in duration-500 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                    <div className={\`min-h-screen flex flex-col bg-tenant-secondary tenant-font animate-in fade-in duration-500 \${bgImage ? 'tenant-bg-image' : ''}\`}>
                         {commonElements}
                         {/* Classic Layout: Soft cover and centered logo */}
                         <header className="relative bg-white pt-40 pb-16 px-6 text-center shadow-sm rounded-b-[4rem] overflow-hidden">
