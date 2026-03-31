@@ -3,41 +3,43 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
+import { productService, Producto } from "@/lib/services/productService";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
-import { XCircle, ShoppingBag, ArrowRight } from "lucide-react";
+import { XCircle, ShoppingBag, ArrowRight, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function PublicProductosPage() {
     const params = useParams();
     const slug = params.slug as string;
     const [tenant, setTenant] = useState<TenantData | null>(null);
+    const [productos, setProductos] = useState<Producto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        setIsClient(true);
         async function load() {
             if (!slug) {
                 setLoading(false);
                 return;
             }
             
-            console.log("Cargando productos para:", slug);
-
             try {
-                const data = await getTenant(slug);
-                if (data) {
-                    setTenant(data);
+                // Fetch tenant and products in parallel
+                const [tenantData, productsData] = await Promise.all([
+                    getTenant(slug),
+                    productService.getProductos(slug)
+                ]);
+
+                if (tenantData) {
+                    setTenant(tenantData);
+                    setProductos(productsData || []);
                     
-                    // Actualizar título y meta tags
-                    const webConfig = data.web_config;
-                    const seoTitle = `Productos - ${data.nombre_salon} | RESETSYSTEM`;
-                    const seoDesc = webConfig?.seo_description || data.datos_contacto?.descripcion || 'Compra nuestros productos online';
-                    document.title = seoTitle;
-                    
-                    let metaDesc = document.querySelector('meta[name="description"]');
+                    // SEO
+                    const webConfig = tenantData.web_config;
+                    document.title = `Productos - ${tenantData.nombre_salon} | RESETSYSTEM`;
+                    const seoDesc = webConfig?.seo_description || 'Compra nuestros productos online';
+                    const metaDesc = document.querySelector('meta[name="description"]');
                     if (metaDesc) metaDesc.setAttribute('content', seoDesc);
                 } else {
                     setError("Salón no encontrado.");
@@ -67,6 +69,12 @@ export default function PublicProductosPage() {
         </div>
     );
 
+    const handleWhatsAppConsult = (producto: Producto) => {
+        const phone = tenant.datos_contacto?.whatsapp || '5491112345678';
+        const message = encodeURIComponent(`¡Hola! 👋 Me interesa el producto "${producto.nombre}" en ${tenant.nombre_salon}. ¿Tienen stock disponible? ✨`);
+        window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${message}`, '_blank');
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <PublicNavbar 
@@ -77,27 +85,52 @@ export default function PublicProductosPage() {
             
             <main className="flex-1 max-w-7xl mx-auto px-6 py-32 w-full">
                 <div className="text-center mb-16 space-y-4">
-                    <h1 className="text-5xl font-black uppercase tracking-tighter text-gray-900 italic">Nuestros Productos</h1>
-                    <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">CUIDA TU PIEL CON LO MEJOR EN ESTÉTICA PROFESIONAL</p>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter text-gray-900 italic animate-in fade-in slide-in-from-bottom-4 duration-700">Catálogo de Productos</h1>
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-200">
+                        CUIDA TU PIEL CON LO MEJOR EN ESTÉTICA PROFESIONAL
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                     <div className="bg-white p-8 rounded-[3.5rem] shadow-xl border border-gray-100 space-y-6 group hover:shadow-2xl transition-all">
-                        <div className="aspect-square bg-gray-50 rounded-[2.5rem] flex items-center justify-center text-5xl group-hover:bg-black group-hover:text-white transition-all transform group-hover:scale-105 duration-500">✨</div>
-                        <div className="space-y-3">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-tenant-accent">Skin Care</span>
-                            <h3 className="text-xl font-black uppercase tracking-tight">Serum Revitalizante</h3>
-                            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Para pieles sensibles</p>
-                            <p className="text-2xl font-black text-gray-900">$3.500</p>
-                        </div>
-                        <Button 
-                            className="w-full rounded-2xl h-14 bg-black text-white font-black uppercase tracking-widest text-[10px]"
-                            onClick={() => window.open(`https://wa.me/?text=Hola! Quiero consultar por el Serum Revitalizante en ${tenant.nombre_salon}`)}
-                        >
-                            Consultar por WhatsApp
-                        </Button>
+                {productos.length === 0 ? (
+                    <div className="bg-white p-20 rounded-[3rem] text-center border border-gray-100 max-w-2xl mx-auto">
+                        <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-6" />
+                        <h2 className="text-xl font-black uppercase text-gray-400">Próximamente</h2>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2">Estamos actualizando nuestro catálogo de productos.</p>
                     </div>
-                </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {productos.map((producto, idx) => (
+                            <div 
+                                key={producto.id} 
+                                className="bg-white p-8 rounded-[3.5rem] shadow-premium-soft border border-gray-100 space-y-6 group hover:shadow-2xl hover:scale-[1.02] transition-all duration-500 animate-in fade-in zoom-in-95"
+                                style={{ animationDelay: `${idx * 100}ms` }}
+                            >
+                                <div className="aspect-square bg-gray-50 rounded-[2.5rem] flex items-center justify-center text-5xl group-hover:bg-black group-hover:text-white transition-all transform duration-500 overflow-hidden">
+                                    {producto.imagenes && producto.imagenes[0] ? (
+                                        <img src={producto.imagenes[0]} alt={producto.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    ) : (
+                                        <span className="opacity-40">✨</span>
+                                    )}
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-tenant-accent">{producto.categoria || 'Skin Care'}</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-300">{producto.marca}</span>
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase tracking-tight line-clamp-1">{producto.nombre}</h3>
+                                    {producto.descripcion && <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest line-clamp-2 leading-relaxed">{producto.descripcion}</p>}
+                                    <p className="text-2xl font-black text-gray-900 tracking-tighter">${producto.precio}</p>
+                                </div>
+                                <Button 
+                                    className="w-full rounded-2xl h-14 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl"
+                                    onClick={() => handleWhatsAppConsult(producto)}
+                                >
+                                    Consultar Stock
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </main>
 
             <PublicFooter logoUrl={tenant.logo_url} />
