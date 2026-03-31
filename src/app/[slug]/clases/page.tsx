@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
@@ -18,7 +20,8 @@ type Step = 'list' | 'sessions' | 'form' | 'success';
 
 export default function PublicClasesPage() {
     const params = useParams();
-    const slug = params.slug as string;
+    const slugRaw = params.slug as string;
+    const slug = decodeURIComponent(slugRaw);
     
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [clases, setClases] = useState<Clase[]>([]);
@@ -146,7 +149,7 @@ export default function PublicClasesPage() {
                 return (
                     <div className="animate-in fade-in duration-700">
                         <div className="text-center mb-20 space-y-4">
-                            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-gray-900 italic">Cronograma</h1>
+                            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-gray-900 italic">Nuestras Clases</h1>
                             <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] max-w-sm mx-auto leading-relaxed">
                                 ELIGE UNA ACTIVIDAD PARA VER LOS DÍAS Y HORARIOS DISPONIBLES
                             </p>
