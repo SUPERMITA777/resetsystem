@@ -55,10 +55,24 @@ export async function createOrUpdateTenant(slug: string, data: Partial<TenantDat
 
 export async function getTenant(slug: string): Promise<TenantData | null> {
     const tenantRef = doc(db, COLLECTION_NAME, slug);
-    const docSnap = await getDoc(tenantRef);
+    
+    // Implementar timeout de 5s para evitar bloqueos en SSR
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout de conexión a BD")), 5000)
+    );
 
-    if (docSnap.exists()) {
-        return { ...docSnap.data() } as TenantData;
+    try {
+        const docSnap = await Promise.race([
+            getDoc(tenantRef),
+            timeoutPromise
+        ]) as any;
+
+        if (docSnap.exists()) {
+            return { ...docSnap.data() } as TenantData;
+        }
+    } catch (e) {
+        console.error(`Error obteniendo tenant ${slug}:`, e);
+        return null;
     }
 
     return null;
