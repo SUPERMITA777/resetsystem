@@ -1,18 +1,28 @@
 "use client";
 
-import { Search, Menu, MessageCircle } from "lucide-react";
+import { Search, Menu, MessageCircle, X } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface PublicNavbarProps {
   salonName?: string;
   logoUrl?: string;
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
+  slug?: string;
 }
 
-export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange }: PublicNavbarProps) {
+export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange, slug }: PublicNavbarProps) {
   const displayName = salonName || "RESET HOME SPA WEB";
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const pathname = usePathname();
+
+  const navLinks = [
+    { name: "Tratamientos", href: slug ? `/${slug}` : "#" },
+    { name: "Clases", href: slug ? `/${slug}/clases` : "#" },
+    { name: "Productos", href: slug ? `/${slug}/productos` : "#" },
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass fine-line">
@@ -73,9 +83,20 @@ export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange }:
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-8">
-            <button className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity">Inicio</button>
-            <button className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity">Servicios</button>
-            <button className="btn-elegant !py-3 !px-6 !text-[10px]">Reservar</button>
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`text-[10px] font-semibold uppercase tracking-[0.2em] transition-opacity ${
+                  pathname === link.href || (link.name === 'Tratamientos' && pathname === `/${slug}`)
+                    ? 'opacity-100 text-[var(--primary)] border-b-2 border-[var(--primary)] pb-1'
+                    : 'opacity-40 hover:opacity-100'
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+            <Link href={slug ? `/${slug}#booking` : "#"} className="btn-elegant !py-3 !px-6 !text-[10px]">Reservar</Link>
           </div>
         </div>
       </div>

@@ -38,6 +38,9 @@ export interface TenantData {
         background_image_url?: string;
         seo_title?: string;
         seo_description?: string;
+        social_share_title?: string;
+        social_share_description?: string;
+        default_view?: 'tratamientos' | 'clases' | 'productos';
         font_family?: 'serif' | 'sans' | 'mono' | 'display' | 'elegant';
     };
 }

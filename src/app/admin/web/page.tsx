@@ -6,7 +6,7 @@ import {
     Globe, Layout as LayoutIcon, Palette, Image as ImageIcon,
     MessageSquare, Save, ChevronRight, Check, Sparkles,
     Instagram, Phone, MapPin, Search, Smartphone, Eye,
-    Type
+    Type, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -51,6 +51,9 @@ export default function WebConfigPage() {
         
         seo_title: '',
         seo_description: '',
+        social_share_title: '',
+        social_share_description: '',
+        default_view: 'tratamientos' as 'tratamientos' | 'clases' | 'productos',
     });
 
     useEffect(() => {
@@ -91,6 +94,9 @@ export default function WebConfigPage() {
                     
                     seo_title: data.web_config?.seo_title || data.nombre_salon,
                     seo_description: data.web_config?.seo_description || data.datos_contacto?.descripcion || '',
+                    social_share_title: data.web_config?.social_share_title || '',
+                    social_share_description: data.web_config?.social_share_description || '',
+                    default_view: data.web_config?.default_view || 'tratamientos',
                 });
             }
         } catch (error) {
@@ -121,6 +127,9 @@ export default function WebConfigPage() {
                     background_image_url: config.background_image_url,
                     seo_title: config.seo_title,
                     seo_description: config.seo_description,
+                    social_share_title: config.social_share_title,
+                    social_share_description: config.social_share_description,
+                    default_view: config.default_view,
                     font_family: config.font_family,
                 },
                 config_clases: {
@@ -272,6 +281,33 @@ export default function WebConfigPage() {
                                             <p className="text-[10px] text-gray-400 font-bold leading-relaxed">{layout.desc}</p>
                                         </div>
                                     ))}
+                                </div>
+
+                                <div className="mt-12 pt-10 border-t border-gray-50">
+                                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Sección Inicial (Aterrizaje)</Label>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-6">¿Qué sección debe ver tu cliente al abrir tu link?</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {[
+                                            { id: 'tratamientos', label: 'Tratamientos', icon: <Sparkles className="w-4 h-4" /> },
+                                            { id: 'clases', label: 'Clases', icon: <Calendar className="w-4 h-4" /> },
+                                            { id: 'productos', label: 'Productos', icon: <ImageIcon className="w-4 h-4" /> }
+                                        ].map((view) => (
+                                            <button
+                                                key={view.id}
+                                                type="button"
+                                                onClick={() => setConfig({...config, default_view: view.id as any})}
+                                                className={`p-6 rounded-2xl border-2 transition-all flex items-center justify-between group ${
+                                                    config.default_view === view.id ? 'border-black bg-black text-white' : 'border-gray-100 bg-white text-gray-400 hover:border-gray-200'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    {view.icon}
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">{view.label}</span>
+                                                </div>
+                                                {config.default_view === view.id && <Check className="w-4 h-4" />}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -574,24 +610,57 @@ export default function WebConfigPage() {
                                             </p>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-left">
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Título SEO</Label>
+                                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Título Pestaña (Navegador)</Label>
                                                 <Input 
                                                     value={config.seo_title}
                                                     onChange={e => setConfig({...config, seo_title: e.target.value})}
                                                     className="h-12 bg-white/10 border-none text-white rounded-2xl font-bold"
-                                                    placeholder="Título para buscadores"
+                                                    placeholder="Ej: Reset Home Spa | Masajes y Relax"
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descripción SEO</Label>
+                                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descripción Pestaña (Opcional)</Label>
                                                 <Input 
                                                     value={config.seo_description}
                                                     onChange={e => setConfig({...config, seo_description: e.target.value})}
                                                     className="h-12 bg-white/10 border-none text-white rounded-2xl font-bold"
-                                                    placeholder="Resumen para buscadores"
+                                                    placeholder="Breve descripción del sitio"
                                                 />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-8 border-t border-white/5 space-y-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+                                                    <MessageSquare className="w-6 h-6 text-emerald-500" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-lg font-black uppercase tracking-tight">Personalización de Compartido</h4>
+                                                    <p className="text-white/40 text-[9px] font-black uppercase tracking-widest">Lo que tus clientes ven al recibir tu link por WhatsApp</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Título Compartido (WhatsApp/RRSS)</Label>
+                                                    <Input 
+                                                        value={config.social_share_title}
+                                                        onChange={e => setConfig({...config, social_share_title: e.target.value})}
+                                                        className="h-12 bg-white/10 border-none text-white rounded-2xl font-bold"
+                                                        placeholder="Cualquier texto que resalte tu marca"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Descripción Compartida</Label>
+                                                    <Input 
+                                                        value={config.social_share_description}
+                                                        onChange={e => setConfig({...config, social_share_description: e.target.value})}
+                                                        className="h-12 bg-white/10 border-none text-white rounded-2xl font-bold"
+                                                        placeholder="Invita a tus clientes a ver tu catálogo"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

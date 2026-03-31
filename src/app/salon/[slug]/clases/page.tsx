@@ -10,10 +10,6 @@ import { ClaseBookingModal } from "@/components/booking/ClaseBookingModal";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { PublicNavbar } from "@/components/layout/public/Navbar";
-import { PublicFooter } from "@/components/layout/public/Footer";
 
 export default function PublicClasesPage() {
     const params = useParams();
@@ -27,27 +23,22 @@ export default function PublicClasesPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        if (!slug) return;
-        
-        console.log("Iniciando listener para clases del salón:", slug);
-        const unsubscribe = onSnapshot(doc(db, "tenants", slug), (docSnap) => {
-            if (docSnap.exists()) {
-                const tenantData = docSnap.data() as TenantData;
-                console.log("Datos del salón actualizados (Real-time):", tenantData);
-                setTenant(tenantData);
-                
-                // Fetch classes separately as they are a collection
-                claseService.getClases(slug).then(classesData => {
+        async function loadData() {
+            if (!slug) return;
+            try {
+                const tenantData = await getTenant(slug);
+                if (tenantData) {
+                    setTenant(tenantData);
+                    const classesData = await claseService.getClases(slug);
                     setClases(classesData);
-                });
+                }
+            } catch (error) {
+                console.error("Error loading data", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-        }, (error) => {
-            console.error("Error en onSnapshot (tenant):", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        }
+        loadData();
     }, [slug]);
 
     if (loading) {
@@ -65,7 +56,6 @@ export default function PublicClasesPage() {
     const accent = config.accent_color || '#D4A5B2';
     const secondary = config.secondary_color || '#faf9f9';
     const font = config.font_family || 'sans';
-    const bgImage = config.background_image_url;
 
     // Dynamic styles based on tenant configuration
     const customStyles = `
@@ -74,41 +64,27 @@ export default function PublicClasesPage() {
             --tenant-accent: ${accent};
             --tenant-secondary: ${secondary};
         }
-        .tenant-font { 
-            font-family: ${
-                font === 'serif' ? 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' : 
-                font === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' : 
-                font === 'display' ? '"Playfair Display", serif' :
-                font === 'elegant' ? '"Montserrat", sans-serif' :
-                'inherit'
-            }; 
-            ${font === 'elegant' ? 'letter-spacing: 0.05em;' : ''}
-        }
+        .tenant-font { font-family: ${font === 'serif' ? 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' : font === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' : 'inherit'}; }
         .bg-tenant-primary { background-color: var(--tenant-primary); }
         .bg-tenant-accent { background-color: var(--tenant-accent); }
         .bg-tenant-secondary { background-color: var(--tenant-secondary); }
         .text-tenant-primary { color: var(--tenant-primary); }
         .text-tenant-accent { color: var(--tenant-accent); }
         .border-tenant-accent { border-color: var(--tenant-accent); }
-
-        ${bgImage ? `
-        .tenant-bg-image {
-            background-image: url('${bgImage}');
-            background-attachment: fixed;
-            background-size: cover;
-            background-position: center;
-        }
-        ` : ''}
     `;
 
     return (
-        <div className={`min-h-screen bg-tenant-secondary flex flex-col tenant-font ${bgImage ? 'tenant-bg-image' : ''}`}>
+        <div className="min-h-screen bg-tenant-secondary flex flex-col tenant-font">
             <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-            <PublicNavbar 
-                salonName={tenant.nombre_salon} 
-                logoUrl={tenant.logo_url} 
-                slug={slug}
-            />
+            <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-40 border-b border-tenant-accent/20">
+                <div className="max-w-xl mx-auto px-6 h-16 flex items-center justify-between">
+                    <Link href={`/salon/${slug}`} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                        <ChevronLeft className="w-5 h-5 text-gray-400" />
+                    </Link>
+                    <h1 className="text-lg font-black uppercase tracking-tighter text-tenant-primary">{tenant.nombre_salon}</h1>
+                    <div className="w-9 h-9" /> {/* Spacer */}
+                </div>
+            </header>
 
             <main className="flex-1 max-w-xl w-full mx-auto px-6 pt-24 pb-20">
                 <div className="mb-12 text-center">
@@ -139,7 +115,7 @@ export default function PublicClasesPage() {
                             if (availableHorarios.length === 0) return null;
 
                             return (
-                                <div key={clase.id} className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-white/20 transition-all duration-300">
+                                <div key={clase.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-premium-soft border border-tenant-accent/10 transition-all duration-300">
                                     {/* Imagen Principal */}
                                     <div 
                                         className="relative h-64 w-full cursor-pointer group"
@@ -248,7 +224,6 @@ export default function PublicClasesPage() {
                 tenantName={tenant.nombre_salon}
                 salonWhatsapp={tenant.datos_contacto?.whatsapp}
             />
-            <PublicFooter logoUrl={tenant.logo_url} />
         </div>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
 import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle } from "lucide-react";
@@ -17,6 +17,8 @@ export default function SalonPublicPage() {
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const router = useRouter();
+
     useEffect(() => {
         if (!slug) return;
         
@@ -25,12 +27,19 @@ export default function SalonPublicPage() {
             if (docSnap.exists()) {
                 const data = docSnap.data() as TenantData;
                 console.log("Datos del salón recibidos (Real-time):", data);
-                console.log("Web Config actual:", data.web_config);
                 setTenant(data);
+
+                // Handle default view redirection
+                const defaultView = data.web_config?.default_view || 'tratamientos';
+                if (defaultView === 'clases' && window.location.pathname === `/${slug}`) {
+                    router.push(`/${slug}/clases`);
+                } else if (defaultView === 'productos' && window.location.pathname === `/${slug}`) {
+                    router.push(`/${slug}/productos`);
+                }
                 
                 // Actualizar título de la página
                 if (data.nombre_salon) {
-                    document.title = `${data.nombre_salon} | RESETSYSTEM`;
+                    document.title = data.web_config?.seo_title || `${data.nombre_salon} | RESETSYSTEM`;
                 }
             } else {
                 console.warn("El salón no existe en Firestore:", slug);
@@ -43,7 +52,7 @@ export default function SalonPublicPage() {
         });
 
         return () => unsubscribe();
-    }, [slug]);
+    }, [slug, router]);
 
     if (loading) {
         return (
@@ -109,12 +118,12 @@ export default function SalonPublicPage() {
         }
         
         /* Overrides para asegurar que los componentes usen los colores del salón */
-        .text-tenant-primary, .text-\[var\(--primary\)\], .text-\[var\(--foreground\)\] { color: var(--tenant-primary) !important; }
-        .text-tenant-accent, .text-\[var\(--accent\)\] { color: var(--tenant-accent) !important; }
-        .bg-tenant-primary, .bg-\[var\(--primary\)\], .bg-\[var\(--foreground\)\] { background-color: var(--tenant-primary) !important; }
-        .bg-tenant-accent, .bg-\[var\(--accent\)\] { background-color: var(--tenant-accent) !important; }
-        .bg-tenant-secondary, .bg-\[var\(--background\)\], .bg-\[var\(--secondary\)\] { background-color: var(--tenant-secondary) !important; }
-        .border-tenant-accent, .border-\[var\(--accent\)\] { border-color: var(--tenant-accent) !important; }
+        .text-tenant-primary, .text-\\[var\\(--primary\\)\\], .text-\\[var\\(--foreground\\)\\] { color: var(--tenant-primary) !important; }
+        .text-tenant-accent, .text-\\[var\\(--accent\\)\\] { color: var(--tenant-accent) !important; }
+        .bg-tenant-primary, .bg-\\[var\\(--primary\\)\\], .bg-\\[var\\(--foreground\\)\\] { background-color: var(--tenant-primary) !important; }
+        .bg-tenant-accent, .bg-\\[var\\(--accent\\)\\] { background-color: var(--tenant-accent) !important; }
+        .bg-tenant-secondary, .bg-\\[var\\(--background\\)\\], .bg-\\[var\\(--secondary\\)\\] { background-color: var(--tenant-secondary) !important; }
+        .border-tenant-accent, .border-\\[var\\(--accent\\)\\] { border-color: var(--tenant-accent) !important; }
         
         /* Glass effect overrides */
         .glass {
@@ -139,6 +148,7 @@ export default function SalonPublicPage() {
                 <PublicNavbar 
                     salonName={tenant.nombre_salon} 
                     logoUrl={tenant.logo_url} 
+                    slug={slug}
                 />
             </>
         );
@@ -234,8 +244,8 @@ export default function SalonPublicPage() {
                         <main className="flex-1 max-w-4xl w-full mx-auto p-6 flex flex-col gap-10 mt-10">
                             {/* Titulo de Tratamientos similar a la foto */}
                             <div className="text-center mb-8">
-                                <h2 className="text-5xl md:text-7xl font-serif italic leading-none uppercase text-tenant-primary">
-                                    <span className="not-italic text-tenant-accent">Tratamientos</span>
+                                <h2 className="text-5xl md:text-7xl font-serif italic leading-none uppercase text-tenant-primary" style={{ color: primary }}>
+                                    <span className="not-italic text-tenant-accent" style={{ color: accent }}>Tratamientos</span>
                                 </h2>
                             </div>
                             
