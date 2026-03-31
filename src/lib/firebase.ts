@@ -2,9 +2,10 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { 
     initializeFirestore, 
+    getFirestore,
     persistentLocalCache, 
     persistentMultipleTabManager,
-    memoryLocalCache
+    Firestore
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -20,23 +21,22 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
-// Determinar el cache de Firestore
-let firestoreCache;
+// Determinar la instancia de Firestore
+let db: Firestore;
+
 if (typeof window !== 'undefined') {
-    // Si estamos en el navegador, usamos persistencia multi-pestaña por defecto
-    // Esto evita el error de "Failed to obtain exclusive access"
-    firestoreCache = persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
+    // Si estamos en el navegador, usamos persistencia multi-pestaña
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        }),
+        experimentalForceLongPolling: true,
     });
 } else {
-    // En el servidor (SSR), usamos cache en memoria
-    firestoreCache = memoryLocalCache();
+    // En el servidor (SSR/Serverless), usamos la configuración estándar de Firestore
+    // EVITAMOS usar initializeFirestore con opciones para prevenir el crasheo "about:blank" en Vercel
+    db = getFirestore(app);
 }
-
-const db = initializeFirestore(app, {
-    localCache: firestoreCache,
-    ...(typeof window !== 'undefined' ? { experimentalForceLongPolling: true } : {}),
-});
 
 const storage = getStorage(app);
 
