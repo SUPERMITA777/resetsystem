@@ -37,108 +37,101 @@ export function Sidebar() {
     }, []);
 
     return (
-        <aside className="w-64 bg-[var(--background)] border-r border-[var(--secondary)] flex flex-col items-center py-6 h-screen sticky top-0 hidden md:flex overflow-y-auto">
-            <div className="mb-10 w-full px-6">
-                <div className="flex flex-col items-start">
-                    <div className="font-heading font-extrabold text-2xl text-[var(--foreground)] tracking-tight uppercase leading-none">
+        <aside className="w-72 bg-[var(--background)]/80 backdrop-blur-xl border-r border-[var(--secondary)] flex flex-col py-8 h-screen sticky top-0 hidden md:flex overflow-y-auto no-scrollbar shadow-2xl shadow-black/5 z-30">
+            <div className="mb-12 w-full px-8">
+                <div className="flex flex-col items-start group">
+                    <div className="font-heading font-extrabold text-3xl text-[var(--foreground)] tracking-tighter uppercase leading-none group-hover:scale-[1.02] transition-transform duration-500">
                         {tenantName}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1 opacity-40">
-                        <Sparkles className="w-3 h-3 text-[var(--primary)]" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]">by resetsystem</span>
+                    <div className="flex items-center gap-1.5 mt-2 opacity-50">
+                        <Sparkles className="w-3.5 h-3.5 text-[var(--primary)] animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--foreground)]">by resetsystem</span>
                     </div>
                 </div>
             </div>
 
-            <div className="w-full px-4 mb-6">
-                <GlobalSearch />
+            <div className="w-full px-6 mb-8">
+                <div className="p-1 rounded-2xl bg-[var(--secondary)]/30 border border-[var(--secondary)]">
+                    <GlobalSearch />
+                </div>
             </div>
 
-            <nav className="flex flex-col gap-2 w-full px-4">
-                <Link href="/admin/turnos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <Activity className="w-5 h-5 text-[var(--primary)]" />
+            <nav className="flex flex-col gap-1.5 w-full px-6 flex-1">
+                <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 opacity-70">Operaciones</p>
+                <Link href="/admin/turnos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <Activity className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Turnos
                 </Link>
-                <Link href="/admin/agenda" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <CalendarDays className="w-5 h-5 text-[var(--primary)]" />
+                <Link href="/admin/agenda" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <CalendarDays className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Agenda
                 </Link>
-                <Link href="/admin/clientes" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <UserIcon className="w-5 h-5 text-[var(--primary)]" />
+                <Link href="/admin/clientes" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <UserIcon className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Clientes
                 </Link>
-                <Link href="/admin/staff" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <Users className="w-5 h-5 text-[var(--primary)]" />
+                <Link href="/admin/staff" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <Users className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Profesionales
                 </Link>
-                <Link href="/admin/tratamientos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <Sparkles className="w-5 h-5 text-[var(--primary)]" />
+                <Link href="/admin/tratamientos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <Sparkles className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Tratamientos
                 </Link>
-                <Link href="/admin/clases" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <Dumbbell className="w-5 h-5 text-[var(--primary)]" />
+                <Link href="/admin/clases" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Clases
                 </Link>
-                <Link href="/admin/control-clases" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <QrCode className="w-5 h-5 text-[var(--primary)]" />
-                    Control Clases
-                </Link>
-                <Link href="/admin/productos" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <ShoppingBag className="w-5 h-5 text-[var(--primary)]" />
+                <Link href="/admin/productos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <ShoppingBag className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Productos
                 </Link>
-                <Link href="/admin/fitness" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <Dumbbell className="w-5 h-5 text-[var(--primary)]" />
-                    Fitness
-                </Link>
 
-                <div className="pt-4 mt-2 border-t border-[var(--secondary)]">
-                    <p className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Presencia Web</p>
-                    <Link href="/admin/web" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                        <Globe className="w-5 h-5 text-[var(--primary)]" />
+                <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">
+                    <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 opacity-70">Marketing & Web</p>
+                    <Link href="/admin/web" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Globe className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                         Configuración Web
                     </Link>
-                    <Link href="/admin/promos-web" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                        <Gift className="w-5 h-5 text-[var(--primary)]" />
+                    <Link href="/admin/promos-web" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Gift className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                         Promos Web
-                    </Link>
-                    <Link href="/admin/tarot" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                        <Sparkles className="w-5 h-5 text-[var(--primary)]" />
-                        Tarot Web
                     </Link>
                     <a 
                         href={`/${tenantId}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-all text-xs font-black uppercase tracking-widest mt-2 group"
+                        className="flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 active:scale-[0.98] transition-all text-xs font-black uppercase tracking-widest mt-4 group"
                     >
-                        <ExternalLink className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-                        Ver mi Web
+                        <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        Ver mi Web Pública
                     </a>
                 </div>
 
-                <Link href="/admin/reportes" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium mt-auto">
-                    <FileBarChart className="w-5 h-5 text-[var(--primary)]" />
-                    Reportes
-                </Link>
-                <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--secondary)] transition-colors text-sm font-medium">
-                    <Settings className="w-5 h-5 text-[var(--primary)]" />
-                    Configuración
-                </Link>
+                <div className="mt-auto pt-6 border-t border-[var(--secondary)]/50">
+                    <Link href="/admin/reportes" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group mb-1">
+                        <FileBarChart className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Reportes
+                    </Link>
+                    <Link href="/admin/settings" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Settings className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Ajustes
+                    </Link>
+                </div>
             </nav>
 
             {/* Current User & Logout */}
-            <div className="w-full px-4 mt-auto pt-6 border-t border-[var(--secondary)]">
-                <div className="bg-[var(--secondary)]/30 rounded-2xl p-4 flex items-center justify-between border border-[var(--secondary)]/50">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-10 h-10 rounded-full bg-[var(--primary)] text-[var(--background)] flex items-center justify-center font-bold shrink-0">
+            <div className="w-full px-6 mt-8 pt-6 border-t border-[var(--secondary)]/50">
+                <div className="bg-[var(--secondary)]/30 backdrop-blur-lg rounded-3xl p-5 flex items-center justify-between border border-[var(--secondary)]/30">
+                    <div className="flex items-center gap-3.5 overflow-hidden">
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--foreground)] text-[var(--background)] flex items-center justify-center font-black shrink-0 shadow-lg">
                             {user?.email?.charAt(0).toUpperCase() || <UserIcon className="w-5 h-5" />}
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-bold text-[var(--foreground)] truncate">
-                                {user?.displayName || "Usuario"}
+                            <span className="text-[11px] font-black text-[var(--foreground)] truncate uppercase tracking-tight">
+                                {user?.displayName || "Usuario Admin"}
                             </span>
-                            <span className="text-[10px] text-gray-500 truncate">
+                            <span className="text-[9px] text-gray-500 truncate font-bold">
                                 {user?.email}
                             </span>
                         </div>
@@ -146,7 +139,7 @@ export function Sidebar() {
                     
                     <button 
                         onClick={handleLogout}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
+                        className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all active:scale-90"
                         title="Cerrar Sessión"
                     >
                         <LogOut className="w-5 h-5" />
