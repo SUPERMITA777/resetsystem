@@ -355,12 +355,6 @@ export function TurnoClaseModal({ isOpen, onClose, onSave, onRequestCredits, edi
                         </div>
                     </div>
                 )}
-
-                <div className="pt-4 flex justify-end">
-                    <button onClick={onClose} className="text-[10px] font-black text-gray-400 hover:text-black uppercase tracking-widest py-1 transition-colors">
-                        Cerrar Ventana
-                    </button>
-                </div>
             </div>
         </Modal>
     );

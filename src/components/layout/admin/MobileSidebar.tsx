@@ -76,7 +76,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                         { href: "/admin/staff", icon: Users, label: "Profesionales" },
                         { href: "/admin/tratamientos", icon: Sparkles, label: "Tratamientos" },
                         { href: "/admin/clases", icon: Dumbbell, label: "Clases" },
-                        { href: "/admin/control-clases", icon: QrCode, label: "Control Clases" },
+                        { href: "/admin/control-clases", icon: QrCode, label: "CONTROL CLASES" },
                         { href: "/admin/productos", icon: ShoppingBag, label: "Productos" },
                         { href: "/admin/fitness", icon: Dumbbell, label: "Fitness" }
                     ].map((item) => (

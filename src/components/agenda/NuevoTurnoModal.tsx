@@ -26,6 +26,7 @@ interface NuevoTurnoModalProps {
 }
 
 export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora, initialBox, initialFecha, initialTratamientoId, editTurno, agendaConfig }: NuevoTurnoModalProps) {
+    const [step, setStep] = useState(1);
     const [cliente, setCliente] = useState('');
     const [telefono, setTelefono] = useState('');
     const [email, setEmail] = useState('');
@@ -52,7 +53,6 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const [selectedProfesionalId, setSelectedProfesionalId] = useState('');
     const [loading, setLoading] = useState(false);
     
-    // Autocomplete state
     const [clientesDb, setClientesDb] = useState<Cliente[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([]);
@@ -88,6 +88,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
                     loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || []);
                 }
             } else {
+                setStep(1);
                 setCliente('');
                 setTelefono('');
                 setEmail('');
@@ -116,13 +117,13 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         }
     }, [isOpen, editTurno, initialHora, initialTratamientoId]);
 
-    // Tecla ESC para cerrar modal sin guardar
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
             if (e.key === 'Enter') {
                 if (document.activeElement?.tagName !== 'TEXTAREA') {
-                    handleSubmit(e as any);
+                    if (step < 3) nextStep();
+                    else handleSubmit(e as any);
                 }
             }
         };
@@ -130,11 +131,11 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             window.addEventListener('keydown', handleEsc);
         }
         return () => window.removeEventListener('keydown', handleEsc);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, step]);
 
     const getArgentinaTimeData = () => {
         const now = new Date();
-        const formatter = new Intl.DateTimeFormat('sv-SE', { // sv-SE gives yyyy-mm-dd
+        const formatter = new Intl.DateTimeFormat('sv-SE', {
             timeZone: 'America/Argentina/Buenos_Aires',
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -172,7 +173,6 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
     const loadTratamientos = async () => {
         try {
             const data = await serviceManagement.getTratamientos(currentTenant);
-            
             setTratamientos(data.filter(t => t.habilitado));
         } catch (error) {
             console.error(error);
@@ -198,6 +198,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         setTelefono(c.telefono);
         setEmail(c.email || '');
         setShowSuggestions(false);
+        toast.success(`Cliente seleccionado: ${c.nombre}`);
     };
 
     const handleTratamientoChange = async (id: string) => {
@@ -210,7 +211,6 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         setLoading(true);
         try {
             const data = await serviceManagement.getSubtratamientos(currentTenant, id);
-            // Permitimos todos los sub-tratamientos según pedido del usuario
             setSubtratamientos(data);
         } catch (error) {
             console.error(error);
@@ -226,7 +226,6 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             setSubtratamientos(data);
             const selected = data.filter(s => subIds.includes(s.id));
             setSelectedSubs(selected);
-            // Don't update total here if we already set it from editTurno.total
         } catch (error) {
             console.error(error);
         } finally {
@@ -255,12 +254,13 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         setTotal(subTotal + ajustePrecio);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!onSave) return;
 
         if (selectedSubs.length === 0) {
-            alert("Selecciona al menos un sub-tratamiento");
+            toast.error("Selecciona al menos un servicio");
+            setStep(2);
             return;
         }
 
@@ -273,10 +273,8 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
 
         const totalDuration = selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0);
         const subNames = selectedSubs.map(s => s.nombre).join(', ');
-        
         const prof = profesionales.find(p => p.uid === selectedProfesionalId);
 
-        // Snapshot de tratamientos
         const subtratamientosSnap = selectedSubs.map(s => ({
             id: s.id,
             nombre: s.nombre,
@@ -345,9 +343,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         }
 
         let template = agendaConfig?.reminder_message;
-        
         if (!template) {
-            // Default template if none is configured
             template = "Hola! te recordamos que el turno del dia %fecha% a las %hora% para %tratamiento%. En caso de no poder asistir avisar con antelación mínima de 24 hs, de lo contrario se perderá la seña. La tolerancia es de 15 minutos. Dirección: VELES SARSFIELD 59, entre AVENIDA SAN MARTIN y 25 DE MAYO.";
         }
 
@@ -374,378 +370,348 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
         }
     };
 
-    return (
-        <Modal 
-            isOpen={isOpen} 
-            onClose={onClose} 
-            title={editTurno ? "Editar Turno" : "Agendar Nuevo Turno"}
-            maxWidth="max-w-3xl"
-            extraHeader={editTurno ? (
-                <button 
-                    type="button" 
-                    onClick={handleDelete}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                >
-                    <Trash2 className="w-5 h-5" />
-                </button>
-            ) : null}
-        >
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-0 overflow-visible">
-                <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Fecha</label>
-                            <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
-                                    <Calendar className="w-4 h-4" />
-                                </div>
-                                <input 
-                                    type="date"
-                                    value={fecha}
-                                    onChange={(e) => setFecha(e.target.value)}
-                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all"
-                                    required
-                                />
-                            </div>
-                        </div>
+    const nextStep = () => {
+        if (step === 1 && (!fecha || !hora || !cliente)) {
+            toast.error("Completa los datos obligatorios");
+            return;
+        }
+        if (step === 2 && selectedSubs.length === 0) {
+            toast.error("Selecciona al menos un servicio");
+            return;
+        }
+        setStep(prev => Math.min(prev + 1, 3));
+    };
 
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Hora</label>
-                            <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
-                                    <Clock className="w-4 h-4" />
-                                </div>
-                                <input 
-                                    type="time"
-                                    value={hora}
-                                    onChange={(e) => setHora(e.target.value)}
-                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all"
-                                    required
-                                />
-                            </div>
+    const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+
+    const renderStep1 = () => (
+        <div className="space-y-5 animate-in slide-in-from-right-4 duration-300">
+            <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Fecha</label>
+                    <div className="relative group/field">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                            <Calendar className="w-4 h-4" />
                         </div>
+                        <input 
+                            type="date"
+                            value={fecha}
+                            onChange={(e) => setFecha(e.target.value)}
+                            className="w-full h-12 pl-12 pr-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all"
+                            required
+                        />
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="relative">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Cliente</label>
-                            <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input
-                                    required
-                                    placeholder="Nombre y Apellido"
-                                    value={cliente}
-                                    onChange={(e) => handleClienteInputChange(e.target.value)}
-                                    className="pl-12 rounded-2xl bg-gray-50 border-none h-12 font-bold"
-                                />
-                            </div>
-                            {showSuggestions && (
-                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-2xl max-h-48 overflow-y-auto">
-                                    {filteredClientes.map(c => (
-                                        <div 
-                                            key={c.id} 
-                                            onClick={() => handleSelectCliente(c)}
-                                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center border-b border-gray-50 last:border-0"
-                                        >
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900">{c.nombre} {c.apellido}</span>
-                                                <span className="text-[10px] text-gray-400 font-medium">{c.telefono}</span>
-                                            </div>
-                                            <Tag className="w-3 h-3 text-gray-300" />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                </div>
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Hora</label>
+                    <div className="relative group/field">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                            <Clock className="w-4 h-4" />
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">WhatsApp Cliente</label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <Input
-                                        placeholder="Ej: 54911..."
-                                        value={telefono}
-                                        onChange={(e) => setTelefono(e.target.value)}
-                                        className="pl-12 rounded-2xl bg-gray-50 border-none h-12 font-bold"
-                                    />
-                                </div>
-                                {telefono && (
-                                    <button 
-                                        type="button"
-                                        onClick={() => window.open(`https://wa.me/${telefono.replace(/\D/g, '')}`, '_blank')}
-                                        className="w-12 h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 shrink-0"
-                                        title="Chatear con cliente"
-                                    >
-                                        <MessageSquare className="w-5 h-5" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                        <input 
+                            type="time" 
+                            value={hora}
+                            onChange={(e) => setHora(e.target.value)}
+                            className="w-full h-12 pl-12 pr-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all"
+                            required
+                        />
                     </div>
+                </div>
+            </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Tratamiento</label>
-                            <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
-                                    <Tag className="w-4 h-4" />
-                                </div>
-                                <select 
-                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none disabled:opacity-50"
-                                    value={selectedTratamientoId}
-                                    onChange={(e) => handleTratamientoChange(e.target.value)}
-                                    required
+            <div className="space-y-4">
+                <div className="relative">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Cliente</label>
+                    <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                            required
+                            placeholder="Nombre y Apellido"
+                            value={cliente}
+                            onChange={(e) => handleClienteInputChange(e.target.value)}
+                            className="pl-12 rounded-2xl bg-gray-50 border-none h-14 font-bold"
+                        />
+                    </div>
+                    {showSuggestions && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-2xl max-h-48 overflow-y-auto">
+                            {filteredClientes.map(c => (
+                                <div 
+                                    key={c.id} 
+                                    onClick={() => handleSelectCliente(c)}
+                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center border-b border-gray-50 last:border-0"
                                 >
-                                    <option value="">Seleccionar...</option>
-                                    {tratamientos.map(t => (
-                                        <option key={t.id} value={t.id}>{t.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Añadir Sub-tratamiento</label>
-                            <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
-                                    <Plus className="w-4 h-4" />
-                                </div>
-                                <select
-                                    disabled={!selectedTratamientoId || loading}
-                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none disabled:opacity-50 cursor-pointer"
-                                    value=""
-                                    onChange={(e) => handleAddSub(e.target.value)}
-                                >
-                                    <option value="">{loading ? "Cargando..." : "Seleccionar..."}</option>
-                                    {subtratamientos.map(s => (
-                                        <option key={s.id} value={s.id}>{s.nombre} (${s.precio})</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Selected Subtratamientos labels */}
-                    {selectedSubs.length > 0 && (
-                        <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            {selectedSubs.map(s => (
-                                <div key={s.id} className="bg-black text-white px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-2 group">
-                                    <span>{s.nombre} ({s.duracion_minutos}m)</span>
-                                    <X 
-                                        className="w-3 h-3 cursor-pointer hover:text-red-400 transition-colors" 
-                                        onClick={() => handleRemoveSub(s.id)}
-                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-900">{c.nombre} {c.apellido}</span>
+                                        <span className="text-[10px] text-gray-400 font-medium">{c.telefono}</span>
+                                    </div>
+                                    <Tag className="w-3 h-3 text-gray-300" />
                                 </div>
                             ))}
                         </div>
                     )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Ajuste ($)</label>
-                            <Input 
-                                type="number"
-                                value={ajustePrecio}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value) || 0;
-                                    setAjustePrecio(val);
-                                    const subTotal = selectedSubs.reduce((acc, s) => acc + s.precio, 0);
-                                    setTotal(subTotal + val);
-                                }}
-                                placeholder="+/-"
-                                className="h-11 rounded-xl text-sm font-bold bg-white"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-600 ml-2">Seña ($)</label>
-                            <div className="flex flex-col gap-1">
-                                <Input 
-                                    type="number"
-                                    value={sena}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value) || 0;
-                                        setSena(val);
-                                        if (val > 1 && status === 'RESERVADO') {
-                                            setStatus('CONFIRMADO');
-                                        }
-                                    }}
-                                    className="h-11 rounded-xl text-sm font-bold text-emerald-600 bg-white"
-                                />
-                                <div className="flex gap-1">
-                                    <button 
-                                        type="button"
-                                        onClick={() => setMetodoPagoSena('EFECTIVO')}
-                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSena === 'EFECTIVO' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
-                                    >
-                                        EFEC
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setMetodoPagoSena('TRANSFERENCIA')}
-                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSena === 'TRANSFERENCIA' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
-                                    >
-                                        TRANSF
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <div className="flex justify-between items-center pr-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 ml-2">Abona Saldo ($)</label>
-                                <label className="flex items-center gap-1 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={saldoPagado}
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            setSaldoPagado(checked);
-                                            if (checked) setPagoSaldo(total - sena);
-                                        }}
-                                        className="w-3 h-3 rounded"
-                                    />
-                                    <span className="text-[8px] font-black text-gray-400 uppercase">Todo</span>
-                                </label>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <Input 
-                                    type="number"
-                                    value={pagoSaldo}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value) || 0;
-                                        setPagoSaldo(val);
-                                        setSaldoPagado(val > 0 && val === (total - sena));
-                                    }}
-                                    className="h-11 rounded-xl text-sm font-bold text-blue-600 bg-white"
-                                />
-                                <div className="flex gap-1">
-                                    <button 
-                                        type="button"
-                                        onClick={() => setMetodoPagoSaldo('EFECTIVO')}
-                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSaldo === 'EFECTIVO' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
-                                    >
-                                        EFEC
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setMetodoPagoSaldo('TRANSFERENCIA')}
-                                        className={`flex-1 py-1 text-[9px] font-black rounded-lg transition-all ${metodoPagoSaldo === 'TRANSFERENCIA' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-400 border border-gray-100'}`}
-                                    >
-                                        TRANSF
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Saldo Final ($)</label>
-                            <Input 
-                                value={Math.max(0, total - sena - pagoSaldo)}
-                                readOnly
-                                className="h-11 rounded-xl text-sm font-black text-gray-600 bg-gray-100/50 pointer-events-none"
-                            />
-                        </div>
-                    </div>
-
-                    {status === 'COMPLETADO' && (total - sena - pagoSaldo > 0) && (
-                        <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl space-y-2 animate-in slide-in-from-top-2 duration-300">
-                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
-                                <Bell className="w-3 h-3" />
-                                Saldo Pendiente: Justificar Motivo
-                            </p>
-                            <textarea
-                                value={motivoSaldo}
-                                onChange={(e) => setMotivoSaldo(e.target.value)}
-                                className="w-full bg-white border-none rounded-xl p-3 text-xs font-bold focus:ring-2 focus:ring-orange-400 outline-none transition-all resize-none h-16"
-                                placeholder="Ej: Se abona en la próxima sesión, Transferencia pendiente..."
-                                required
-                            />
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Estado</label>
-                            <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
-                                    <Activity className="w-4 h-4" />
-                                </div>
-                                <select 
-                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none"
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value as any)}
-                                >
-                                    <option value="RESERVADO">RESERVADO</option>
-                                    <option value="CONFIRMADO">CONFIRMADO</option>
-                                    <option value="COMPLETADO">COMPLETADO</option>
-                                    <option value="CANCELADO">CANCELADO</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Asignar Profesional</label>
-                            <div className="relative group/field">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
-                                    <UserPlus className="w-4 h-4" />
-                                </div>
-                                <select 
-                                    className="w-full h-11 pl-14 pr-4 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none ring-2 ring-transparent focus:ring-black/5 transition-all appearance-none"
-                                    value={selectedProfesionalId}
-                                    onChange={(e) => setSelectedProfesionalId(e.target.value)}
-                                >
-                                    <option value="">Cualquiera / Sin asignar</option>
-                                    {profesionales.map(p => (
-                                        <option key={p.uid} value={p.uid}>{p.displayName || p.email}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="pt-2 pb-2 flex items-center justify-between border-t border-gray-100 mt-2">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-50 rounded-lg">
-                            <Clock className="w-3.5 h-3.5 text-blue-500" />
-                        </div>
-                        <div>
-                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Duración</p>
-                            <p className="text-xs font-black text-blue-600">{selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0)} min</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-emerald-50 rounded-lg">
-                            <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total</p>
-                            <p className="text-xs font-black text-emerald-600">${total}</p>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">WhatsApp</label>
                     <div className="flex gap-2">
-                        <Button type="submit" className="flex-1 h-11 bg-black text-white hover:bg-gray-800 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all active:scale-95">
-                            {editTurno ? "Guardar Cambios" : "Agendar Turno"}
-                        </Button>
-                        {editTurno && (
-                            <button 
-                                type="button" 
-                                onClick={handleSendReminder}
-                                className="px-4 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all flex items-center gap-2"
-                            >
-                                <Bell className="w-4 h-4" />
-                                Recordatorio
-                            </button>
-                        )}
+                        <div className="relative flex-1">
+                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Input
+                                placeholder="Ej: 54911..."
+                                value={telefono}
+                                onChange={(e) => setTelefono(e.target.value)}
+                                className="pl-12 rounded-2xl bg-gray-50 border-none h-14 font-bold"
+                            />
+                        </div>
                     </div>
-                    <button type="button" onClick={onClose} className="text-[10px] font-black text-gray-400 hover:text-black uppercase tracking-widest py-1 transition-colors">
-                        Cancelar
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderStep2 = () => (
+        <div className="space-y-5 animate-in slide-in-from-right-4 duration-300">
+            <div className="space-y-4">
+                <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Tratamiento Principal</label>
+                    <div className="relative group/field">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                            <Tag className="w-4 h-4" />
+                        </div>
+                        <select 
+                            className="w-full h-14 pl-14 pr-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none appearance-none"
+                            value={selectedTratamientoId}
+                            onChange={(e) => handleTratamientoChange(e.target.value)}
+                            required
+                        >
+                            <option value="">Seleccionar tratamiento...</option>
+                            {tratamientos.map(t => (
+                                <option key={t.id} value={t.id}>{t.nombre}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">Servicios a realizar</label>
+                    <div className="relative group/field">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                            <Plus className="w-4 h-4" />
+                        </div>
+                        <select
+                            disabled={!selectedTratamientoId || loading}
+                            className="w-full h-14 pl-14 pr-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none appearance-none disabled:opacity-50"
+                            value=""
+                            onChange={(e) => handleAddSub(e.target.value)}
+                        >
+                            <option value="">{loading ? "Cargando servicios..." : "Añadir servicio..."}</option>
+                            {subtratamientos.map(s => (
+                                <option key={s.id} value={s.id}>{s.nombre} (${s.precio})</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {selectedSubs.length > 0 && (
+                    <div className="grid grid-cols-1 gap-2 p-2">
+                        {selectedSubs.map(s => (
+                            <div key={s.id} className="bg-gray-50 p-4 rounded-2xl flex justify-between items-center border border-gray-100 group">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-black text-gray-900">{s.nombre}</span>
+                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-tight">{s.duracion_minutos} min • ${s.precio}</span>
+                                </div>
+                                <button 
+                                    onClick={() => handleRemoveSub(s.id)}
+                                    className="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    const renderStep3 = () => (
+        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+            <div className="bg-gray-50/50 p-4 rounded-[2rem] border border-gray-100 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-emerald-600 ml-1">Seña ($)</label>
+                        <Input 
+                            type="number"
+                            value={sena}
+                            onChange={(e) => {
+                                const val = Number(e.target.value) || 0;
+                                setSena(val);
+                                if (val > 1 && status === 'RESERVADO') setStatus('CONFIRMADO');
+                            }}
+                            className="h-12 rounded-2xl text-sm font-bold text-emerald-600 bg-white border-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 ml-1">Abona Saldo ($)</label>
+                        <Input 
+                            type="number"
+                            value={pagoSaldo}
+                            onChange={(e) => {
+                                const val = Number(e.target.value) || 0;
+                                setPagoSaldo(val);
+                                setSaldoPagado(val > 0 && val === (total - sena));
+                            }}
+                            className="h-12 rounded-2xl text-sm font-bold text-blue-600 bg-white border-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
+                    <button 
+                        type="button"
+                        onClick={() => setMetodoPagoSena('EFECTIVO')}
+                        className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${metodoPagoSena === 'EFECTIVO' ? 'bg-black text-white shadow-lg' : 'bg-white text-gray-400 border border-gray-100'}`}
+                    >
+                        PAGO EFECTIVO
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setMetodoPagoSena('TRANSFERENCIA')}
+                        className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${metodoPagoSena === 'TRANSFERENCIA' ? 'bg-black text-white shadow-lg' : 'bg-white text-gray-400 border border-gray-100'}`}
+                    >
+                        TRANSFERENCIA
                     </button>
                 </div>
-            </form>
+            </div>
+
+            <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Profesional</label>
+                <div className="relative group/field">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-focus-within/field:bg-black group-focus-within/field:text-white transition-all">
+                        <UserPlus className="w-4 h-4" />
+                    </div>
+                    <select 
+                        className="w-full h-14 pl-14 pr-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none appearance-none"
+                        value={selectedProfesionalId}
+                        onChange={(e) => setSelectedProfesionalId(e.target.value)}
+                    >
+                        <option value="">Cualquiera</option>
+                        {profesionales.map(p => (
+                            <option key={p.uid} value={p.uid}>{p.displayName || p.email}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Estado</label>
+                <select 
+                    className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl font-black text-xs outline-none uppercase tracking-widest"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as any)}
+                >
+                    <option value="RESERVADO">RESERVADO</option>
+                    <option value="CONFIRMADO">CONFIRMADO</option>
+                    <option value="COMPLETADO">COMPLETADO</option>
+                    <option value="CANCELADO">CANCELADO</option>
+                </select>
+            </div>
+
+            <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Ajuste Manual ($)</label>
+                <Input 
+                    type="number"
+                    value={ajustePrecio}
+                    onChange={(e) => {
+                        const val = Number(e.target.value) || 0;
+                        setAjustePrecio(val);
+                        const subTotal = selectedSubs.reduce((acc, s) => acc + s.precio, 0);
+                        setTotal(subTotal + val);
+                    }}
+                    className="h-12 rounded-2xl text-sm font-bold bg-gray-50 border-none"
+                    placeholder="+/-"
+                />
+            </div>
+        </div>
+    );
+
+    const ModalFooter = (
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between px-2">
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Estimado</span>
+                    <span className="text-2xl font-black text-black">${total}</span>
+                </div>
+                <div className="flex flex-col text-right">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Duración</span>
+                    <span className="text-sm font-black text-blue-600 uppercase tracking-tight">{selectedSubs.reduce((acc, s) => acc + s.duracion_minutos, 0)} min</span>
+                </div>
+            </div>
+            
+            <div className="flex gap-3">
+                {step > 1 && (
+                    <Button 
+                        onClick={prevStep}
+                        variant="default"
+                        className="h-14 px-6 rounded-2xl font-black bg-gray-100 text-gray-900 border-none uppercase tracking-widest text-[11px]"
+                    >
+                        Atrás
+                    </Button>
+                )}
+                {step < 3 ? (
+                    <Button 
+                        onClick={nextStep}
+                        className="flex-1 h-14 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-black/20"
+                    >
+                        Continuar
+                    </Button>
+                ) : (
+                    <Button 
+                        onClick={() => handleSubmit()} 
+                        className="flex-1 h-14 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-emerald-500/20"
+                    >
+                        {editTurno ? "Guardar Cambios" : "Confirmar Turno"}
+                    </Button>
+                )}
+            </div>
+            {editTurno && step === 3 && (
+                <button 
+                    type="button" 
+                    onClick={handleSendReminder}
+                    className="w-full h-10 border border-emerald-500 text-emerald-600 rounded-xl font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all font-sans"
+                >
+                    <Bell className="w-3 h-3" />
+                    Enviar Recordatorio WhatsApp
+                </button>
+            )}
+        </div>
+    );
+
+    return (
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose} 
+            title={editTurno ? "Editar Turno" : "Nuevo Turno"}
+            maxWidth="max-w-xl"
+            extraHeader={
+                <div className="flex items-center gap-4">
+                    <div className="flex gap-1.5">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === step ? 'w-8 bg-black' : 'w-2 bg-gray-200'}`} />
+                        ))}
+                    </div>
+                    {editTurno && (
+                        <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
+                    )}
+                </div>
+            }
+            footer={ModalFooter}
+        >
+            <div className="pb-2">
+                {step === 1 && renderStep1()}
+                {step === 2 && renderStep2()}
+                {step === 3 && renderStep3()}
+            </div>
         </Modal>
     );
 }

@@ -82,9 +82,17 @@ export function Sidebar() {
                     <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Clases
                 </Link>
+                <Link href="/admin/control-clases" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group border-b border-[var(--secondary)]/30 mb-2">
+                    <QrCode className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                    CONTROL CLASES
+                </Link>
                 <Link href="/admin/productos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
                     <ShoppingBag className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                     Productos
+                </Link>
+                <Link href="/admin/fitness" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                    <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                    Fitness
                 </Link>
 
                 <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">

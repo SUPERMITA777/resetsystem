@@ -214,32 +214,38 @@ export default function WebConfigPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    {/* Sidebar navigation */}
-                    <div className="lg:col-span-3 space-y-3">
-                        {sections.map((section) => (
-                            <button
-                                key={section.id}
-                                onClick={() => setActiveSection(section.id as ConfigSection)}
-                                className={`w-full p-6 rounded-[2rem] border transition-all flex items-center gap-5 text-left group ${
-                                    activeSection === section.id 
-                                        ? 'bg-black text-white border-black shadow-xl shadow-black/10' 
-                                        : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'
-                                }`}
-                            >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                                    activeSection === section.id ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-400 group-hover:bg-black group-hover:text-white'
-                                }`}>
-                                    {React.cloneElement(section.icon as React.ReactElement<{ className: string }>, { className: "w-4 h-4" })}
-                                </div>
-                                <div>
-                                    <h3 className="text-[11px] font-black uppercase tracking-widest leading-none">{section.title}</h3>
-                                    <p className={`text-[9px] font-bold mt-1 leading-tight ${activeSection === section.id ? 'text-white/60' : 'text-gray-300'}`}>
-                                        {section.id === activeSection ? "Editando ahora" : "Personalizar"}
-                                    </p>
-                                </div>
-                                {activeSection === section.id && <ChevronRight className="w-4 h-4 ml-auto opacity-40" />}
-                            </button>
-                        ))}
+                    {/* Navegación - Sidebar en Desktop, Tabs horizontales en Mobile */}
+                    <div className="lg:col-span-3">
+                        <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 scrollbar-hide snap-x">
+                            {sections.map((section) => (
+                                <button
+                                    key={section.id}
+                                    onClick={() => setActiveSection(section.id as ConfigSection)}
+                                    className={`
+                                        flex-shrink-0 snap-start
+                                        w-auto lg:w-full p-4 lg:p-6 rounded-[1.5rem] lg:rounded-[2rem] 
+                                        border transition-all flex items-center gap-3 lg:gap-5 text-left group
+                                        ${activeSection === section.id 
+                                            ? 'bg-black text-white border-black shadow-xl shadow-black/10' 
+                                            : 'bg-white text-gray-400 border-gray-100'
+                                        }
+                                    `}
+                                >
+                                    <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center transition-colors ${
+                                        activeSection === section.id ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-400 group-hover:bg-black group-hover:text-white'
+                                    }`}>
+                                        {React.cloneElement(section.icon as React.ReactElement<{ className: string }>, { className: "w-3 h-3 lg:w-4 lg:h-4" })}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest leading-none">{section.title}</h3>
+                                        <p className={`hidden lg:block text-[9px] font-bold mt-1 leading-tight ${activeSection === section.id ? 'text-white/60' : 'text-gray-300'}`}>
+                                            {section.id === activeSection ? "Editando ahora" : "Personalizar"}
+                                        </p>
+                                    </div>
+                                    {activeSection === section.id && <ChevronRight className="hidden lg:block w-4 h-4 ml-auto opacity-40" />}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Main configuration area */}
