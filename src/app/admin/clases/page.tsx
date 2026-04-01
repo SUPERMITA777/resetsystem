@@ -23,7 +23,7 @@ export default function ClasesAdminPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClase, setSelectedClase] = useState<Clase | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedDate, setSelectedDate] = useState<string>(format(startOfToday(), 'yyyy-MM-dd'));
+    const [selectedDate, setSelectedDate] = useState<string>("");
 
     // Inscriptos Modal state
     const [isInscriptosModalOpen, setIsInscriptosModalOpen] = useState(false);
