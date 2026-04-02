@@ -440,6 +440,15 @@ Preséntalo al profesor al llegar.`);
                             </div>
                             <div className="flex items-center gap-2">
                                 <button 
+                                    onClick={() => {
+                                        setModalData({ fecha: listadoDate, hora: '09:00', boxId: 'box-1' });
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="h-14 px-6 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all bg-black text-white hover:bg-gray-800 flex items-center gap-2 shrink-0"
+                                >
+                                    <Plus className="w-4 h-4" /> Nuevo
+                                </button>
+                                <button 
                                     onClick={() => setListadoDate(format(new Date(), 'yyyy-MM-dd'))}
                                     className={`h-14 px-6 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all ${listadoDate === format(new Date(), 'yyyy-MM-dd') ? 'bg-black text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
                                 >
@@ -518,9 +527,20 @@ Preséntalo al profesor al llegar.`);
 
                 {activeTab === 'pendientes' && (
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-                            <AlertCircle className="w-5 h-5 text-amber-500" />
-                            <p className="text-sm font-bold text-gray-500">Turnos solicitados desde la web que requieren tu acción.</p>
+                        <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <AlertCircle className="w-5 h-5 text-amber-500" />
+                                <p className="text-sm font-bold text-gray-500">Turnos solicitados desde la web que requieren tu acción.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setModalData({ fecha: format(new Date(), 'yyyy-MM-dd'), hora: '09:00', boxId: 'box-1' });
+                                    setIsModalOpen(true);
+                                }}
+                                className="h-10 px-5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all bg-black text-white hover:bg-gray-800 flex items-center gap-2 shrink-0"
+                            >
+                                <Plus className="w-4 h-4" /> Nuevo Turno
+                            </button>
                         </div>
 
                         {loadingPendientes ? (

@@ -65,6 +65,7 @@ export function NuevoTurnoModal({ isOpen, onClose, onSave, onDelete, initialHora
             loadClientes();
             loadProfesionales();
             if (editTurno) {
+                setStep(1);
                 setCliente(editTurno.clienteAbreviado || '');
                 setTelefono(editTurno.whatsapp || '');
                 setEmail(editTurno.email || '');
