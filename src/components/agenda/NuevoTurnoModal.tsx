@@ -122,8 +122,21 @@ export function NuevoTurnoModal({
             setSelectedTratamientoId(editTurno.tratamientoId || '');
             setSelectedProfesionalId(editTurno.profesionalId || '');
             // Restore carrito if exists
-            if (editTurno.carrito) setCarrito(editTurno.carrito);
-            else setCarrito([]);
+            if (editTurno.carrito) {
+                setCarrito(editTurno.carrito.map(c => ({
+                    producto: {
+                        id: c.productoId,
+                        nombre: c.nombre || '',
+                        marca: c.marca || '',
+                        precio: c.precio || 0,
+                        precio_costo: 0,
+                        categoria: ''
+                    } as Producto,
+                    cantidad: c.cantidad
+                })));
+            } else {
+                setCarrito([]);
+            }
             if (editTurno.tratamientoId) {
                 loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || []);
             }
@@ -384,7 +397,7 @@ export function NuevoTurnoModal({
                 pagoSaldo,
                 saldoPagado: pagoCompleto,
                 historialPagos: newHistorial,
-                carrito: carrito.map(i => ({ productoId: i.producto.id, nombre: i.producto.nombre, precio: i.producto.precio, cantidad: i.cantidad })),
+                carrito: carrito.map(i => ({ productoId: i.producto.id, nombre: i.producto.nombre, marca: i.producto.marca, precio: i.producto.precio, cantidad: i.cantidad })),
                 subtotalProductos,
             });
 

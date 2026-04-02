@@ -44,6 +44,14 @@ export interface TurnoData {
         fecha: string;
         timestamp: number;
     }>;
+    carrito?: Array<{
+        productoId: string;
+        nombre: string;
+        marca?: string;
+        precio: number;
+        cantidad: number;
+    }>;
+    subtotalProductos?: number;
 }
 
 interface TurnoCardProps {
