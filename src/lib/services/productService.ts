@@ -6,6 +6,7 @@ import {
     getDocs,
     deleteDoc,
     updateDoc,
+    increment,
 } from "firebase/firestore";
 
 export interface Producto {
@@ -16,8 +17,14 @@ export interface Producto {
     descripcion?: string;
     precio: number;
     precio_costo: number;
+    stock?: number;  // cantidad disponible en inventario
     imagenes?: string[];
     createdAt?: number;
+}
+
+export interface CarritoItem {
+    producto: Producto;
+    cantidad: number;
 }
 
 export const productService = {
@@ -43,5 +50,14 @@ export const productService = {
         if (!tenantId || !id) throw new Error("Parámetros faltantes para eliminar producto");
         const ref = doc(db, "tenants", tenantId, "productos", id);
         await deleteDoc(ref);
+    },
+
+    /**
+     * Decrement product stock atomically.
+     * Uses Firestore server-side increment to avoid race conditions.
+     */
+    async decrementStock(tenantId: string, productoId: string, cantidad: number): Promise<void> {
+        const ref = doc(db, "tenants", tenantId, "productos", productoId);
+        await updateDoc(ref, { stock: increment(-cantidad) });
     },
 };
