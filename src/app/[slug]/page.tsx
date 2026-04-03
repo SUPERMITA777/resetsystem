@@ -68,7 +68,7 @@ export default function SalonPublicPage() {
                 
                 // Actualizar título y meta tags de la página
                 if (data?.nombre_salon) {
-                    const seoTitle = webConfig?.seo_title || `${data.nombre_salon} | RESETSYSTEM`;
+                    const seoTitle = webConfig?.seo_title || data.nombre_salon;
                     const seoDesc = webConfig?.seo_description || data.datos_contacto?.descripcion || 'Reserva tu turno online';
                     document.title = seoTitle;
                     

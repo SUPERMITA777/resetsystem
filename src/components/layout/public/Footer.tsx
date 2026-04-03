@@ -58,7 +58,7 @@ export function PublicFooter({ logoUrl }: { logoUrl?: string }) {
         {/* Bottom bar */}
         <div className="pt-6 md:pt-12 border-t border-black/5 flex flex-col-reverse md:flex-row items-center justify-between gap-4 md:gap-6">
           <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--foreground)]/30">
-            © 2026 RESET HOME SPA WEB. Elevando el estándar de la belleza.
+            © {new Date().getFullYear()} RESETSYSTEM. Elevando el estándar de la belleza.
           </p>
           <div className="flex gap-6 md:gap-10">
             <Link href="#" className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--foreground)]/30 hover:text-[var(--primary)] transition-colors">Instagram</Link>

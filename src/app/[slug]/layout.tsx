@@ -16,7 +16,7 @@ export async function generateMetadata(
     .replace(/\b\w/g, l => l.toUpperCase());
   
   return {
-    title: `${formattedName} | RESETSYSTEM`,
+    title: `${formattedName}`,
     description: "Reserva tu turno online",
   };
 }

@@ -25,9 +25,9 @@ export function AdminLayout({ children, topbarContent }: { children: React.React
 
         getTenant(activeTenant).then(data => {
             if (data?.nombre_salon) {
-                document.title = `${data.nombre_salon} Web`;
+                document.title = `${data.nombre_salon}`;
             } else {
-                document.title = "RESET HOME SPA WEB";
+                document.title = "RESETSYSTEM";
             }
         });
     }, [role, userTenantId]);

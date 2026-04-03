@@ -14,7 +14,7 @@ interface PublicNavbarProps {
 }
 
 export function PublicNavbar({ salonName, logoUrl, searchTerm, onSearchChange, slug }: PublicNavbarProps) {
-  const displayName = salonName || "RESET HOME SPA WEB";
+  const displayName = salonName || "Salón";
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const pathname = usePathname();
 

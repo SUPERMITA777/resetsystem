@@ -14,8 +14,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "RESET HOME SPA WEB",
-  description: "¡TU MEJOR VERSIÓN!",
+  title: "RESETSYSTEM | El Estándar en Belleza",
+  description: "La plataforma definitiva para la gestión de salones y spa.",
 };
 
 import { Toaster } from "react-hot-toast";
