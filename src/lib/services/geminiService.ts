@@ -26,7 +26,7 @@ export const geminiService = {
         const serviciosContext = servicios.map(s => `- ${s.nombre}: $${s.precio} (${s.duracion_minutos} min)`).join("\n");
 
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             tools: [{
                 functionDeclarations: [{
                     name: "agendar_turno_pendiente",
