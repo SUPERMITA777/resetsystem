@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || 'http://localhost:8080';
 const GLOBAL_KEY = process.env.EVOLUTION_GLOBAL_API_KEY || '';
 
 const headers = {
