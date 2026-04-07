@@ -372,18 +372,18 @@ export default function ConnectionsPage() {
                                 <p className="text-[9px] text-gray-400 font-medium px-1">Deja vacío para usar el servidor central por defecto.</p>
                             </div>
 
-                            {/* Instalador Automático */}
+                            {/* Nuevo Instalador Plug & Play */}
                             <div className="mt-12 bg-gray-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl" />
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl" />
                                 
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                                            <Cpu className="w-5 h-5 text-indigo-400" />
+                                            <Bot className="w-5 h-5 text-green-400" />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-black uppercase tracking-tight">Auto-Instalador de Agentes</h4>
-                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Configura tu PC en segundos</p>
+                                            <h4 className="text-sm font-black uppercase tracking-tight">Agente "Plug & Play" Local</h4>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Sin instalaciones - Sin configuraciones técnicas</p>
                                         </div>
                                     </div>
 
@@ -409,114 +409,32 @@ export default function ConnectionsPage() {
                                 </div>
 
                                 <div className="space-y-6 relative z-10">
-                                    <div className="bg-black/50 p-6 rounded-2xl border border-white/5 font-mono text-[11px] leading-relaxed text-indigo-300">
-                                        <p className="text-gray-500 mb-4 font-sans italic"># {selectedOS === 'Windows' ? 'Ejecuta esto en PowerShell como Administrador' : 'Copia y pega este comando en tu terminal'}</p>
-                                        <div className="flex items-start justify-between gap-4">
-                                            <code className="break-all whitespace-pre-wrap">
-                                                {selectedOS === 'Windows' && `irm https://reset-system.com/setup.ps1 | iex`}
-                                                {selectedOS === 'Linux' && `curl -fsSL https://reset-system.com/setup-linux.sh | bash`}
-                                                {selectedOS === 'macOS' && `curl -fsSL https://reset-system.com/setup-mac.sh | bash`}
-                                            </code>
-                                            <button 
-                                                onClick={() => {
-                                                    let script = "";
-                                                    const apiKey = process.env.EVOLUTION_GLOBAL_API_KEY || 'global_key';
-                                                    
-                                                    if (selectedOS === 'Windows') {
-                                                        script = `
-# Reset System - Windows Auto Installer
-Write-Host "🚀 Iniciando Instalación en Windows..." -ForegroundColor Cyan
-if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Docker no detectado." -ForegroundColor Red
-    Start-Process "https://www.docker.com/products/docker-desktop/"
-    exit
-}
-$path = "$HOME\\ResetSystemAgents"
-if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path }
-Set-Location $path
-$compose = @"
-services:
-  evolution-api:
-    image: atendai/evolution-api:latest
-    container_name: evolution_api
-    environment:
-      - SERVER_URL=\${SERVER_URL}
-      - API_KEY=${apiKey}
-    ports:
-      - "8080:8080"
-"@
-$compose | Out-File -FilePath "$path\\docker-compose.yml"
-docker compose up -d
-docker run --rm --network host cloudflare/cloudflared:latest tunnel --url http://localhost:8080
-`;
-                                                    } else if (selectedOS === 'Linux') {
-                                                        script = `
-#!/bin/bash
-# Reset System - Linux Auto Installer
-echo "🚀 Iniciando Instalación en Linux..."
-if ! [ -x "$(command -v docker)" ]; then
-  echo "❌ Docker no detectado. Instalando..."
-  curl -fsSL https://get.docker.com | sh
-  sudo usermod -aG docker $USER
-fi
-mkdir -p ~/ResetSystemAgents && cd ~/ResetSystemAgents
-cat <<EOF > docker-compose.yml
-services:
-  evolution-api:
-    image: atendai/evolution-api:latest
-    container_name: evolution_api
-    environment:
-      - SERVER_URL=\${SERVER_URL}
-      - API_KEY=${apiKey}
-    ports:
-      - "8080:8080"
-EOF
-docker compose up -d
-docker run --rm --network host cloudflare/cloudflared:latest tunnel --url http://localhost:8080
-`;
-                                                    } else {
-                                                        script = `
-#!/bin/bash
-# Reset System - macOS Auto Installer
-echo "🚀 Iniciando Instalación en macOS..."
-if ! [ -x "$(command -v docker)" ]; then
-  echo "❌ Docker no detectado. Instala Docker Desktop primero: https://www.docker.com/products/docker-desktop/"
-  exit 1
-fi
-mkdir -p ~/ResetSystemAgents && cd ~/ResetSystemAgents
-cat <<EOF > docker-compose.yml
-services:
-  evolution-api:
-    image: atendai/evolution-api:latest
-    container_name: evolution_api
-    environment:
-      - SERVER_URL=\${SERVER_URL}
-      - API_KEY=${apiKey}
-    ports:
-      - "8080:8080"
-EOF
-docker compose up -d
-docker run --rm --network host cloudflare/cloudflared:latest tunnel --url http://localhost:8080
-`;
-                                                    }
-                                                    
-                                                    navigator.clipboard.writeText(script);
-                                                    import('react-hot-toast').then(t => t.default.success(`Script de ${selectedOS} copiado`));
-                                                }}
-                                                className="shrink-0 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all"
-                                                title="Copiar código completo"
-                                            >
-                                                <QrCode className="w-5 h-5 text-indigo-400" />
-                                            </button>
-                                        </div>
+                                    <div className="bg-black/50 p-6 rounded-2xl border border-white/5">
+                                        <h5 className="text-[12px] font-bold text-white mb-2">Instrucciones:</h5>
+                                        <ol className="list-decimal list-inside text-[11px] text-gray-400 space-y-2 mb-6">
+                                            <li>Haz clic en el botón de descarga inferior.</li>
+                                            <li>Abre el programa descargado (haciendo doble clic).</li>
+                                            <li>Se abrirá una pequeña ventana en negro, escribe allí tu código de salón: <strong>{tenantId}</strong></li>
+                                            <li>Escanea el Código QR con el WhatsApp de tu salón (Dispositivos Vinculados).</li>
+                                            <li>¡Listo! Ya puedes minimizar la ventana. La IA funcionará hasta que cierres el programa o apagues tu PC.</li>
+                                        </ol>
+                                        
+                                        <a 
+                                            href={`/downloads/ResetAgent${selectedOS === 'Windows' ? '.exe' : selectedOS === 'Linux' ? '_Linux' : '_Mac'}`}
+                                            download={`AgenteResetSpa_${selectedOS}${selectedOS === 'Windows' ? '.exe' : ''}`}
+                                            className="inline-flex items-center gap-3 px-8 py-4 bg-green-500 text-black rounded-xl font-black uppercase tracking-widest text-[11px] hover:bg-green-400 hover:scale-105 active:scale-95 transition-all shadow-xl"
+                                        >
+                                            <Smartphone className="w-5 h-5" />
+                                            Descargar Agente para {selectedOS}
+                                        </a>
                                     </div>
                                     
                                     <div className="flex flex-wrap gap-4">
                                         <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-full border border-white/5 text-[9px] font-bold text-gray-400">
-                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" /> Docker Ready
+                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Standalone (No requiere Docker)
                                         </div>
                                         <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-full border border-white/5 text-[9px] font-bold text-gray-400">
-                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" /> Cloudflare Tunnel
+                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> Se apaga con tu PC
                                         </div>
                                     </div>
                                 </div>
