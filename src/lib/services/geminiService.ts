@@ -3,7 +3,9 @@ import { getTenant } from "./tenantService";
 import { createTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
+const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+const genAI = new GoogleGenerativeAI(apiKey);
+
 
 export interface ChatMessage {
     role: "user" | "model";
@@ -44,7 +46,7 @@ export const geminiService = {
                     }
                 }]
             }]
-        });
+        }, { apiVersion: 'v1' });
 
         const systemPrompt = `
             Eres Noemí, la experta en ventas de "${tenant.nombre_salon}".
@@ -117,7 +119,7 @@ export const geminiService = {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.veronica?.active) return null;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
 
         const systemPrompt = `
             Eres Verónica, la asistente de recordatorios de "${tenant.nombre_salon}".
