@@ -93,7 +93,7 @@ async function connectToWhatsApp() {
             // Extraer el texto del mensaje (soporta texto plano o respuesta a otro mensaje)
             const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
-            if (!text || !sender || fromMe) continue;
+            if (!text || !sender) continue;
             if (sender.includes('@g.us') || sender === 'status@broadcast') continue;
 
             try {
@@ -106,7 +106,8 @@ async function connectToWhatsApp() {
                 const response = await axios.post(`${SERVER_URL}/api/ai/sync-agent`, {
                     tenantId,
                     sender,
-                    text
+                    text,
+                    fromMe
                 }, {
                     headers: { 'Content-Type': 'application/json' },
                     timeout: 30000 // 30 segundos max para que Gemini responda

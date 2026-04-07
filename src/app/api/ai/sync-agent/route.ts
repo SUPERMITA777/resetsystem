@@ -14,8 +14,8 @@ export async function POST(req: Request) {
         const body = await req.json();
         
         // Estructura esperada desde el EXE:
-        // { tenantId: "resetspa", sender: "549110000000@s.whatsapp.net", text: "Hola" }
-        const { tenantId, sender, text } = body;
+        // { tenantId: "resetspa", sender: "549110000000@s.whatsapp.net", text: "Hola", fromMe: boolean }
+        const { tenantId, sender, text, fromMe } = body;
 
         if (!tenantId || !sender || !text) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -39,13 +39,21 @@ export async function POST(req: Request) {
         if (isPauseCommand) {
             const { setDoc } = await import("firebase/firestore");
             await setDoc(clientRef, { mutedAt: new Date().toISOString() });
+            // Si el comando lo envió el dueño (fromMe), no enviar auto-respuesta al cliente.
+            if (fromMe) return NextResponse.json({ status: "paused_by_owner" });
             return NextResponse.json({ reply: "⚡ Entendido, pauso mis respuestas automáticas. Un asistente humano te contactará a la brevedad." });
         }
 
         if (isResumeCommand) {
             const { deleteDoc } = await import("firebase/firestore");
             await deleteDoc(clientRef);
+            if (fromMe) return NextResponse.json({ status: "resumed_by_owner" });
             return NextResponse.json({ reply: "⚡ IA Reactivada. ¡Hola de nuevo! ¿En qué puedo ayudarte?" });
+        }
+
+        // Si el mensaje fue enviado por el humano (dueño) y no es un comando, ignorarlo
+        if (fromMe) {
+            return NextResponse.json({ status: "ignored_from_me" });
         }
 
         // 3. Verificar si el chat está silenciado
