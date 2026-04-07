@@ -41,6 +41,7 @@ const qrcode_terminal_1 = __importDefault(require("qrcode-terminal"));
 const axios_1 = __importDefault(require("axios"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const pino_1 = __importDefault(require("pino"));
 // Configuración Base
 const SERVER_URL = process.env.RESET_API_URL || "https://resetsystem.com"; // En prod usar dominio real.
 const authFolder = path.join(process.cwd(), 'auth_info_baileys');
@@ -81,6 +82,7 @@ async function connectToWhatsApp() {
         auth: state,
         printQRInTerminal: false,
         browser: ["Reset Spa Agent", "Desktop", "1.0.0"],
+        logger: (0, pino_1.default)({ level: 'silent' })
     });
     sock.ev.on('creds.update', saveCreds);
     sock.ev.on('connection.update', (update) => {
@@ -118,7 +120,7 @@ async function connectToWhatsApp() {
             const fromMe = msg.key.fromMe;
             // Extraer el texto del mensaje (soporta texto plano o respuesta a otro mensaje)
             const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
-            if (!text || !sender || fromMe)
+            if (!text || !sender)
                 continue;
             if (sender.includes('@g.us') || sender === 'status@broadcast')
                 continue;
@@ -131,7 +133,8 @@ async function connectToWhatsApp() {
                 const response = await axios_1.default.post(`${SERVER_URL}/api/ai/sync-agent`, {
                     tenantId,
                     sender,
-                    text
+                    text,
+                    fromMe
                 }, {
                     headers: { 'Content-Type': 'application/json' },
                     timeout: 30000 // 30 segundos max para que Gemini responda
@@ -151,4 +154,3 @@ async function connectToWhatsApp() {
         }
     });
 }
-connectToWhatsApp();

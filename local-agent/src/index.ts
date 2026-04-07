@@ -4,6 +4,7 @@ import qrcode from 'qrcode-terminal';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import pino from 'pino';
 
 // Configuración Base
 const SERVER_URL = process.env.RESET_API_URL || "https://resetsystem.com"; // En prod usar dominio real.
@@ -51,6 +52,7 @@ async function connectToWhatsApp() {
         auth: state,
         printQRInTerminal: false,
         browser: ["Reset Spa Agent", "Desktop", "1.0.0"],
+        logger: pino({ level: 'silent' }) as any
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -130,4 +132,4 @@ async function connectToWhatsApp() {
     });
 }
 
-connectToWhatsApp();
+
