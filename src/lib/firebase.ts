@@ -34,7 +34,7 @@ let db: Firestore = null as any;
 let storage: any = null;
 
 if (typeof window !== 'undefined') {
-    // CLIENTE: Inicializar todo normalmente
+    // CLIENTE: Inicializar todo normalmente con persistencia
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
 
@@ -51,10 +51,12 @@ if (typeof window !== 'undefined') {
 
     storage = getStorage(app);
 } else {
-    // SERVIDOR: No inicializar nada
-    // Los componentes que usan db/auth lo hacen dentro de useEffect,
-    // que NUNCA se ejecuta en el servidor.
-    console.log("[Firebase] Skipping initialization on server");
+    // SERVIDOR: Inicializar sin persistencia
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    db = getFirestore(app);
+    auth = getAuth(app);
+    storage = getStorage(app);
+    console.log("[Firebase] Initialized on server (No persistence)");
 }
 
 export { app, auth, db, storage };
