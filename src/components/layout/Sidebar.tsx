@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, User as UserIcon, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift, Dumbbell, LogOut, QrCode } from "lucide-react";
+import { CalendarDays, User as UserIcon, Users, LayoutDashboard, Settings, Sparkles, Activity, FileBarChart, Globe, ExternalLink, ShoppingBag, Gift, Dumbbell, LogOut, QrCode, Bot, MessageSquare } from "lucide-react";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { GlobalSearch } from "./GlobalSearch";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -114,6 +114,18 @@ export function Sidebar() {
                         <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         Ver mi Web Pública
                     </a>
+                </div>
+
+                <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">
+                    <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 opacity-70">Agentes IA</p>
+                    <Link href="/admin/ai-agents/julia" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Bot className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Julia - Ventas
+                    </Link>
+                    <Link href="/admin/ai-agents/sofia" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <MessageSquare className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Sofía - Recordatorios
+                    </Link>
                 </div>
 
                 <div className="mt-auto pt-6 border-t border-[var(--secondary)]/50">
