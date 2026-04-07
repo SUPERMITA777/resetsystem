@@ -12,9 +12,9 @@ const genAI = new GoogleGenerativeAI(apiKey);
 async function getGenerativeModelWithFallback(config: any) {
     const modelsToTry = [
         { name: config.model, api: 'v1beta' }, // Intento primario (el configurado)
-        { name: "gemini-1.5-flash", api: 'v1beta' },
-        { name: "gemini-1.5-flash-8b", api: 'v1beta' },
-        { name: "gemini-1.5-flash", api: 'v1' },
+        { name: "gemini-flash-latest", api: 'v1beta' },
+        { name: "gemini-2.5-flash", api: 'v1beta' },
+        { name: "gemini-2.0-flash", api: 'v1beta' },
     ];
 
     let lastError: any = null;
@@ -57,7 +57,7 @@ export const geminiService = {
         const serviciosContext = servicios.map(s => `- ${s.nombre}: $${s.precio} (${s.duracion_minutos} min)`).join("\n");
 
         const model = await getGenerativeModelWithFallback({ 
-            model: "gemini-1.5-flash-latest",
+            model: "gemini-flash-latest",
             tools: [{
                 functionDeclarations: [{
                     name: "agendar_turno_pendiente",
@@ -148,7 +148,7 @@ export const geminiService = {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.veronica?.active) return null;
 
-        const model = await getGenerativeModelWithFallback({ model: "gemini-1.5-flash-latest" });
+        const model = await getGenerativeModelWithFallback({ model: "gemini-flash-latest" });
 
         const systemPrompt = `
             Eres Verónica, la asistente de recordatorios de "${tenant.nombre_salon}".
