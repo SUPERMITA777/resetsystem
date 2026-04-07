@@ -1,4 +1,4 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import { default as makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode-terminal';
 import axios from 'axios';
@@ -48,11 +48,15 @@ async function connectToWhatsApp() {
 
     const { state, saveCreds } = await useMultiFileAuthState(authFolder);
 
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    console.log(`Versión WA Web: v${version.join('.')} (Última: ${isLatest})`);
+
     const sock = makeWASocket({
         auth: state,
+        version,
         printQRInTerminal: false,
-        browser: ["Reset Spa Agent", "Desktop", "1.0.0"],
-        logger: pino({ level: 'silent' }) as any
+        browser: Browsers.macOS('Desktop'),
+        logger: pino({ level: 'info' }) as any
     });
 
     sock.ev.on('creds.update', saveCreds);
