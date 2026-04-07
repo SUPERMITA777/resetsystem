@@ -50,6 +50,8 @@ export interface TenantData {
             rules?: string;
             whatsapp_connected?: boolean;
             instagram_connected?: boolean;
+            pause_phrase?: string;
+            resume_phrase?: string;
         };
         veronica?: { 
             active: boolean; 
@@ -57,6 +59,7 @@ export interface TenantData {
             auto_reschedule: boolean;
             smart_waitlist?: boolean;
         };
+        evolution_api_url?: string; // Para modo servidor local
     };
 }
 

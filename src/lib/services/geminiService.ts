@@ -3,7 +3,7 @@ import { getTenant } from "./tenantService";
 import { createTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
 
 export interface ChatMessage {
     role: "user" | "model";
@@ -100,14 +100,14 @@ export const geminiService = {
                         response: { content: "Turno creado exitosamente con estatus PENDIENTE." }
                     }
                 }]);
-                return toolResponse.response.text();
+                return `⚡ ${toolResponse.response.text()}`;
             } catch (error) {
                 console.error("Error en function call agendar_turno:", error);
                 return "Lo siento, tuve un problema técnico al intentar agendar tu turno. ¿Podrías intentar de nuevo en unos minutos?";
             }
         }
 
-        return response.text();
+        return `⚡ ${response.text()}`;
     },
 
     /**
@@ -140,6 +140,7 @@ export const geminiService = {
         });
 
         const result = await chat.sendMessage(userMessage);
-        return result.response.text();
+        const responseText = result.response.text();
+        return `⚡ ${responseText}`;
     }
 };

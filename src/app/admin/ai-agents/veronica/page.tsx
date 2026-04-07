@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { MessageSquare, CalendarClock, Phone, RefreshCw, Settings, AlertCircle, Save, Check, Clock } from "lucide-react";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
+import Link from "next/link";
 
 export default function VeronicaAIPage() {
     const [isActive, setIsActive] = useState(false);
@@ -122,15 +123,23 @@ export default function VeronicaAIPage() {
                     </h2>
                     
                     <div className="bg-white rounded-3xl border border-[var(--secondary)]/50 p-6 space-y-4 shadow-sm">
-                        <div className="flex justify-between items-center bg-[#25D366]/5 border border-[#25D366]/20 p-4 rounded-2xl">
+                        <Link 
+                            href="/admin/ai-agents/connections"
+                            className={`flex justify-between items-center p-4 rounded-2xl border transition-all hover:border-[#ff006e]/30 ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]/5 border-[#25D366]/20' : 'bg-gray-50 border-gray-100 opacity-60'}`}
+                        >
                             <div className="flex items-center gap-3">
-                                <Phone className="w-5 h-5 text-[#25D366]" />
+                                <div className={`w-10 h-10 ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]' : 'bg-gray-400'} rounded-xl flex items-center justify-center text-white`}>
+                                    <Phone className="w-5 h-5 text-white" />
+                                </div>
                                 <div>
                                     <p className="text-sm font-bold text-gray-800">Línea Emisora</p>
-                                    <p className="text-xs text-[#25D366] font-semibold mt-0.5">WhatsApp Conectado</p>
+                                    <p className={`text-xs ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'text-[#25D366] font-semibold' : 'text-gray-500 font-medium'} mt-0.5`}>
+                                        {tenant?.ai_config?.noemi?.whatsapp_connected ? 'WhatsApp Conectado' : 'No Vinculado'}
+                                    </p>
                                 </div>
                             </div>
-                        </div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-[#ff006e]">Gestionar</span>
+                        </Link>
 
                         <div className="grid grid-cols-2 gap-4 mt-4 py-4 border-t border-[var(--secondary)]/50">
                             <div className="space-y-1">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Bot, Link as LinkIcon, Smartphone, Mail, Phone, Settings, AlertCircle, Save, Check, RefreshCw } from "lucide-react";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
+import Link from "next/link";
 
 export default function NoemiAIPage() {
     const [isActive, setIsActive] = useState(false);
@@ -122,7 +123,10 @@ export default function NoemiAIPage() {
                     </h2>
                     
                     <div className="bg-white rounded-3xl border border-[var(--secondary)]/50 p-6 space-y-4 shadow-sm">
-                        <div className={`flex items-center justify-between p-4 rounded-2xl border ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]/5 border-[#25D366]/20' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
+                        <Link 
+                            href="/admin/ai-agents/connections"
+                            className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:border-[var(--primary)]/30 ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]/5 border-[#25D366]/20' : 'bg-gray-50 border-gray-100 opacity-60'}`}
+                        >
                             <div className="flex items-center gap-4">
                                 <div className={`w-10 h-10 ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]' : 'bg-gray-400'} rounded-xl flex items-center justify-center text-white`}>
                                     <Phone className="w-5 h-5" />
@@ -134,10 +138,10 @@ export default function NoemiAIPage() {
                                     </p>
                                 </div>
                             </div>
-                            <button className={`text-xs font-bold ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'text-gray-400 hover:text-black hover:underline' : 'text-[var(--primary)] hover:underline'}`}>
+                            <span className={`text-xs font-bold ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'text-gray-400 hover:text-black hover:underline' : 'text-[var(--primary)] hover:underline'}`}>
                                 {tenant?.ai_config?.noemi?.whatsapp_connected ? 'Cambiar' : 'Conectar'}
-                            </button>
-                        </div>
+                            </span>
+                        </Link>
 
                         <div className={`flex items-center justify-between p-4 rounded-2xl border ${tenant?.ai_config?.noemi?.instagram_connected ? 'bg-gradient-to-tr from-[#f9ce34]/5 via-[#ee2a7b]/5 to-[#6228d7]/5 border-[#ee2a7b]/20' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
                             <div className="flex items-center gap-4">

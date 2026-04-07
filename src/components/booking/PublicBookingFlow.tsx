@@ -392,11 +392,36 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-20 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-100">
-                        <Clock className="w-10 h-10 text-gray-200 mx-auto mb-4" />
-                        <h3 className="text-sm font-black uppercase text-gray-400 tracking-tight">No hay horarios</h3>
-                        <p className="text-[10px] text-gray-300 font-bold uppercase mt-2">Intenta con otra fecha</p>
-                        <Button variant="ghost" className="mt-6 text-[10px] font-black underline" onClick={() => setStep('date')}>Cambiar fecha</Button>
+                    <div className="py-20 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-100 animate-in zoom-in-95 duration-500">
+                        <Clock className="w-12 h-12 text-gray-200 mx-auto mb-6" />
+                        <h3 className="text-xl font-black uppercase text-gray-400 tracking-tight">Sin Horarios Disponibles</h3>
+                        <p className="text-[10px] text-gray-300 font-bold uppercase mt-2 max-w-xs mx-auto leading-relaxed">
+                            No encontramos huecos libres para el {selectedDate && format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}.
+                        </p>
+                        
+                        <div className="flex flex-col gap-4 mt-10 max-w-xs mx-auto">
+                            <Button 
+                                className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2"
+                                onClick={() => {
+                                    const fechaStr = selectedDate ? format(selectedDate, "EEEE d 'de' MMMM", { locale: es }) : '';
+                                    const message = `✨ ¡Hola! Te contacto desde la web de ${tenantName}. ✨\n\nMe interesa el servicio "${selectedService?.nombre}" para el día ${fechaStr}, pero no encontré horarios disponibles online. ¿Podrían ayudarme?`;
+                                    const encoded = encodeURIComponent(message);
+                                    const phone = tenant?.datos_contacto?.whatsapp || '5491112345678';
+                                    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encoded}`, '_blank');
+                                }}
+                            >
+                                <Smartphone className="w-4 h-4" />
+                                Consultar por WhatsApp
+                            </Button>
+                            
+                            <Button 
+                                variant="ghost" 
+                                className="text-[10px] font-black uppercase tracking-widest text-gray-400 underline decoration-2 underline-offset-4" 
+                                onClick={() => setStep('date')}
+                            >
+                                Elegir otra fecha
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>

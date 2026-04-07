@@ -219,9 +219,35 @@ export default function PublicClasesPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {(selectedClase?.horarios || []).length === 0 ? (
-                                <div className="col-span-full py-20 text-center bg-white border border-dashed border-gray-200 rounded-[3rem]">
-                                    <AlertCircle className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sin sesiones programadas para esta actividad</p>
+                                <div className="col-span-full py-20 text-center bg-white border-2 border-dashed border-gray-100 rounded-[3rem] animate-in zoom-in-95 duration-500">
+                                    <AlertCircle className="w-12 h-12 text-gray-200 mx-auto mb-6" />
+                                    <h3 className="text-xl font-black uppercase text-gray-400 tracking-tight">Sin Cupos o Sesiones</h3>
+                                    <p className="text-[10px] text-gray-300 font-bold uppercase mt-2 max-w-xs mx-auto leading-relaxed">
+                                        No encontramos sesiones disponibles para {selectedClase?.nombre} en este momento.
+                                    </p>
+                                    
+                                    <div className="flex flex-col gap-4 mt-10 max-w-xs mx-auto px-6">
+                                        <Button 
+                                            className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2"
+                                            onClick={() => {
+                                                const message = `✨ ¡Hola! Te contacto desde la web de ${tenant?.nombre_salon}. ✨\n\nMe interesa participar en la clase de "${selectedClase?.nombre}", pero no encontré horarios con cupo disponibles online. ¿Podrían avisarme si se libera alguno?`;
+                                                const encoded = encodeURIComponent(message);
+                                                const phone = tenant?.datos_contacto?.whatsapp || '5491112345678';
+                                                window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encoded}`, '_blank');
+                                            }}
+                                        >
+                                            <Smartphone className="w-4 h-4" />
+                                            Consultar Disponibilidad
+                                        </Button>
+                                        
+                                        <Button 
+                                            variant="ghost" 
+                                            className="text-[10px] font-black uppercase tracking-widest text-gray-400 underline decoration-2 underline-offset-4" 
+                                            onClick={() => setStep('list')}
+                                        >
+                                            Ver otras actividades
+                                        </Button>
+                                    </div>
                                 </div>
                             ) : (
                                 selectedClase?.horarios

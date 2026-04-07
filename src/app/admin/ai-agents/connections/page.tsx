@@ -1,16 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Phone, Smartphone, RefreshCw, CheckCircle2, AlertCircle, QrCode, LogOut, ShieldCheck, Zap, Bot } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Phone, Smartphone, RefreshCw, CheckCircle2, AlertCircle, QrCode, LogOut, ShieldCheck, Zap, Bot, MessageSquare, Settings, ArrowRight, Cpu } from "lucide-react";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
+import { evolutionService } from "@/lib/services/evolutionService";
+import Link from "next/link";
 
 export default function ConnectionsPage() {
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [tenant, setTenant] = useState<TenantData | null>(null);
+    const [selectedOS, setSelectedOS] = useState<'Windows' | 'Linux' | 'macOS'>('Windows');
     const [loading, setLoading] = useState(true);
+    const [pollingActive, setPollingActive] = useState(false);
 
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
+
+    const checkCurrentStatus = useCallback(async () => {
+        const connection = await evolutionService.checkConnection(tenantId, tenant?.ai_config?.evolution_api_url);
+        if (connection?.instance?.state === 'OPEN') {
+            setStatus('connected');
+            setQrCode(null);
+            setPollingActive(false);
+            return true;
+        }
+        return false;
+    }, [tenantId]);
 
     useEffect(() => {
         async function load() {
@@ -18,54 +33,70 @@ export default function ConnectionsPage() {
             const data = await getTenant(tenantId);
             if (data) {
                 setTenant(data);
-                if (data.ai_config?.noemi?.whatsapp_connected) {
-                    setStatus('connected');
+                const isConnected = await checkCurrentStatus();
+                if (!isConnected && data.ai_config?.noemi?.whatsapp_connected) {
+                    // Sync mismatch, trust the API over Firestore for connection
+                    setStatus('disconnected');
                 }
             }
             setLoading(false);
         }
         load();
-    }, [tenantId]);
+    }, [tenantId, checkCurrentStatus]);
 
-    const handleConnect = () => {
-        setStatus('connecting');
-        // Simular obtención de QR de Evolution API
-        setTimeout(() => {
-            setQrCode("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=EvolutionAPI_Mock_Connection_12345");
-        }, 1500);
-
-        // Simular conexión exitosa después de 15 segundos
-        setTimeout(async () => {
-            if (status === 'connecting') {
-                setStatus('connected');
-                setQrCode(null);
-                await createOrUpdateTenant(tenantId, {
-                    ai_config: {
-                        ...tenant?.ai_config,
-                        noemi: {
-                            ...tenant?.ai_config?.noemi!,
-                            whatsapp_connected: true
+    // Polling logic when QR is shown
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (pollingActive && status === 'connecting') {
+            interval = setInterval(async () => {
+                const connected = await checkCurrentStatus();
+                if (connected) {
+                    // Update Firestore when connected
+                    await createOrUpdateTenant(tenantId, {
+                        ai_config: {
+                            ...tenant?.ai_config,
+                            noemi: { ...tenant?.ai_config?.noemi!, whatsapp_connected: true },
+                            veronica: { ...tenant?.ai_config?.veronica!, active: tenant?.ai_config?.veronica?.active || false }
                         }
-                    }
-                });
-            }
-        }, 15000);
+                    });
+                }
+            }, 5000);
+        }
+        return () => clearInterval(interval);
+    }, [pollingActive, status, checkCurrentStatus, tenant, tenantId]);
+
+    const handleConnect = async () => {
+        setStatus('connecting');
+        setQrCode(null);
+        
+        // 1. Create or Get Instance
+        await evolutionService.createInstance(tenantId, tenant?.ai_config?.evolution_api_url);
+        
+        // 2. Get QR
+        const qrData = await evolutionService.getConnectQR(tenantId, tenant?.ai_config?.evolution_api_url);
+        if (qrData?.base64) {
+            setQrCode(qrData.base64);
+            setPollingActive(true);
+        } else {
+            console.error("No se pudo obtener el QR");
+            setStatus('disconnected');
+        }
     };
 
     const handleDisconnect = async () => {
         if (!confirm("¿Estás seguro de desconectar WhatsApp? Las agentes Noemí y Verónica dejarán de funcionar.")) return;
         
-        setStatus('disconnected');
-        setQrCode(null);
-        await createOrUpdateTenant(tenantId, {
-            ai_config: {
-                ...tenant?.ai_config,
-                noemi: {
-                    ...tenant?.ai_config?.noemi!,
-                    whatsapp_connected: false
+        const success = await evolutionService.logoutInstance(tenantId, tenant?.ai_config?.evolution_api_url);
+        if (success) {
+            setStatus('disconnected');
+            setQrCode(null);
+            await createOrUpdateTenant(tenantId, {
+                ai_config: {
+                    ...tenant?.ai_config,
+                    noemi: { ...tenant?.ai_config?.noemi!, whatsapp_connected: false }
                 }
-            }
-        });
+            });
+        }
     };
 
     if (loading) {
@@ -77,156 +108,448 @@ export default function ConnectionsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
-            <div className="bg-white p-8 rounded-[2rem] border border-[var(--secondary)]/50 shadow-sm">
-                <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)] flex items-center gap-3">
-                    Conexiones de Agentes
-                </h1>
-                <p className="text-gray-500 mt-2 font-medium">
-                    Vincula tus redes sociales para que Noemí y Verónica puedan interactuar con tus clientes.
-                </p>
+            <div className="bg-white p-8 rounded-[2.5rem] border border-[var(--secondary)]/50 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--primary)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+                <div className="relative z-10">
+                    <h1 className="text-3xl font-extrabold tracking-tight text-[var(--foreground)] flex items-center gap-3">
+                        <Zap className="w-8 h-8 text-[var(--primary)]" />
+                        Conexión de Agentes
+                    </h1>
+                    <p className="text-gray-500 mt-2 font-medium max-w-2xl">
+                        Centraliza la comunicación de tus agentes. Cada salón es independiente y gestiona su propia conexión de WhatsApp para Noemí y Verónica.
+                    </p>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                {/* WhatsApp Card */}
-                <div className={`bg-white rounded-[2rem] border-2 p-8 transition-all ${status === 'connected' ? 'border-[#25D366]/30 shadow-lg shadow-[#25D366]/5' : 'border-[var(--secondary)]/50'}`}>
-                    <div className="flex items-start justify-between mb-8">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 ${status === 'connected' ? 'bg-[#25D366]' : 'bg-gray-100'} rounded-2xl flex items-center justify-center text-white transition-colors`}>
-                                <Phone className={`w-7 h-7 ${status === 'connected' ? 'text-white' : 'text-gray-400'}`} />
+                {/* Conexión WhatsApp Principal */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className={`bg-white rounded-[2.5rem] border-2 p-8 transition-all sticky top-8 ${status === 'connected' ? 'border-[#25D366]/30 shadow-xl shadow-[#25D366]/5' : 'border-[var(--secondary)]/50 shadow-sm'}`}>
+                        <div className="flex flex-col items-center text-center space-y-6">
+                            <div className={`w-20 h-20 ${status === 'connected' ? 'bg-[#25D366]' : 'bg-gray-100'} rounded-[2rem] flex items-center justify-center text-white transition-all transform hover:scale-105 duration-300`}>
+                                <Phone className={`w-10 h-10 ${status === 'connected' ? 'text-white' : 'text-gray-400'}`} />
                             </div>
+                            
                             <div>
-                                <h2 className="text-xl font-bold">WhatsApp Business</h2>
-                                <p className="text-sm font-medium text-gray-500 mt-1">Vía Evolution API</p>
+                                <h2 className="text-2xl font-black">WhatsApp</h2>
+                                <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Estado del Canal</p>
                             </div>
-                        </div>
-                        {status === 'connected' && (
-                            <div className="bg-[#25D366]/10 text-[#25D366] px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-1.5 border border-[#25D366]/20">
-                                <CheckCircle2 className="w-3 h-3" />
-                                Activo
-                            </div>
-                        )}
-                    </div>
 
-                    <div className="space-y-6">
-                        {status === 'disconnected' && (
-                            <div className="space-y-6">
-                                <p className="text-sm text-gray-600 font-medium leading-relaxed">
-                                    Conecta tu WhatsApp para habilitar los recordatorios automáticos y la venta asistida por IA.
-                                </p>
-                                <button 
-                                    onClick={handleConnect}
-                                    className="w-full bg-[#1c1c3c] text-white py-4 rounded-2xl font-bold hover:bg-[var(--primary)] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#1c1c3c]/10"
-                                >
-                                    <QrCode className="w-5 h-5" />
-                                    Generar Código QR
-                                </button>
-                            </div>
-                        )}
+                            {status === 'connected' && (
+                                <div className="bg-[#25D366]/10 text-[#25D366] px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 border border-[#25D366]/20">
+                                    <div className="w-2 h-2 bg-[#25D366] rounded-full animate-pulse" />
+                                    Canal Activo
+                                </div>
+                            )}
 
-                        {status === 'connecting' && (
-                            <div className="flex flex-col items-center justify-center py-4 space-y-6">
-                                {qrCode ? (
-                                    <>
-                                        <div className="p-4 bg-white border-4 border-gray-100 rounded-[2rem] shadow-sm relative group">
-                                            <img src={qrCode} alt="WhatsApp QR" className="w-48 h-48 rounded-xl" />
-                                            <div className="absolute inset-0 bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-[1.8rem] flex items-center justify-center cursor-pointer">
-                                                <RefreshCw className="w-8 h-8 text-[var(--primary)] animate-spin-slow" />
+                            <div className="w-full pt-4">
+                                {status === 'disconnected' && (
+                                    <button 
+                                        onClick={handleConnect}
+                                        className="w-full bg-[#1c1c3c] text-white py-5 rounded-[1.5rem] font-bold hover:bg-[var(--primary)] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-xl"
+                                    >
+                                        <QrCode className="w-6 h-6" />
+                                        Vincular WhatsApp
+                                    </button>
+                                )}
+
+                                {status === 'connecting' && (
+                                    <div className="space-y-6 flex flex-col items-center">
+                                        {qrCode ? (
+                                            <div className="p-6 bg-white border-4 border-gray-50 rounded-[2.5rem] shadow-inner">
+                                                <img src={qrCode} alt="WhatsApp QR" className="w-48 h-48 rounded-xl" />
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className="py-12">
+                                                <RefreshCw className="w-10 h-10 text-[var(--primary)] animate-spin" />
+                                            </div>
+                                        )}
                                         <div className="text-center space-y-2">
-                                            <p className="text-sm font-bold text-gray-800">Escanea el código QR</p>
-                                            <p className="text-xs text-gray-400 font-medium max-w-[200px]">Abre WhatsApp en tu teléfono {'>'} Dispositivos vinculados {'>'} Vincular un dispositivo.</p>
+                                            <p className="text-sm font-black text-gray-800">Escanea este código</p>
+                                            <p className="text-xs text-gray-400 font-medium px-4">Busca "Dispositivos vinculados" en tu WhatsApp y escanea para activar tus agentes.</p>
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center p-12 space-y-4">
-                                        <RefreshCw className="w-10 h-10 text-[var(--primary)] animate-spin" />
-                                        <p className="text-sm font-bold text-gray-400">Solicitando instancia...</p>
+                                        <button 
+                                            onClick={() => setStatus('disconnected')}
+                                            className="text-xs font-bold text-gray-400 hover:text-red-500 underline"
+                                        >
+                                            Cancelar proceso
+                                        </button>
                                     </div>
                                 )}
-                                <button 
-                                    onClick={() => setStatus('disconnected')}
-                                    className="text-sm font-bold text-gray-400 hover:text-red-500"
-                                >
-                                    Cancelar conexión
-                                </button>
-                            </div>
-                        )}
 
-                        {status === 'connected' && (
-                            <div className="space-y-6">
-                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
-                                    <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-tighter">
-                                        <span>Instancia</span>
-                                        <span className="text-gray-800">{tenantId}</span>
+                                {status === 'connected' && (
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                            <span className="text-xs font-black text-gray-400 uppercase">Instancia</span>
+                                            <span className="text-xs font-bold text-gray-800">{tenantId}</span>
+                                        </div>
+                                        <button 
+                                            onClick={handleDisconnect}
+                                            className="w-full bg-red-50 text-red-500 py-4 rounded-2xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <LogOut className="w-5 h-5" />
+                                            Cerrar Sesión
+                                        </button>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-tighter">
-                                        <span>Estado</span>
-                                        <span className="text-[#25D366]">Operativo</span>
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={handleDisconnect}
-                                    className="w-full bg-white border-2 border-red-500/20 text-red-500 py-4 rounded-2xl font-bold hover:bg-red-50 hover:border-red-500/40 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                    Desconectar WhatsApp
-                                </button>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Instagram Card */}
-                <div className="bg-white rounded-[2rem] border border-[var(--secondary)]/50 p-8 opacity-60">
-                    <div className="flex items-start justify-between mb-8">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] rounded-2xl flex items-center justify-center text-white">
-                                <Smartphone className="w-7 h-7" />
+                {/* Detalle de Agentes Activos */}
+                <div className="lg:col-span-2 space-y-8">
+                    <h2 className="text-xl font-black flex items-center gap-3 text-gray-800">
+                        <Bot className="w-6 h-6 text-[var(--primary)]" />
+                        Agentes que utilizarán este canal
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Noemí */}
+                        <div className="bg-white rounded-[2.5rem] border border-[var(--secondary)]/50 p-8 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex items-center gap-5 mb-6">
+                                <div className="w-14 h-14 bg-gradient-to-br from-[#7209b7] to-[#39008c] rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                    <Bot className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-xl">Noemí</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--primary)]">Especialista en Ventas</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 mb-8">
+                                <div className="flex items-center gap-3 text-sm font-medium text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <MessageSquare className="w-4 h-4 text-[var(--primary)]" />
+                                    <span>Tono: <b className="capitalize">{tenant?.ai_config?.noemi?.tone || 'Amigable'}</b></span>
+                                </div>
+                                <div className="text-xs text-gray-500 leading-relaxed italic bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    "{tenant?.ai_config?.noemi?.rules || 'Sin instrucciones adicionales configuradas.'}"
+                                </div>
+                            </div>
+
+                            <Link 
+                                href="/admin/ai-agents/noemi"
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-gray-50 rounded-xl text-xs font-black text-gray-400 hover:text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all border border-gray-100"
+                            >
+                                <Settings className="w-4 h-4" />
+                                CONFIGURAR COMPORTAMIENTO
+                            </Link>
+                        </div>
+
+                        {/* Verónica */}
+                        <div className="bg-white rounded-[2.5rem] border border-[var(--secondary)]/50 p-8 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex items-center gap-5 mb-6">
+                                <div className="w-14 h-14 bg-gradient-to-br from-[#4cc9f0] to-[#4361ee] rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                    <Bot className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-xl">Verónica</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4cc9f0]">Recordatorios</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 mb-8">
+                                <div className="flex items-center gap-3 text-sm font-medium text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <CheckCircle2 className="w-4 h-4 text-[#4cc9f0]" />
+                                    <span>Objetivo: <b>Confirmar Citas</b></span>
+                                </div>
+                                <div className="text-xs text-gray-500 leading-relaxed italic bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    "Hola, soy Verónica. Te escribo para confirmar tu turno de mañana..."
+                                </div>
+                            </div>
+
+                            <Link 
+                                href="/admin/ai-agents/veronica"
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-gray-50 rounded-xl text-xs font-black text-gray-400 hover:text-[#4361ee] hover:bg-[#4361ee]/5 transition-all border border-gray-100"
+                            >
+                                <Settings className="w-4 h-4" />
+                                CONFIGURAR COMPORTAMIENTO
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Configuración Avanzada de Agentes */}
+                    <div className="bg-white rounded-[2.5rem] border border-[var(--secondary)]/50 p-10 shadow-sm relative overflow-hidden">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 bg-black/5 rounded-2xl flex items-center justify-center">
+                                <ShieldCheck className="w-6 h-6 text-black" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold">Instagram Direct</h2>
-                                <p className="text-sm font-medium text-gray-500 mt-1">Próximamente</p>
+                                <h3 className="text-xl font-black">Control de Independencia</h3>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Atención personalizada y frases secretas</p>
                             </div>
                         </div>
-                    </div>
-                    <p className="text-sm text-gray-600 font-medium leading-relaxed mb-8">
-                        Integración directa con Meta Graph API para que Noemí pueda vender a través de tus DMs de Instagram.
-                    </p>
-                    <button disabled className="w-full bg-gray-100 text-gray-400 py-4 rounded-2xl font-bold cursor-not-allowed">
-                        Próximamente
-                    </button>
-                </div>
 
-            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                    <MessageSquare className="w-4 h-4" /> Frase para MUTE (Hablar con humano)
+                                </label>
+                                <input 
+                                    type="text"
+                                    placeholder="Ej: Quiero hablar con Sole"
+                                    value={tenant?.ai_config?.noemi?.pause_phrase || ''}
+                                    onChange={async (e) => {
+                                        const val = e.target.value;
+                                        setTenant(prev => prev ? {
+                                            ...prev,
+                                            ai_config: {
+                                                ...prev.ai_config,
+                                                noemi: { ...prev.ai_config?.noemi!, pause_phrase: val }
+                                            }
+                                        } : null);
+                                    }}
+                                    className="w-full h-16 bg-gray-50 rounded-2xl px-6 font-bold text-sm border-2 border-transparent focus:border-black/5 focus:bg-white transition-all outline-none"
+                                />
+                                <p className="text-[9px] text-gray-400 font-medium px-1">Si el cliente dice esto, la IA dejará de responder en ese chat.</p>
+                            </div>
 
-            {/* Info Section */}
-            <div className="bg-[#1c1c3c] rounded-[2rem] p-8 text-white relative overflow-hidden">
-                <Zap className="absolute top-0 right-0 w-64 h-64 text-white/5 -translate-y-1/2 translate-x-1/4" />
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="space-y-3">
-                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                            <ShieldCheck className="w-5 h-5 text-white" />
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                    <Zap className="w-4 h-4" /> Frase para RESUME (Despertar IA)
+                                </label>
+                                <input 
+                                    type="text"
+                                    placeholder="Ej: Noemi continua con tu trabajo"
+                                    value={tenant?.ai_config?.noemi?.resume_phrase || ''}
+                                    onChange={async (e) => {
+                                        const val = e.target.value;
+                                        setTenant(prev => prev ? {
+                                            ...prev,
+                                            ai_config: {
+                                                ...prev.ai_config,
+                                                noemi: { ...prev.ai_config?.noemi!, resume_phrase: val }
+                                            }
+                                        } : null);
+                                    }}
+                                    className="w-full h-16 bg-gray-50 rounded-2xl px-6 font-bold text-sm border-2 border-transparent focus:border-black/5 focus:bg-white transition-all outline-none"
+                                />
+                                <p className="text-[9px] text-gray-400 font-medium px-1">Usa esto para que la IA vuelva a tomar el control del chat.</p>
+                            </div>
                         </div>
-                        <h3 className="font-bold">Seguro y Privado</h3>
-                        <p className="text-xs text-white/60 leading-relaxed font-medium">Tus datos y conversaciones están encriptados y protegidos bajo protocolos de seguridad bancaria.</p>
+
+                        {/* Modo Local Server */}
+                        <div className="mt-10 pt-10 border-t border-gray-100">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                                    <Cpu className="w-5 h-5 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black uppercase tracking-tight">Modo Servidor Local</h4>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Apaga la IA automáticamente con tu PC</p>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-indigo-50/50 p-6 rounded-3xl mb-8">
+                                <p className="text-[11px] text-indigo-900 leading-relaxed font-medium">
+                                    Si instalas el motor de mensajería en tu PC del salón, los agentes se desconectarán automáticamente cuando apagues la computadora. Esto te permite usar WhatsApp normalmente en tu celular cuando no estás en el local.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4 max-w-xl">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                    URL de Servidor Local (Ej: Cloudflare Tunnel o Ngrok)
+                                </label>
+                                <input 
+                                    type="text"
+                                    placeholder="https://tu-pc-local.trycloudflared.com"
+                                    value={tenant?.ai_config?.evolution_api_url || ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTenant(prev => prev ? {
+                                            ...prev,
+                                            ai_config: {
+                                                ...prev.ai_config,
+                                                evolution_api_url: val
+                                            }
+                                        } : null);
+                                    }}
+                                    className="w-full h-16 bg-gray-50 rounded-2xl px-6 font-bold text-sm border-2 border-transparent focus:border-indigo-200 focus:bg-white transition-all outline-none"
+                                />
+                                <p className="text-[9px] text-gray-400 font-medium px-1">Deja vacío para usar el servidor central por defecto.</p>
+                            </div>
+
+                            {/* Instalador Automático */}
+                            <div className="mt-12 bg-gray-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl" />
+                                
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                                            <Cpu className="w-5 h-5 text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black uppercase tracking-tight">Auto-Instalador de Agentes</h4>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Configura tu PC en segundos</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Tabs de SO */}
+                                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                        {['Windows', 'Linux', 'macOS'].map((os) => (
+                                            <button
+                                                key={os}
+                                                onClick={() => setSelectedOS(os as any)}
+                                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                                    selectedOS === os 
+                                                    ? 'bg-white text-black shadow-lg' 
+                                                    : 'text-gray-500 hover:text-white'
+                                                }`}
+                                            >
+                                                {os === 'Windows' && '🪟 '}
+                                                {os === 'Linux' && '🐧 '}
+                                                {os === 'macOS' && '🍎 '}
+                                                {os}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 relative z-10">
+                                    <div className="bg-black/50 p-6 rounded-2xl border border-white/5 font-mono text-[11px] leading-relaxed text-indigo-300">
+                                        <p className="text-gray-500 mb-4 font-sans italic"># {selectedOS === 'Windows' ? 'Ejecuta esto en PowerShell como Administrador' : 'Copia y pega este comando en tu terminal'}</p>
+                                        <div className="flex items-start justify-between gap-4">
+                                            <code className="break-all whitespace-pre-wrap">
+                                                {selectedOS === 'Windows' && `irm https://reset-system.com/setup.ps1 | iex`}
+                                                {selectedOS === 'Linux' && `curl -fsSL https://reset-system.com/setup-linux.sh | bash`}
+                                                {selectedOS === 'macOS' && `curl -fsSL https://reset-system.com/setup-mac.sh | bash`}
+                                            </code>
+                                            <button 
+                                                onClick={() => {
+                                                    let script = "";
+                                                    const apiKey = process.env.EVOLUTION_GLOBAL_API_KEY || 'global_key';
+                                                    
+                                                    if (selectedOS === 'Windows') {
+                                                        script = `
+# Reset System - Windows Auto Installer
+Write-Host "🚀 Iniciando Instalación en Windows..." -ForegroundColor Cyan
+if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "❌ Docker no detectado." -ForegroundColor Red
+    Start-Process "https://www.docker.com/products/docker-desktop/"
+    exit
+}
+$path = "$HOME\\ResetSystemAgents"
+if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path }
+Set-Location $path
+$compose = @"
+services:
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: evolution_api
+    environment:
+      - SERVER_URL=\${SERVER_URL}
+      - API_KEY=${apiKey}
+    ports:
+      - "8080:8080"
+"@
+$compose | Out-File -FilePath "$path\\docker-compose.yml"
+docker compose up -d
+docker run --rm --network host cloudflare/cloudflared:latest tunnel --url http://localhost:8080
+`;
+                                                    } else if (selectedOS === 'Linux') {
+                                                        script = `
+#!/bin/bash
+# Reset System - Linux Auto Installer
+echo "🚀 Iniciando Instalación en Linux..."
+if ! [ -x "$(command -v docker)" ]; then
+  echo "❌ Docker no detectado. Instalando..."
+  curl -fsSL https://get.docker.com | sh
+  sudo usermod -aG docker $USER
+fi
+mkdir -p ~/ResetSystemAgents && cd ~/ResetSystemAgents
+cat <<EOF > docker-compose.yml
+services:
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: evolution_api
+    environment:
+      - SERVER_URL=\${SERVER_URL}
+      - API_KEY=${apiKey}
+    ports:
+      - "8080:8080"
+EOF
+docker compose up -d
+docker run --rm --network host cloudflare/cloudflared:latest tunnel --url http://localhost:8080
+`;
+                                                    } else {
+                                                        script = `
+#!/bin/bash
+# Reset System - macOS Auto Installer
+echo "🚀 Iniciando Instalación en macOS..."
+if ! [ -x "$(command -v docker)" ]; then
+  echo "❌ Docker no detectado. Instala Docker Desktop primero: https://www.docker.com/products/docker-desktop/"
+  exit 1
+fi
+mkdir -p ~/ResetSystemAgents && cd ~/ResetSystemAgents
+cat <<EOF > docker-compose.yml
+services:
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: evolution_api
+    environment:
+      - SERVER_URL=\${SERVER_URL}
+      - API_KEY=${apiKey}
+    ports:
+      - "8080:8080"
+EOF
+docker compose up -d
+docker run --rm --network host cloudflare/cloudflared:latest tunnel --url http://localhost:8080
+`;
+                                                    }
+                                                    
+                                                    navigator.clipboard.writeText(script);
+                                                    import('react-hot-toast').then(t => t.default.success(`Script de ${selectedOS} copiado`));
+                                                }}
+                                                className="shrink-0 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                                                title="Copiar código completo"
+                                            >
+                                                <QrCode className="w-5 h-5 text-indigo-400" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap gap-4">
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-full border border-white/5 text-[9px] font-bold text-gray-400">
+                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" /> Docker Ready
+                                        </div>
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-full border border-white/5 text-[9px] font-bold text-gray-400">
+                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" /> Cloudflare Tunnel
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={async () => {
+                                if (tenant && tenantId) {
+                                    await createOrUpdateTenant(tenantId, {
+                                        ai_config: tenant.ai_config
+                                    });
+                                    import('react-hot-toast').then(t => t.default.success("Configuración guardada exitosamente"));
+                                }
+                            }}
+                            className="mt-10 flex items-center gap-3 px-10 h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl"
+                        >
+                            Guardar Cambios
+                        </button>
                     </div>
-                    <div className="space-y-3">
-                        <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center text-green-400 font-black">
-                            %
+
+                    {/* Privacidad Info */}
+                    <div className="bg-[#1c1c3c] rounded-[2.5rem] p-8 text-white flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+                        <ShieldCheck className="absolute top-0 right-0 w-48 h-48 text-white/5 -translate-y-1/4 translate-x-1/4" />
+                        <div className="w-20 h-20 bg-white/10 rounded-[2rem] flex items-center justify-center shrink-0">
+                            <Smartphone className="w-10 h-10" />
                         </div>
-                        <h3 className="font-bold">Ahorro de Tiempo</h3>
-                        <p className="text-xs text-white/60 leading-relaxed font-medium">Las agentes atienden el 80% de las consultas repetitivas sin que tengas que tocar el celular.</p>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="w-10 h-10 bg-[var(--primary)]/20 rounded-xl flex items-center justify-center">
-                            <Bot className="w-5 h-5 text-[var(--primary)]" />
+                        <div className="space-y-2 relative z-10">
+                            <h4 className="text-lg font-black tracking-tight">Tu privacidad es sagrada</h4>
+                            <p className="text-sm text-white/60 leading-relaxed font-medium">
+                                Noemí y Verónica solo pueden ver los mensajes de tu salón. La conexión es punto a punto y no almacenamos tus conversaciones privadas de WhatsApp personales.
+                            </p>
                         </div>
-                        <h3 className="font-bold">Multi-agente</h3>
-                        <p className="text-xs text-white/60 leading-relaxed font-medium">Noemí y Verónica trabajan en equipo sobre la misma línea de WhatsApp para una experiencia fluida.</p>
                     </div>
                 </div>
             </div>
