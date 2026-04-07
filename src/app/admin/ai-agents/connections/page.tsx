@@ -3,29 +3,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Phone, Smartphone, RefreshCw, CheckCircle2, AlertCircle, QrCode, LogOut, ShieldCheck, Zap, Bot, MessageSquare, Settings, ArrowRight, Cpu } from "lucide-react";
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
-import { evolutionService } from "@/lib/services/evolutionService";
 import Link from "next/link";
 
 export default function ConnectionsPage() {
-    const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-    const [qrCode, setQrCode] = useState<string | null>(null);
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [selectedOS, setSelectedOS] = useState<'Windows' | 'Linux' | 'macOS'>('Windows');
     const [loading, setLoading] = useState(true);
-    const [pollingActive, setPollingActive] = useState(false);
 
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
-
-    const checkCurrentStatus = useCallback(async () => {
-        const connection = await evolutionService.checkConnection(tenantId, tenant?.ai_config?.evolution_api_url);
-        if (connection?.instance?.state === 'OPEN') {
-            setStatus('connected');
-            setQrCode(null);
-            setPollingActive(false);
-            return true;
-        }
-        return false;
-    }, [tenantId]);
 
     useEffect(() => {
         async function load() {
@@ -33,71 +18,11 @@ export default function ConnectionsPage() {
             const data = await getTenant(tenantId);
             if (data) {
                 setTenant(data);
-                const isConnected = await checkCurrentStatus();
-                if (!isConnected && data.ai_config?.noemi?.whatsapp_connected) {
-                    // Sync mismatch, trust the API over Firestore for connection
-                    setStatus('disconnected');
-                }
             }
             setLoading(false);
         }
         load();
-    }, [tenantId, checkCurrentStatus]);
-
-    // Polling logic when QR is shown
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (pollingActive && status === 'connecting') {
-            interval = setInterval(async () => {
-                const connected = await checkCurrentStatus();
-                if (connected) {
-                    // Update Firestore when connected
-                    await createOrUpdateTenant(tenantId, {
-                        ai_config: {
-                            ...tenant?.ai_config,
-                            noemi: { ...tenant?.ai_config?.noemi!, whatsapp_connected: true },
-                            veronica: { ...tenant?.ai_config?.veronica!, active: tenant?.ai_config?.veronica?.active || false }
-                        }
-                    });
-                }
-            }, 5000);
-        }
-        return () => clearInterval(interval);
-    }, [pollingActive, status, checkCurrentStatus, tenant, tenantId]);
-
-    const handleConnect = async () => {
-        setStatus('connecting');
-        setQrCode(null);
-        
-        // 1. Create or Get Instance
-        await evolutionService.createInstance(tenantId, tenant?.ai_config?.evolution_api_url);
-        
-        // 2. Get QR
-        const qrData = await evolutionService.getConnectQR(tenantId, tenant?.ai_config?.evolution_api_url);
-        if (qrData?.base64) {
-            setQrCode(qrData.base64);
-            setPollingActive(true);
-        } else {
-            console.error("No se pudo obtener el QR");
-            setStatus('disconnected');
-        }
-    };
-
-    const handleDisconnect = async () => {
-        if (!confirm("¿Estás seguro de desconectar WhatsApp? Las agentes Noemí y Verónica dejarán de funcionar.")) return;
-        
-        const success = await evolutionService.logoutInstance(tenantId, tenant?.ai_config?.evolution_api_url);
-        if (success) {
-            setStatus('disconnected');
-            setQrCode(null);
-            await createOrUpdateTenant(tenantId, {
-                ai_config: {
-                    ...tenant?.ai_config,
-                    noemi: { ...tenant?.ai_config?.noemi!, whatsapp_connected: false }
-                }
-            });
-        }
-    };
+    }, [tenantId]);
 
     if (loading) {
         return (
@@ -127,74 +52,25 @@ export default function ConnectionsPage() {
                 
                 {/* Conexión WhatsApp Principal */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className={`bg-white rounded-[2.5rem] border-2 p-8 transition-all sticky top-8 ${status === 'connected' ? 'border-[#25D366]/30 shadow-xl shadow-[#25D366]/5' : 'border-[var(--secondary)]/50 shadow-sm'}`}>
+                    <div className="bg-white rounded-[2.5rem] border-2 p-8 transition-all sticky top-8 border-[#25D366]/30 shadow-xl shadow-[#25D366]/5">
                         <div className="flex flex-col items-center text-center space-y-6">
-                            <div className={`w-20 h-20 ${status === 'connected' ? 'bg-[#25D366]' : 'bg-gray-100'} rounded-[2rem] flex items-center justify-center text-white transition-all transform hover:scale-105 duration-300`}>
-                                <Phone className={`w-10 h-10 ${status === 'connected' ? 'text-white' : 'text-gray-400'}`} />
+                            <div className="w-20 h-20 bg-[#25D366] rounded-[2rem] flex items-center justify-center text-white transition-all transform hover:scale-105 duration-300">
+                                <Phone className="w-10 h-10 text-white" />
                             </div>
                             
                             <div>
                                 <h2 className="text-2xl font-black">WhatsApp</h2>
-                                <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Estado del Canal</p>
+                                <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Standalone Agent</p>
                             </div>
 
-                            {status === 'connected' && (
-                                <div className="bg-[#25D366]/10 text-[#25D366] px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 border border-[#25D366]/20">
-                                    <div className="w-2 h-2 bg-[#25D366] rounded-full animate-pulse" />
-                                    Canal Activo
+                            <div className="w-full pt-4 space-y-4">
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                    <span className="text-xs font-black text-gray-400 uppercase">Salón (ID)</span>
+                                    <span className="text-xs font-bold text-gray-800">{tenantId}</span>
                                 </div>
-                            )}
-
-                            <div className="w-full pt-4">
-                                {status === 'disconnected' && (
-                                    <button 
-                                        onClick={handleConnect}
-                                        className="w-full bg-[#1c1c3c] text-white py-5 rounded-[1.5rem] font-bold hover:bg-[var(--primary)] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-xl"
-                                    >
-                                        <QrCode className="w-6 h-6" />
-                                        Vincular WhatsApp
-                                    </button>
-                                )}
-
-                                {status === 'connecting' && (
-                                    <div className="space-y-6 flex flex-col items-center">
-                                        {qrCode ? (
-                                            <div className="p-6 bg-white border-4 border-gray-50 rounded-[2.5rem] shadow-inner">
-                                                <img src={qrCode} alt="WhatsApp QR" className="w-48 h-48 rounded-xl" />
-                                            </div>
-                                        ) : (
-                                            <div className="py-12">
-                                                <RefreshCw className="w-10 h-10 text-[var(--primary)] animate-spin" />
-                                            </div>
-                                        )}
-                                        <div className="text-center space-y-2">
-                                            <p className="text-sm font-black text-gray-800">Escanea este código</p>
-                                            <p className="text-xs text-gray-400 font-medium px-4">Busca "Dispositivos vinculados" en tu WhatsApp y escanea para activar tus agentes.</p>
-                                        </div>
-                                        <button 
-                                            onClick={() => setStatus('disconnected')}
-                                            className="text-xs font-bold text-gray-400 hover:text-red-500 underline"
-                                        >
-                                            Cancelar proceso
-                                        </button>
-                                    </div>
-                                )}
-
-                                {status === 'connected' && (
-                                    <div className="space-y-4">
-                                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                            <span className="text-xs font-black text-gray-400 uppercase">Instancia</span>
-                                            <span className="text-xs font-bold text-gray-800">{tenantId}</span>
-                                        </div>
-                                        <button 
-                                            onClick={handleDisconnect}
-                                            className="w-full bg-red-50 text-red-500 py-4 rounded-2xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <LogOut className="w-5 h-5" />
-                                            Cerrar Sesión
-                                        </button>
-                                    </div>
-                                )}
+                                <div className="text-xs text-gray-500 bg-[var(--primary)]/5 p-4 rounded-xl border border-[var(--primary)]/10 text-left">
+                                    La conexión de WhatsApp ahora se gestiona directamente de forma segura desde la aplicación <b>Plug & Play</b> instalada en tu computadora.
+                                </div>
                             </div>
                         </div>
                     </div>
