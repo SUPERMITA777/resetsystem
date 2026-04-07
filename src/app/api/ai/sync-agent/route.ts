@@ -21,6 +21,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
+        // --- MODO DIAGNÓSTICO (DEBUG) ---
+        if (text === "DEBUG_MODELS") {
+            const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const data = await response.json();
+            const modelList = data.models?.map((m: any) => m.name.replace("models/", "")).join(", ") || "No se encontraron modelos";
+            return NextResponse.json({ reply: `🚨 DIAGNÓSTICO: Modelos disponibles en este entorno: ${modelList}` });
+        }
+
         const tenant = await getTenant(tenantId);
         if (!tenant) {
             return NextResponse.json({ error: "Tenant not found" }, { status: 404 });

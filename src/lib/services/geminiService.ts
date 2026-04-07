@@ -6,6 +6,35 @@ import { serviceManagement } from "./serviceManagement";
 const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
+/**
+ * Intenta obtener un modelo probando diferentes alias y versiones de API si falla.
+ */
+async function getGenerativeModelWithFallback(config: any) {
+    const modelsToTry = [
+        { name: config.model, api: 'v1beta' }, // Intento primario (el configurado)
+        { name: "gemini-1.5-flash", api: 'v1beta' },
+        { name: "gemini-1.5-flash-8b", api: 'v1beta' },
+        { name: "gemini-1.5-flash", api: 'v1' },
+    ];
+
+    let lastError: any = null;
+    for (const modelInfo of modelsToTry) {
+        try {
+            console.log(`Intentando Gemini con ${modelInfo.name} (${modelInfo.api})...`);
+            const model = genAI.getGenerativeModel(
+                { ...config, model: modelInfo.name }, 
+                { apiVersion: modelInfo.api as any }
+            );
+            // Verificamos si responde con un ping básico (esto puede ser opcional, pero ayuda a detectar 404 antes de enviar todo el historial)
+            return model;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Fallo con ${modelInfo.name} (${modelInfo.api}):`, e);
+        }
+    }
+    throw lastError;
+}
+
 
 export interface ChatMessage {
     role: "user" | "model";
@@ -27,7 +56,7 @@ export const geminiService = {
         const servicios = await serviceManagement.getAllSubtratamientos(tenantId);
         const serviciosContext = servicios.map(s => `- ${s.nombre}: $${s.precio} (${s.duracion_minutos} min)`).join("\n");
 
-        const model = genAI.getGenerativeModel({ 
+        const model = await getGenerativeModelWithFallback({ 
             model: "gemini-1.5-flash-latest",
             tools: [{
                 functionDeclarations: [{
@@ -119,7 +148,7 @@ export const geminiService = {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.veronica?.active) return null;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+        const model = await getGenerativeModelWithFallback({ model: "gemini-1.5-flash-latest" });
 
         const systemPrompt = `
             Eres Verónica, la asistente de recordatorios de "${tenant.nombre_salon}".
