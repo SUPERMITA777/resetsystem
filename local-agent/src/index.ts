@@ -10,13 +10,32 @@ const SERVER_URL = process.env.RESET_API_URL || "https://resetsystem.com"; // En
 const authFolder = path.join(process.cwd(), 'auth_info_baileys');
 
 // Argumento CLI: node index.js [tenantId]
-const tenantId = process.argv[2] || process.env.TENANT_ID;
+const rl = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-if (!tenantId) {
-    console.error("❌ ERROR CRÍTICO: No se proporcionó el Código de Salón (Tenant ID).");
-    console.error("Uso: AgenteResetSpa.exe <tu_salon>");
-    console.error("Ejemplo: AgenteResetSpa.exe resetspa");
-    process.exit(1);
+let tenantId: string = "";
+
+const argsTenantId = process.argv[2] || process.env.TENANT_ID;
+
+if (!argsTenantId) {
+    console.log(`\n========================================`);
+    console.log(`⚡ AGENTE IA "PLUG & PLAY" - RESET SYSTEM ⚡`);
+    console.log(`========================================\n`);
+    rl.question("👉 Introduce tu Código de Salón (Tenant ID): ", (answer: string) => {
+        const inputTenantId = answer.trim();
+        if(!inputTenantId) {
+            console.error("❌ Código inválido. Cerrando programa.");
+            process.exit(1);
+        }
+        tenantId = inputTenantId;
+        rl.close();
+        connectToWhatsApp();
+    });
+} else {
+    tenantId = argsTenantId;
+    connectToWhatsApp();
 }
 
 async function connectToWhatsApp() {
