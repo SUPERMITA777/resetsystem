@@ -7,7 +7,7 @@ import * as path from 'path';
 import pino from 'pino';
 
 // Configuración Base
-const SERVER_URL = process.env.RESET_API_URL || "https://resetsystem.com"; // En prod usar dominio real.
+const SERVER_URL = process.env.RESET_API_URL || "https://resetsystem.vercel.app";
 const authFolder = path.join(process.cwd(), 'auth_info_baileys');
 
 // Argumento CLI: node index.js [tenantId]
@@ -43,8 +43,8 @@ async function connectToWhatsApp() {
     console.log(`\n========================================`);
     console.log(`⚡ AGENTE IA - RESET SYSTEM ⚡`);
     console.log(`Salón configurado: [${tenantId}]`);
-    console.log(`========================================\n`);
-    console.log("Iniciando servicio... por favor espera.");
+    console.log("Iniciando servicio... por favor espera.\n");
+    
 
     const { state, saveCreds } = await useMultiFileAuthState(authFolder);
 
@@ -129,8 +129,14 @@ async function connectToWhatsApp() {
                 }
 
             } catch (error: any) {
-                console.error(`[!!] Error al procesar mensaje de ${sender.split('@')[0]}:`, error?.response?.data || error.message);
                 await sock.sendPresenceUpdate('paused', sender);
+                if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                    console.error(`[!!] Error: Tiempo de espera agotado al conectar con ${SERVER_URL}. Revisa tu conexión a internet.`);
+                } else if (error.code === 'ENOTFOUND' || error.message.includes('getaddrinfo')) {
+                    console.error(`[!!] Error: No se pudo encontrar el servidor en ${SERVER_URL}. Revisa la configuración.`);
+                } else {
+                    console.error(`[!!] Error al procesar mensaje de ${sender.split('@')[0]}:`, error?.response?.data || error.message);
+                }
             }
         }
     });
