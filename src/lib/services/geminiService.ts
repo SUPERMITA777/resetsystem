@@ -28,7 +28,7 @@ export const geminiService = {
         const serviciosContext = servicios.map(s => `- ${s.nombre}: $${s.precio} (${s.duracion_minutos} min)`).join("\n");
 
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-1.5-flash-latest",
             tools: [{
                 functionDeclarations: [{
                     name: "agendar_turno_pendiente",
@@ -46,7 +46,7 @@ export const geminiService = {
                     }
                 }]
             }]
-        }, { apiVersion: 'v1' });
+        });
 
         const systemPrompt = `
             Eres Noemí, la experta en ventas de "${tenant.nombre_salon}".
@@ -119,7 +119,7 @@ export const geminiService = {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.veronica?.active) return null;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const systemPrompt = `
             Eres Verónica, la asistente de recordatorios de "${tenant.nombre_salon}".
