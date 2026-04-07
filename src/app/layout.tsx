@@ -30,7 +30,12 @@ export default function RootLayout({
       <body className={`${inter.variable} ${montserrat.variable} antialiased`}>
         <AuthProvider>
           {children}
-          <Toaster position="top-right" />
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              duration: 5000,
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

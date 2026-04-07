@@ -18,7 +18,7 @@ import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, updateT
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { getBoxNames, setBoxName } from "@/lib/services/boxNamesService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 export default function AgendaPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -321,7 +321,7 @@ export default function AgendaPage() {
                     Nuevo Turno
                 </Button>
             </div>
-            <Toaster />
+
         </div>
     );
 

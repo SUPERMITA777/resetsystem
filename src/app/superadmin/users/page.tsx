@@ -11,14 +11,16 @@ import {
     Mail,
     UserPlus,
     Tag,
-    ShieldAlert
+    ShieldAlert,
+    Trash2,
+    Edit2
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { getAllUsers, UserProfile, UserRole } from "@/lib/services/userService";
 import { deleteAuthUser } from "@/lib/actions/userActions";
 import { getAllTenants, TenantData } from "@/lib/services/tenantService";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import Link from "next/link";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 
@@ -92,7 +94,7 @@ export default function UserManagementPage() {
     return (
         <AuthGuard allowedRoles={['superadmin']}>
         <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
-            <Toaster />
+
             {/* Sidebar Reused Logic */}
             <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
                 <div className="p-6 border-b border-gray-800">

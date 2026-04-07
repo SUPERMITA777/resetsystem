@@ -33,7 +33,7 @@ import {
 import { getAuth, signOut } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 export default function ProfesionalDashboard() {
     const { user, staffId, role, tenantId: authTenantId, loading: authLoading } = useAuth();
@@ -176,7 +176,7 @@ export default function ProfesionalDashboard() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-            <Toaster position="top-center" />
+
 
             {/* Header */}
             <header className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">

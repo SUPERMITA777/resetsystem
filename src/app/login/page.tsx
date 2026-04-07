@@ -6,7 +6,7 @@ import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 import { getUserProfile } from "@/lib/services/userService";
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <Toaster position="top-center" />
+
             <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
                 <div className="text-center">
                     <div className="w-16 h-16 bg-black rounded-xl mx-auto mb-4 flex items-center justify-center font-bold text-white text-2xl tracking-tighter shadow-md">
