@@ -5,7 +5,7 @@ import Link from "next/link";
 import { 
     CalendarDays, User as UserIcon, Users, Activity, 
     FileBarChart, Globe, ExternalLink, ShoppingBag, 
-    Gift, Dumbbell, LogOut, QrCode, Sparkles, X, Settings, Bot, MessageSquare
+    Gift, Dumbbell, LogOut, QrCode, Sparkles, X, Settings, Bot, MessageSquare, Smartphone
 } from "lucide-react";
 import { getTenant } from "@/lib/services/tenantService";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -114,13 +114,17 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
                     <div className="pt-4 mt-2 border-t border-[var(--secondary)]">
                         <p className="px-4 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Agentes IA</p>
-                        <Link href="/admin/ai-agents/julia" onClick={onClose} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-[var(--secondary)] transition-all text-sm font-bold">
+                        <Link href="/admin/ai-agents/noemi" onClick={onClose} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-[var(--secondary)] transition-all text-sm font-bold">
                             <Bot className="w-5 h-5 text-[var(--primary)]" />
-                            Julia - Ventas
+                            Noemi - Ventas
                         </Link>
-                        <Link href="/admin/ai-agents/sofia" onClick={onClose} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-[var(--secondary)] transition-all text-sm font-bold">
+                        <Link href="/admin/ai-agents/veronica" onClick={onClose} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-[var(--secondary)] transition-all text-sm font-bold">
                             <MessageSquare className="w-5 h-5 text-[var(--primary)]" />
-                            Sofía - Recordatorios
+                            Verónica - Recordatorios
+                        </Link>
+                        <Link href="/admin/ai-agents/connections" onClick={onClose} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-[var(--secondary)] transition-all text-sm font-bold">
+                            <Smartphone className="w-5 h-5 text-[var(--primary)]" />
+                            Mis Conexiones (QR)
                         </Link>
                     </div>
                 </nav>

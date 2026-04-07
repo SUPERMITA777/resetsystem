@@ -43,6 +43,21 @@ export interface TenantData {
         default_view?: 'tratamientos' | 'clases' | 'productos';
         font_family?: 'serif' | 'sans' | 'mono' | 'display' | 'elegant';
     };
+    ai_config?: {
+        noemi?: { 
+            active: boolean; 
+            tone: 'profesional' | 'amigable' | 'casual'; 
+            rules?: string;
+            whatsapp_connected?: boolean;
+            instagram_connected?: boolean;
+        };
+        veronica?: { 
+            active: boolean; 
+            timing: string; 
+            auto_reschedule: boolean;
+            smart_waitlist?: boolean;
+        };
+    };
 }
 
 const COLLECTION_NAME = "tenants";

@@ -1,17 +1,79 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Bot, Link as LinkIcon, Smartphone, Mail, Phone, Settings, AlertCircle, Save, Check, RefreshCw } from "lucide-react";
+import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 
-export default function JuliaAIPage() {
+export default function NoemiAIPage() {
     const [isActive, setIsActive] = useState(false);
-    const [tone, setTone] = useState("amigable");
+    const [tone, setTone] = useState<'profesional' | 'amigable' | 'casual'>("amigable");
+    const [rules, setRules] = useState("");
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [tenant, setTenant] = useState<TenantData | null>(null);
 
-    const handleSave = () => {
+    const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
+
+    useEffect(() => {
+        async function load() {
+            setLoading(true);
+            const data = await getTenant(tenantId);
+            if (data) {
+                setTenant(data);
+                if (data.ai_config?.noemi) {
+                    setIsActive(data.ai_config.noemi.active);
+                    setTone(data.ai_config.noemi.tone);
+                    setRules(data.ai_config.noemi.rules || "");
+                }
+            }
+            setLoading(false);
+        }
+        load();
+    }, [tenantId]);
+
+    const handleSave = async () => {
         setSaving(true);
-        setTimeout(() => setSaving(false), 1000);
+        try {
+            await createOrUpdateTenant(tenantId, {
+                ai_config: {
+                    ...tenant?.ai_config,
+                    noemi: {
+                        active: isActive,
+                        tone,
+                        rules,
+                        whatsapp_connected: tenant?.ai_config?.noemi?.whatsapp_connected || false,
+                        instagram_connected: tenant?.ai_config?.noemi?.instagram_connected || false
+                    }
+                }
+            });
+            // Update local state
+            setTenant(prev => prev ? ({
+                ...prev,
+                ai_config: {
+                    ...prev.ai_config,
+                    noemi: {
+                        active: isActive,
+                        tone,
+                        rules,
+                        whatsapp_connected: prev.ai_config?.noemi?.whatsapp_connected || false,
+                        instagram_connected: prev.ai_config?.noemi?.instagram_connected || false
+                    }
+                }
+            }) : null);
+        } catch (error) {
+            console.error("Error saving Noemi config:", error);
+        } finally {
+            setSaving(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <RefreshCw className="w-8 h-8 animate-spin text-[var(--primary)]" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -25,13 +87,13 @@ export default function JuliaAIPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)] flex items-center gap-3">
-                            Julia
+                            Noemí
                             <span className="px-3 py-1 bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-black uppercase tracking-widest rounded-full">
                                 IA Ventas
                             </span>
                         </h1>
                         <p className="text-gray-500 mt-2 font-medium max-w-lg">
-                            Vendedora virtual 24/7. Capta leads desde Instagram y WhatsApp, responde dudas frecuentes y agenda citas automáticamente buscando huecos en tu agenda.
+                            Tu experta en ventas 24/7. Capta leads, responde dudas y cierra turnos en tu agenda de forma autónoma. Los turnos creados quedarán pendientes de tu aprobación.
                         </p>
                     </div>
                 </div>
@@ -60,40 +122,44 @@ export default function JuliaAIPage() {
                     </h2>
                     
                     <div className="bg-white rounded-3xl border border-[var(--secondary)]/50 p-6 space-y-4 shadow-sm">
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/20">
+                        <div className={`flex items-center justify-between p-4 rounded-2xl border ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]/5 border-[#25D366]/20' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-[#25D366] rounded-xl flex items-center justify-center text-white">
+                                <div className={`w-10 h-10 ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'bg-[#25D366]' : 'bg-gray-400'} rounded-xl flex items-center justify-center text-white`}>
                                     <Phone className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <p className="font-bold text-sm">WhatsApp Business</p>
-                                    <p className="text-xs text-[#25D366] font-semibold mt-0.5">Conectado (+54 9 11 1234-5678)</p>
+                                    <p className={`text-xs ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'text-[#25D366] font-semibold' : 'text-gray-500 font-medium'} mt-0.5`}>
+                                        {tenant?.ai_config?.noemi?.whatsapp_connected ? 'Conectado' : 'No Vinculado'}
+                                    </p>
                                 </div>
                             </div>
-                            <button className="text-xs font-bold text-gray-400 hover:text-black hover:underline">
-                                Cambiar
+                            <button className={`text-xs font-bold ${tenant?.ai_config?.noemi?.whatsapp_connected ? 'text-gray-400 hover:text-black hover:underline' : 'text-[var(--primary)] hover:underline'}`}>
+                                {tenant?.ai_config?.noemi?.whatsapp_connected ? 'Cambiar' : 'Conectar'}
                             </button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 opacity-60 grayscale">
+                        <div className={`flex items-center justify-between p-4 rounded-2xl border ${tenant?.ai_config?.noemi?.instagram_connected ? 'bg-gradient-to-tr from-[#f9ce34]/5 via-[#ee2a7b]/5 to-[#6228d7]/5 border-[#ee2a7b]/20' : 'bg-gray-50 border-gray-100 opacity-60'}`}>
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] rounded-xl flex items-center justify-center text-white">
+                                <div className={`w-10 h-10 ${tenant?.ai_config?.noemi?.instagram_connected ? 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]' : 'bg-gray-400'} rounded-xl flex items-center justify-center text-white`}>
                                     <Smartphone className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <p className="font-bold text-sm">Instagram Direct</p>
-                                    <p className="text-xs text-gray-500 font-medium mt-0.5">No Vinculado</p>
+                                    <p className={`text-xs ${tenant?.ai_config?.noemi?.instagram_connected ? 'text-[#ee2a7b] font-semibold' : 'text-gray-500 font-medium'} mt-0.5`}>
+                                        {tenant?.ai_config?.noemi?.instagram_connected ? 'Conectado' : 'No Vinculado'}
+                                    </p>
                                 </div>
                             </div>
-                            <button className="text-xs font-bold text-[var(--primary)] hover:underline">
-                                Conectar
+                            <button className={`text-xs font-bold ${tenant?.ai_config?.noemi?.instagram_connected ? 'text-gray-400 hover:text-black hover:underline' : 'text-[var(--primary)] hover:underline'}`}>
+                                {tenant?.ai_config?.noemi?.instagram_connected ? 'Cambiar' : 'Conectar'}
                             </button>
                         </div>
                     </div>
 
                     <div className="bg-[var(--primary)]/5 rounded-3xl p-6 border border-[var(--primary)]/10 text-sm font-medium text-[var(--primary)] flex gap-3 leading-relaxed">
                         <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                        <p>Julia tomará control de las conversaciones entrantes. Puedes pausar la IA desde el chat individual si deseas intervenir manualmente.</p>
+                        <p>Noemí intentará agendar el turno automáticamente. Se creará con el estado "Pendiente" para que tú lo confirmes finalmente.</p>
                     </div>
                 </div>
 
@@ -101,7 +167,7 @@ export default function JuliaAIPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <h2 className="text-lg font-bold flex items-center gap-2">
                         <Settings className="w-5 h-5 text-[var(--primary)]" />
-                        Comportamiento del Agente
+                        Comportamiento de Noemí
                     </h2>
 
                     <div className="bg-white rounded-3xl border border-[var(--secondary)]/50 p-6 lg:p-8 space-y-8 shadow-sm">
@@ -110,7 +176,7 @@ export default function JuliaAIPage() {
                         <div className="space-y-4">
                             <label className="text-sm font-bold text-gray-700">Tono de Voz</label>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {['profesional', 'amigable', 'casual'].map((t) => (
+                                {(['profesional', 'amigable', 'casual'] as const).map((t) => (
                                     <button
                                         key={t}
                                         onClick={() => setTone(t)}
@@ -140,7 +206,7 @@ export default function JuliaAIPage() {
                                 </label>
                                 <label className="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)]" defaultChecked />
-                                    <span className="text-sm font-medium">Requerir confirmación humana antes de agendar (Modo Borrador).</span>
+                                    <span className="text-sm font-medium">Requerir confirmación humana (Estatus Pendiente).</span>
                                 </label>
                                 <label className="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)]" />
@@ -150,11 +216,13 @@ export default function JuliaAIPage() {
                         </div>
                         
                         <div className="space-y-3">
-                            <label className="text-sm font-bold text-gray-700">Prompt / Instrucciones Extra</label>
+                            <label className="text-sm font-bold text-gray-700">Prompt / Instrucciones Extras para Noemí</label>
                             <textarea 
-                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none"
+                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none font-medium"
                                 rows={3}
-                                placeholder="Ej: No ofrezcas turnos los lunes. Si preguntan por Dr. Smith, di que está de vacaciones hasta el vieres."
+                                value={rules}
+                                onChange={(e) => setRules(e.target.value)}
+                                placeholder="Ej: No ofrezcas turnos los lunes. Si preguntan por depilación, di que tenemos una promo de 2x1."
                             />
                         </div>
 
