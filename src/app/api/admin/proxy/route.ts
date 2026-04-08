@@ -7,9 +7,16 @@ import { getAdminDb } from "@/lib/firebase-admin";
  * evitando los errores de permisos "Missing or insufficient permissions" en el cliente.
  */
 export async function POST(req: Request) {
+    let collection = "";
+    let action = "";
+    let docId = "";
+
     try {
         const body = await req.json();
-        const { collection, docId, action, data, queries } = body;
+        collection = body.collection;
+        action = body.action;
+        docId = body.docId;
+        const { data, queries } = body;
 
         if (!collection || !action) {
             return NextResponse.json({ error: "Missing collection or action" }, { status: 400 });
