@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getTenant } from "@/lib/services/tenantService";
 import { geminiService } from "@/lib/services/geminiService";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { getTenantServer } from "@/lib/services/serverDb";
+import { getAdminDb } from "@/lib/firebase-admin";
 
 /**
  * Endpoint Síncrono para el Agente Local (.exe).
@@ -30,7 +29,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ reply: `🚨 DIAGNÓSTICO: Modelos disponibles en este entorno: ${modelList}` });
         }
 
-        const tenant = await getTenant(tenantId);
+        const tenant = await getTenantServer(tenantId);
         if (!tenant) {
             return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
         }
@@ -43,19 +42,19 @@ export async function POST(req: Request) {
         // 2. Verificar Frases de Control (Mute/Resume)
         const isPauseCommand = text.toLowerCase() === tenant.ai_config?.noemi?.pause_phrase?.toLowerCase();
         const isResumeCommand = text.toLowerCase() === tenant.ai_config?.noemi?.resume_phrase?.toLowerCase();
-        const clientRef = doc(db, "tenants", tenant.slug, "ai_muted_chats", sender);
+        
+        const adminDb = getAdminDb();
+        const clientRef = adminDb.collection("tenants").doc(tenant.slug).collection("ai_muted_chats").doc(sender);
 
         if (isPauseCommand) {
-            const { setDoc } = await import("firebase/firestore");
-            await setDoc(clientRef, { mutedAt: new Date().toISOString() });
+            await clientRef.set({ mutedAt: new Date().toISOString() });
             // Si el comando lo envió el dueño (fromMe), no enviar auto-respuesta al cliente.
             if (fromMe) return NextResponse.json({ status: "paused_by_owner" });
             return NextResponse.json({ reply: "⚡ Entendido, pauso mis respuestas automáticas. Un asistente humano te contactará a la brevedad." });
         }
 
         if (isResumeCommand) {
-            const { deleteDoc } = await import("firebase/firestore");
-            await deleteDoc(clientRef);
+            await clientRef.delete();
             if (fromMe) return NextResponse.json({ status: "resumed_by_owner" });
             return NextResponse.json({ reply: "⚡ IA Reactivada. ¡Hola de nuevo! ¿En qué puedo ayudarte?" });
         }
@@ -66,8 +65,8 @@ export async function POST(req: Request) {
         }
 
         // 3. Verificar si el chat está silenciado
-        const muteSnap = await getDoc(clientRef);
-        if (muteSnap.exists()) {
+        const muteSnap = await clientRef.get();
+        if (muteSnap.exists) {
             return NextResponse.json({ status: "ignored_muted" });
         }
 
