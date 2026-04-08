@@ -120,7 +120,7 @@ export function ChatWidget({ tenant }: ChatWidgetProps) {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-4 pointer-events-none">
+        <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end gap-4 pointer-events-none">
             {/* Ventana de Chat */}
             {isOpen && (
                 <div className="w-[90vw] md:w-[400px] h-[70vh] max-h-[600px] bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 flex flex-col pointer-events-auto overflow-hidden animate-in slide-in-from-bottom-5 duration-300">

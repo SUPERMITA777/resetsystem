@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
-import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle } from "lucide-react";
+import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle, Sparkles } from "lucide-react";
 import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
@@ -145,6 +145,11 @@ export default function SalonPublicPage() {
         );
     }
 
+    // Force enable chat for resetspa if needed
+    if (slug === 'resetspa' && tenant.modules) {
+        tenant.modules.noemi_chat = true;
+    }
+
     const config = tenant.web_config || {};
     const primary = config.primary_color || (tenant.tema_visual === 'nude' ? '#7b5460' : tenant.tema_visual === 'lavender' ? '#9381FF' : '#7D9D9C');
     const accent = config.accent_color || (tenant.tema_visual === 'nude' ? '#D4A5B2' : tenant.tema_visual === 'lavender' ? '#B8B8FF' : '#B4CFB0');
@@ -207,6 +212,31 @@ export default function SalonPublicPage() {
             background-position: center;
         }
         ` : ''}
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @keyframes float-delayed {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(20px) rotate(-2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.8; transform: scale(1.05); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float-delayed { animation: float-delayed 8s ease-in-out infinite; }
+        .animate-pulse-slow { animation: pulse-slow 10s ease-in-out infinite; }
+
+        .shadow-premium-soft {
+            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.1), 0 20px 50px -10px rgba(0,0,0,0.05);
+        }
     `;
 
     const renderLayout = () => {
@@ -221,6 +251,109 @@ export default function SalonPublicPage() {
         );
 
         switch (layout) {
+            case 'premium':
+                return (
+                    <div className={`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-1000 ${bgImage ? 'tenant-bg-image' : ''}`}>
+                        {commonElements}
+                        
+                        {/* Premium Layout: Immersive Glassmorphism Hero */}
+                        <section className="relative min-h-[90vh] w-full overflow-hidden flex items-center justify-center py-20 px-4">
+                            {/* Background Elements */}
+                            {config.hero_image_url ? (
+                                <img src={config.hero_image_url} className="absolute inset-0 w-full h-full object-cover scale-105 animate-pulse-slow" alt="Hero" />
+                            ) : (
+                                <div className="absolute inset-0 bg-gradient-to-tr from-tenant-primary to-tenant-accent opacity-20" />
+                            )}
+                            <div className="absolute inset-0 bg-black/30 backdrop-blur-[4px]" />
+                            
+                            {/* Floating Decorative Elements */}
+                            <div className="absolute top-1/4 left-10 w-64 h-64 bg-tenant-accent/20 rounded-full blur-3xl animate-float" />
+                            <div className="absolute bottom-1/4 right-10 w-80 h-80 bg-tenant-primary/20 rounded-full blur-3xl animate-float-delayed" />
+
+                            <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                                {/* Text Content */}
+                                <div className="space-y-8 text-left animate-in slide-in-from-left-10 duration-1000">
+                                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                                        <Sparkles className="w-4 h-4 text-tenant-accent" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Experiencia Exclusiva</span>
+                                    </div>
+                                    <h1 className="text-6xl md:text-8xl font-serif italic text-white leading-[0.9] tracking-tighter">
+                                        {tenant.config_clases?.public_title || "Bienvenido a"} <br/>
+                                        <span className="not-italic font-black text-tenant-accent drop-shadow-2xl">{tenant.nombre_salon}</span>
+                                    </h1>
+                                    <p className="text-xl md:text-2xl text-white/80 font-medium leading-relaxed max-w-lg">
+                                        {tenant.config_clases?.public_subtitle || "Donde la belleza se encuentra con el bienestar en un ambiente premium."}
+                                    </p>
+                                    
+                                    <div className="flex flex-wrap gap-8 pt-6">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Ubicación</span>
+                                            <span className="text-sm font-bold text-white flex items-center gap-2"><MapPin className="w-4 h-4 text-tenant-accent" /> {tenant.datos_contacto?.direccion || "Buenos Aires, Argentina"}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Reserva</span>
+                                            <span className="text-sm font-bold text-white flex items-center gap-2"><Calendar className="w-4 h-4 text-tenant-accent" /> Online 24/7</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Booking Card (The "Glass" piece) */}
+                                <div className="animate-in slide-in-from-right-10 duration-1000 pt-8 lg:pt-0">
+                                    <div className="bg-white/10 backdrop-blur-2xl rounded-[4rem] p-10 md:p-14 border border-white/20 shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-tenant-accent/20 rounded-full blur-2xl group-hover:bg-tenant-accent/30 transition-all duration-700" />
+                                        
+                                        <div className="relative z-10 space-y-8">
+                                            <div className="text-center space-y-2">
+                                                <h3 className="text-2xl font-black uppercase tracking-tighter text-white">Reserva tu turno</h3>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Fácil • Rápido • Seguro</p>
+                                            </div>
+                                            
+                                            <div className="bg-white rounded-[3rem] p-6 shadow-2xl">
+                                                <PublicBookingFlow tenantName={tenant.nombre_salon} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Additional Premium Content Section */}
+                        <section className="py-24 px-6 bg-white rounded-t-[5rem] -mt-20 relative z-20 shadow-[0_-20px_50px_rgba(0,0,0,0.05)]">
+                            <div className="max-w-6xl mx-auto text-center space-y-16">
+                                <div className="space-y-4">
+                                    <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter">Nuestros Servicios</h2>
+                                    <div className="w-24 h-1.5 bg-tenant-accent mx-auto rounded-full" />
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                    <div className="p-10 bg-gray-50 rounded-[3rem] space-y-6 hover:translate-y-[-10px] transition-all duration-500 border border-transparent hover:border-tenant-accent/20 cursor-pointer group">
+                                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-tenant-primary shadow-xl group-hover:bg-tenant-primary group-hover:text-white transition-all duration-500">
+                                            <Sparkles className="w-10 h-10" />
+                                        </div>
+                                        <h4 className="text-xl font-black uppercase tracking-tight">Cuidado Facial</h4>
+                                        <p className="text-sm text-gray-500 font-medium leading-relaxed">Tratamientos personalizados para rejuvenecer y revitalizar tu piel con productos exclusivos.</p>
+                                    </div>
+                                    <div className="p-10 bg-gray-50 rounded-[3rem] space-y-6 hover:translate-y-[-10px] transition-all duration-500 border border-transparent hover:border-tenant-accent/20 cursor-pointer group">
+                                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-tenant-primary shadow-xl group-hover:bg-tenant-primary group-hover:text-white transition-all duration-500">
+                                            <Star className="w-10 h-10" />
+                                        </div>
+                                        <h4 className="text-xl font-black uppercase tracking-tight">Bienestar Corporal</h4>
+                                        <p className="text-sm text-gray-500 font-medium leading-relaxed">Masajes y terapias diseñadas para liberar tensiones y restaurar tu equilibrio interior.</p>
+                                    </div>
+                                    <div className="p-10 bg-gray-50 rounded-[3rem] space-y-6 hover:translate-y-[-10px] transition-all duration-500 border border-transparent hover:border-tenant-accent/20 cursor-pointer group">
+                                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-tenant-primary shadow-xl group-hover:bg-tenant-primary group-hover:text-white transition-all duration-500">
+                                            <Users className="w-10 h-10" />
+                                        </div>
+                                        <h4 className="text-xl font-black uppercase tracking-tight">Staff Profesional</h4>
+                                        <p className="text-sm text-gray-500 font-medium leading-relaxed">Contamos con un equipo altamente capacitado para brindarte la mejor atención y resultados.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <PublicFooter logoUrl={tenant.logo_url} />
+                    </div>
+                );
             case 'modern':
                 return (
                     <div className={`flex flex-col min-h-screen bg-tenant-secondary tenant-font animate-in fade-in duration-700 ${bgImage ? 'tenant-bg-image' : ''}`}>

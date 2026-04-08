@@ -39,7 +39,7 @@ export interface TenantData {
         public_description?: string;
     };
     web_config?: {
-        layout_type?: 'classic' | 'modern' | 'minimal';
+        layout_type?: 'classic' | 'modern' | 'minimal' | 'premium';
         primary_color?: string;
         secondary_color?: string;
         accent_color?: string;

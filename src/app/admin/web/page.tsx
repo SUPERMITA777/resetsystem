@@ -31,7 +31,7 @@ export default function WebConfigPage() {
         tema_visual: 'nude' as TenantData['tema_visual'],
         
         // Web Config specific
-        layout_type: 'classic' as 'classic' | 'modern' | 'minimal',
+        layout_type: 'classic' as 'classic' | 'modern' | 'minimal' | 'premium',
         primary_color: '#000000',
         secondary_color: '#ffffff',
         accent_color: '#D4A5B2',
@@ -266,7 +266,8 @@ export default function WebConfigPage() {
                                     {[
                                         { id: 'classic', label: 'Clásico', desc: 'Ideal para salones de belleza tradicionales.' },
                                         { id: 'modern', label: 'Moderno', desc: 'Enfoque visual con grandes imágenes y tipografías.' },
-                                        { id: 'minimal', label: 'Minimalista', desc: 'Limpio y directo, centrado en la reserva.' }
+                                        { id: 'minimal', label: 'Minimalista', desc: 'Limpio y directo, centrado en la reserva.' },
+                                        { id: 'premium', label: 'Premium', desc: 'Diseño de alta gama con efectos de cristal y animaciones.' }
                                     ].map((layout) => (
                                         <div 
                                             key={layout.id}
