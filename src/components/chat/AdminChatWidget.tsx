@@ -29,6 +29,7 @@ interface AdminChatWidgetProps {
 }
 
 export function AdminChatWidget({ tenant }: AdminChatWidgetProps) {
+    const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -40,16 +41,36 @@ export function AdminChatWidget({ tenant }: AdminChatWidgetProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const widgetRef = useRef<HTMLDivElement>(null);
 
-    // Cargar posición inicial
+    // Cargar datos persistentes al montar
     useEffect(() => {
+        setIsMounted(true);
+        
+        // Cargar posición
         const savedPos = localStorage.getItem("noemi_admin_pos");
         if (savedPos) {
             setPosition(JSON.parse(savedPos));
         } else {
-            // Posición por defecto: Bottom Right
             setPosition({ x: window.innerWidth - 100, y: window.innerHeight - 100 });
         }
+
+        // Cargar estado de apertura
+        const savedOpen = localStorage.getItem("noemi_admin_isOpen");
+        if (savedOpen === "true") setIsOpen(true);
+
+        // Cargar mensajes e historial
+        const savedMessages = localStorage.getItem("noemi_admin_messages");
+        const savedHistory = localStorage.getItem("noemi_admin_history");
+        if (savedMessages) setMessages(JSON.parse(savedMessages));
+        if (savedHistory) setHistory(JSON.parse(savedHistory));
     }, []);
+
+    // Guardar cambios en persistencia
+    useEffect(() => {
+        if (!isMounted) return;
+        localStorage.setItem("noemi_admin_isOpen", isOpen.toString());
+        localStorage.setItem("noemi_admin_messages", JSON.stringify(messages));
+        localStorage.setItem("noemi_admin_history", JSON.stringify(history));
+    }, [isOpen, messages, history, isMounted]);
 
     // Auto-scroll al final
     useEffect(() => {
@@ -94,7 +115,7 @@ export function AdminChatWidget({ tenant }: AdminChatWidgetProps) {
         };
     }, [isDragging, dragOffset, position]);
 
-    if (!tenant.modules?.ai_agents) return null;
+    if (!isMounted || !tenant.modules?.ai_agents) return null;
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
