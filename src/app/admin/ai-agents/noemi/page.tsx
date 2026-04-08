@@ -220,13 +220,17 @@ export default function NoemiAIPage() {
                         </div>
                         
                         <div className="space-y-3">
-                            <label className="text-sm font-bold text-gray-700">Prompt / Instrucciones Extras para Noemí</label>
+                            <label className="text-sm font-bold text-gray-700">Base de Conocimiento y Entrenamiento (Prompt)</label>
+                            <p className="text-xs text-gray-500">
+                                Escribe aquí cualquier detalle, regla o política del salón que la IA deba tener en cuenta para responder. 
+                                Puedes agregar direcciones, métodos de pago, promociones actuales, o cómo manejar ciertos servicios.
+                            </p>
                             <textarea 
-                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none font-medium"
-                                rows={3}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none font-medium text-gray-700"
+                                rows={6}
                                 value={rules}
                                 onChange={(e) => setRules(e.target.value)}
-                                placeholder="Ej: No ofrezcas turnos los lunes. Si preguntan por depilación, di que tenemos una promo de 2x1."
+                                placeholder="Ej: No ofrezcas turnos los lunes porque cerramos. Para uñas esculpidas, siempre avisa que demora 2 horas. Si preguntan formas de pago, diles que aceptamos Efectivo y Transferencia con 10% off."
                             />
                         </div>
 
