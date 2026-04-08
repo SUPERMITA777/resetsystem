@@ -1,10 +1,12 @@
 import { GoogleGenerativeAI, Part, SchemaType } from "@google/generative-ai";
 import { getTenantServer } from "./serverDb";
 import { createOrUpdateTenant } from "./tenantService";
-import { createTurno, getTurnosPorWhatsApp, updateTurno } from "./agendaService";
+import { createTurno, getTurnosPorWhatsApp, updateTurno, getTurnosPorFecha, deleteTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
 import { availabilityService } from "./availabilityService";
 import { chatLogService } from "./chatLogService";
+import { getUsersByTenant } from "./userService";
+import { getEgresosDelDia, getIngresosCreditosDelDia, buildResumen, calcularIngresos } from "./reportesService";
 import { format } from "date-fns";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
@@ -208,22 +210,53 @@ export const geminiServerService = {
                 functionDeclarations: [
                     {
                         name: "save_knowledge",
-                        description: "Guarda información nueva en la base de conocimiento.",
-                        parameters: { type: SchemaType.OBJECT, properties: { info: { type: SchemaType.STRING } }, required: ["info"] }
+                        description: "Guarda información nueva en la base de conocimiento del salón.",
+                        parameters: { type: SchemaType.OBJECT, properties: { info: { type: SchemaType.STRING, description: "La información a recordar." } }, required: ["info"] }
                     },
                     {
                         name: "update_price",
-                        description: "Actualiza el precio de un servicio.",
+                        description: "Actualiza el precio de un servicio (subtratamiento).",
                         parameters: { type: SchemaType.OBJECT, properties: { subId: { type: SchemaType.STRING }, tratamientoId: { type: SchemaType.STRING }, nuevoPrecio: { type: SchemaType.NUMBER } }, required: ["subId", "tratamientoId", "nuevoPrecio"] }
+                    },
+                    {
+                        name: "get_staff",
+                        description: "Obtiene la lista de empleados y equipo del salón (profesionales, administradores)."
+                    },
+                    {
+                        name: "get_daily_agenda",
+                        description: "Obtiene todos los turnos programados para una fecha específica.",
+                        parameters: { type: SchemaType.OBJECT, properties: { fecha: { type: SchemaType.STRING, description: "Fecha en formato YYYY-MM-DD" } }, required: ["fecha"] }
+                    },
+                    {
+                        name: "get_daily_stats",
+                        description: "Obtiene un resumen financiero (ingresos, egresos, balance) de una fecha específica.",
+                        parameters: { type: SchemaType.OBJECT, properties: { fecha: { type: SchemaType.STRING, description: "Fecha en formato YYYY-MM-DD" } }, required: ["fecha"] }
+                    },
+                    {
+                        name: "delete_appointment",
+                        description: "Elimina un turno de la agenda definitivamente por su ID.",
+                        parameters: { type: SchemaType.OBJECT, properties: { turnoId: { type: SchemaType.STRING } }, required: ["turnoId"] }
                     }
                 ]
             }]
         });
 
         const systemPrompt = `
-            Eres Noemí. Estás hablando con el DUEÑO de "${tenant.nombre_salon}".
-            Base de conocimiento: ${tenant.ai_knowledge || "Ninguno."}
-            Servicios:\n${serviciosContext}
+            Eres Noemí, la asistente ejecutiva proactiva de "${tenant.nombre_salon}".
+            Estás hablando directamente con el JEFE.
+            
+            PROTOCOLO DE SEGURIDAD (OBLIGATORIO):
+            1. Antes de realizar cualquier cambio destructivo o de datos (como 'update_price' o 'delete_appointment'), DEBES:
+               a) Describir exactamente qué vas a hacer.
+               b) Preguntar: "¿Estás seguro de que quieres realizar esta acción? Por favor, confírmame con un SÍ para proceder."
+            2. ESPERA al siguiente mensaje del jefe. SOLO si el jefe responde "SÍ", "Confirmado" o similar, emite la llamada a la función en tu siguiente respuesta.
+            3. Para consultas de información (agenda, staff, estadísticas), responde directamente usando las herramientas.
+            
+            Base de conocimiento actual:
+            ${tenant.ai_knowledge || "Aún no tienes conocimiento extra."}
+            
+            Servicios configurados:
+            ${serviciosContext}
         `;
 
         const chat = model.startChat({
@@ -243,12 +276,36 @@ export const geminiServerService = {
             iterations++;
             if (call.name === "save_knowledge") {
                 const args = call.args as any;
-                await createOrUpdateTenant(tenantId, { ai_knowledge: (tenant.ai_knowledge || "") + "\n" + args.info });
-                result = await chat.sendMessage([{ functionResponse: { name: "save_knowledge", response: { content: "OK" } } }]);
+                const updatedKnowledge = (tenant.ai_knowledge || "") + "\n" + args.info;
+                await createOrUpdateTenant(tenantId, { ai_knowledge: updatedKnowledge });
+                result = await chat.sendMessage([{ functionResponse: { name: "save_knowledge", response: { content: "Conocimiento guardado exitosamente." } } }]);
             } else if (call.name === "update_price") {
                 const args = call.args as any;
                 await serviceManagement.updateSubtratamiento(tenantId, args.tratamientoId, args.subId, { precio: args.nuevoPrecio });
-                result = await chat.sendMessage([{ functionResponse: { name: "update_price", response: { content: "Precio OK" } } }]);
+                result = await chat.sendMessage([{ functionResponse: { name: "update_price", response: { content: "Precio actualizado correctamente." } } }]);
+            } else if (call.name === "get_staff") {
+                const users = await getUsersByTenant(tenantId);
+                const staffList = users.map(u => `- ${u.displayName || u.email} (${u.role})`).join("\n") || "No hay empleados registrados.";
+                result = await chat.sendMessage([{ functionResponse: { name: "get_staff", response: { content: staffList } } }]);
+            } else if (call.name === "get_daily_agenda") {
+                const args = call.args as any;
+                const turnos = await getTurnosPorFecha(tenantId, args.fecha);
+                const agendaText = turnos.map(t => `- [${t.horaInicio}] ${t.clienteAbreviado}: ${t.tratamientoAbreviado} (${t.status}) ID:${t.id}`).join("\n") || "No hay turnos para este día.";
+                result = await chat.sendMessage([{ functionResponse: { name: "get_daily_agenda", response: { content: agendaText } } }]);
+            } else if (call.name === "get_daily_stats") {
+                const args = call.args as any;
+                const [turnos, egresos, créditos] = await Promise.all([
+                    getTurnosPorFecha(tenantId, args.fecha),
+                    getEgresosDelDia(tenantId, args.fecha),
+                    getIngresosCreditosDelDia(tenantId, args.fecha)
+                ]);
+                const resumen = buildResumen(turnos, egresos, créditos);
+                const statsText = `Resumen ${args.fecha}:\n- Ingresos: $${resumen.ingresos.total}\n- Egresos: $${resumen.egresos.total}\n- Balance: $${resumen.balance}\n- Turnos: ${resumen.totalTurnos}`;
+                result = await chat.sendMessage([{ functionResponse: { name: "get_daily_stats", response: { content: statsText } } }]);
+            } else if (call.name === "delete_appointment") {
+                const args = call.args as any;
+                await deleteTurno(tenantId, args.turnoId);
+                result = await chat.sendMessage([{ functionResponse: { name: "delete_appointment", response: { content: "Turno eliminado exitosamente." } } }]);
             }
             response = result.response;
             call = response.functionCalls()?.[0];
