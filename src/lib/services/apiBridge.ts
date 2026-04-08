@@ -11,7 +11,14 @@ export interface QueryFilter {
 
 async function fetchProxy(body: any) {
     console.log(`[API Bridge] Action: ${body.action}, Collection: ${body.collection}, DocId: ${body.docId}`);
-    const res = await fetch("/api/admin/proxy", {
+    
+    // Si estamos en el servidor (Vercel/Node), necesitamos una URL absoluta para fetch()
+    const isServer = typeof window === "undefined";
+    const baseUrl = isServer 
+        ? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://resetsystem.vercel.app") 
+        : "";
+    
+    const res = await fetch(`${baseUrl}/api/admin/proxy`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
