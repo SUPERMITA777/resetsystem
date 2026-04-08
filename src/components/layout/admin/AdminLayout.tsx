@@ -6,11 +6,14 @@ import { Topbar } from "../Topbar";
 import { MobileSidebar } from "./MobileSidebar";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getTenant } from "@/lib/services/tenantService";
+import { getTenant, TenantData } from "@/lib/services/tenantService";
+import { AdminChatWidget } from "@/components/chat/AdminChatWidget";
 
 export function AdminLayout({ children, topbarContent }: { children: React.ReactNode, topbarContent?: React.ReactNode }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { role, tenantId: userTenantId } = useAuth();
+    const [tenant, setTenant] = useState<TenantData | null>(null);
+    const [activeTenantId, setActiveTenantId] = useState("");
 
     useEffect(() => {
         let activeTenant = localStorage.getItem("currentTenant") || "resetspa";
@@ -23,11 +26,15 @@ export function AdminLayout({ children, topbarContent }: { children: React.React
             localStorage.setItem("currentTenant", activeTenant);
         }
 
+        setActiveTenantId(activeTenant);
         getTenant(activeTenant).then(data => {
-            if (data?.nombre_salon) {
-                document.title = `${data.nombre_salon}`;
-            } else {
-                document.title = "RESETSYSTEM";
+            if (data) {
+                setTenant(data);
+                if (data.nombre_salon) {
+                    document.title = `${data.nombre_salon}`;
+                } else {
+                    document.title = "RESETSYSTEM";
+                }
             }
         });
     }, [role, userTenantId]);
@@ -49,6 +56,9 @@ export function AdminLayout({ children, topbarContent }: { children: React.React
                             {children}
                         </div>
                     </main>
+                    {tenant && activeTenantId && (
+                        <AdminChatWidget tenant={{ ...tenant, id: activeTenantId }} />
+                    )}
                 </div>
             </div>
         </AuthGuard>
