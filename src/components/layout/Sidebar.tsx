@@ -160,6 +160,14 @@ export function Sidebar() {
                             <Bot className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                             Noemi - Ventas
                         </Link>
+                        <div className="pl-12 flex flex-col gap-1 -mt-2 mb-2">
+                            <Link href="/admin/ai-agents/noemi/training" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[var(--primary)] transition-colors py-1">
+                                [ Entrenamiento ]
+                            </Link>
+                            <Link href="/admin/ai-agents/history" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[var(--primary)] transition-colors py-1">
+                                [ Historial de chats ]
+                            </Link>
+                        </div>
                         <Link href="/admin/ai-agents/veronica" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
                             <MessageSquare className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                             Verónica - Recordatorios

@@ -88,6 +88,7 @@ export interface TenantData {
         ars_spent: number;
         ars_limit: number;
     };
+    ai_knowledge?: string;
 }
 
 const COLLECTION_NAME = "tenants";

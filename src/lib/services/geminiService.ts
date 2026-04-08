@@ -3,6 +3,7 @@ import { getTenant, createOrUpdateTenant } from "./tenantService";
 import { createTurno, getTurnosPorWhatsApp, updateTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
 import { availabilityService } from "./availabilityService";
+import { chatLogService } from "./chatLogService";
 import { format } from "date-fns";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
@@ -144,6 +145,9 @@ export const geminiService = {
             Tu objetivo es gestionar la agenda de forma profesional y eficiente.
             
             Fecha actual: ${fechaActual} (${diaSemana})
+            
+            Conocimiento extra sobre el salón (Lo que aprendiste):
+            ${tenant.ai_knowledge || "Aún no tienes conocimiento extra."}
             
             Información del cliente:
             - Nombre: ${context.userName || "Desconocido"}
@@ -339,7 +343,14 @@ export const geminiService = {
             });
         }
 
-        return `⚡ ${response.text()}`;
+        const responseText = response.text();
+        
+        // Log para el historial
+        const sessionId = context.whatsapp || "web-anon";
+        await chatLogService.logMessage(tenantId, sessionId, "user", userMessage, "web", context.userName);
+        await chatLogService.logMessage(tenantId, sessionId, "model", responseText, "web");
+
+        return `⚡ ${responseText}`;
     },
 
     /**
@@ -409,5 +420,101 @@ export const geminiService = {
 
         const responseText = response.text();
         return `⚡ ${responseText}`;
+    },
+
+    /**
+     * Chat avanzado para el Administrador (Entrenamiento y Tareas)
+     */
+    async chatAdmin(tenantId: string, userMessage: string, history: ChatMessage[] = []) {
+        const tenant = await getTenant(tenantId);
+        if (!tenant) return null;
+
+        const servicios = await serviceManagement.getAllSubtratamientos(tenantId);
+        const serviciosContext = servicios.map(s => `- ID: ${s.id}, ${s.nombre}, Precio: $${s.precio}, Cat: ${s.tratamientoId}`).join("\n");
+
+        const model = await getGenerativeModelWithFallback({ 
+            model: "gemini-flash-latest",
+            tools: [{
+                functionDeclarations: [
+                    {
+                        name: "save_knowledge",
+                        description: "Guarda información nueva en la base de conocimiento del salón.",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                info: { type: SchemaType.STRING, description: "La información a recordar. Sé conciso pero claro." }
+                            },
+                            required: ["info"]
+                        }
+                    },
+                    {
+                        name: "update_price",
+                        description: "Actualiza el precio de un servicio (subtratamiento).",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                subId: { type: SchemaType.STRING },
+                                tratamientoId: { type: SchemaType.STRING },
+                                nuevoPrecio: { type: SchemaType.NUMBER }
+                            },
+                            required: ["subId", "tratamientoId", "nuevoPrecio"]
+                        }
+                    }
+                ]
+            }]
+        });
+
+        const systemPrompt = `
+            Eres Noemí, la asistente virtual de "${tenant.nombre_salon}".
+            En este chat, estás hablando directamente con el DUEÑO del salón.
+            
+            Tu objetivo es:
+            1. APRENDER: Si el dueño te dice algo importante, guárdalo usando 'save_knowledge'. 
+            2. AYUDAR: Si te pide cambiar un precio, usa 'update_price'.
+            3. SER CURIOSA: Pregunta cosas que no sepas y que te ayudarían a vender mejor (ej: ¿Tienen combos?, ¿Cuesta más la manicura con diseño?).
+            
+            Base de conocimiento actual:
+            ${tenant.ai_knowledge || "Cero. Necesito que me enseñes sobre tu negocio."}
+            
+            Servicios configurados:
+            ${serviciosContext}
+            
+            Responde siempre como una asistente ejecutiva de alto nivel, profesional y proactiva.
+        `;
+
+        const chat = model.startChat({
+            history: [
+                { role: "user", parts: [{ text: systemPrompt }] },
+                { role: "model", parts: [{ text: "¡Hola! Soy Noemí. Estoy lista para que me entrenes y me pidas lo que necesites para gestionar el salón." }] },
+                ...history
+            ]
+        });
+
+        let result = await chat.sendMessage(userMessage);
+        let response = result.response;
+        let call = response.functionCalls()?.[0];
+
+        let iterations = 0;
+        while (call && iterations < 2) {
+            iterations++;
+            if (call.name === "save_knowledge") {
+                const args = call.args as any;
+                const newKnowledge = (tenant.ai_knowledge || "") + "\n" + args.info;
+                await createOrUpdateTenant(tenantId, { ai_knowledge: newKnowledge });
+                result = await chat.sendMessage([{
+                    functionResponse: { name: "save_knowledge", response: { content: "Conocimiento guardado exitosamente." } }
+                }]);
+            } else if (call.name === "update_price") {
+                const args = call.args as any;
+                await serviceManagement.updateSubtratamiento(tenantId, args.tratamientoId, args.subId, { precio: args.nuevoPrecio });
+                result = await chat.sendMessage([{
+                    functionResponse: { name: "update_price", response: { content: "Precio actualizado correctamente." } }
+                }]);
+            }
+            response = result.response;
+            call = response.functionCalls()?.[0];
+        }
+
+        return `⚡ ${response.text()}`;
     }
 };
