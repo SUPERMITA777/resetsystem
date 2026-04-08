@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { UsersManagementTab } from "@/components/admin/settings/UsersManagementTab";
@@ -83,7 +83,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-8 w-full max-w-5xl animate-in fade-in duration-500">
                 <Toaster />
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -280,6 +280,6 @@ export default function SettingsPage() {
                     </div>
                 )}
             </div>
-        </AdminLayout>
+        </>
     );
 }

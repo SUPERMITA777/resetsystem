@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import {
     CalendarDays, ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
     Calendar as CalendarIcon, Banknote, CreditCard, Plus, Trash2,
@@ -383,7 +383,7 @@ export default function ReportesPage() {
     const loading = tab === "diario" ? diaLoading : mesLoading;
 
     return (
-        <AdminLayout>
+        <>
             <Toaster />
             <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
 
@@ -722,7 +722,7 @@ export default function ReportesPage() {
                     </div>
                 )}
             </div>
-        </AdminLayout>
+        </>
     );
 }
 

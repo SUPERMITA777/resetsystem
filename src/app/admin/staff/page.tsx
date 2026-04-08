@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { Button } from "@/components/ui/Button";
 import { Plus, User, Mail, Shield, Trash2, X, Save, Settings, MessageSquare, Phone, ExternalLink, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { getUsersByTenant, UserProfile, UserRole } from "@/lib/services/userService";
@@ -120,7 +120,7 @@ export default function StaffPage() {
     };
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-6 w-full h-full animate-in fade-in duration-300">
                 <div className="flex justify-between items-center">
                     <div>
@@ -357,6 +357,6 @@ export default function StaffPage() {
                     </div>
                 </div>
             )}
-        </AdminLayout>
+        </>
     );
 }

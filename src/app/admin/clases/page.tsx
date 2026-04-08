@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Plus, Calendar, Clock, Users, Trash2, Edit3, Tag, Search, Filter, ExternalLink } from "lucide-react";
@@ -79,7 +79,7 @@ export default function ClasesAdminPage() {
     ];
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-8 w-full animate-in fade-in duration-500">
                 <Toaster />
                 
@@ -301,6 +301,6 @@ export default function ClasesAdminPage() {
                     tenantId={tenantId || ''}
                 />
             </div>
-        </AdminLayout>
+        </>
     );
 }

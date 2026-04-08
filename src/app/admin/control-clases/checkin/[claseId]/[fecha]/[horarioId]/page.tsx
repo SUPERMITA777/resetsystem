@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { use } from "react";
 import { getInscriptosPorClaseYHorario, updateTurno, TurnoDB } from "@/lib/services/agendaService";
 import { claseService, Clase } from "@/lib/services/claseService";
@@ -83,7 +83,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     };
 
     return (
-        <AdminLayout>
+        <>
             <div className={`min-h-screen transition-colors duration-500 ${
                 bgStatus === 'success' ? 'bg-emerald-500' : 
                 bgStatus === 'error' ? 'bg-red-500' : 'bg-transparent'
@@ -193,6 +193,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 </div>
             </div>
         </div>
-</AdminLayout>
+        </>
     );
 }

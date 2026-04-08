@@ -8,19 +8,18 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { AdminChatWidget } from "@/components/chat/AdminChatWidget";
+import { AdminTopbarProvider, useAdminTopbar } from "@/lib/context/AdminTopbarContext";
 
-export function AdminLayout({ children, topbarContent }: { children: React.ReactNode, topbarContent?: React.ReactNode }) {
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { role, tenantId: userTenantId } = useAuth();
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [activeTenantId, setActiveTenantId] = useState("");
+    const { topbarContent } = useAdminTopbar();
 
     useEffect(() => {
         let activeTenant = localStorage.getItem("currentTenant") || "resetspa";
 
-        // FORCED TENANT ISOLATION: 
-        // Si el usuario es superadmin, permitimos que use el tenant que está en localStorage (seteado al hacer click en "Ver Panel")
-        // Si no es superadmin, forzamos su tenantId asignado en el perfil.
         if (role && role !== 'superadmin' && userTenantId) {
             activeTenant = userTenantId;
             localStorage.setItem("currentTenant", activeTenant);
@@ -30,11 +29,7 @@ export function AdminLayout({ children, topbarContent }: { children: React.React
         getTenant(activeTenant).then(data => {
             if (data) {
                 setTenant(data);
-                if (data.nombre_salon) {
-                    document.title = `${data.nombre_salon}`;
-                } else {
-                    document.title = "RESETSYSTEM";
-                }
+                document.title = data.nombre_salon || "RESETSYSTEM";
             }
         });
     }, [role, userTenantId]);
@@ -57,10 +52,20 @@ export function AdminLayout({ children, topbarContent }: { children: React.React
                         </div>
                     </main>
                     {tenant && activeTenantId && (
-                        <AdminChatWidget tenant={{ ...tenant, id: activeTenantId }} />
+                        <AdminChatWidget key={activeTenantId} tenant={{ ...tenant, id: activeTenantId }} />
                     )}
                 </div>
             </div>
         </AuthGuard>
+    );
+}
+
+export function AdminLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <AdminTopbarProvider>
+            <AdminLayoutInner>
+                {children}
+            </AdminLayoutInner>
+        </AdminTopbarProvider>
     );
 }

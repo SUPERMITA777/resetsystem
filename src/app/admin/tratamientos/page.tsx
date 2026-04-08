@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Clock, Tag, Box, User, Download, Upload, FileSpreadsheet, Search, X } from "lucide-react";
@@ -289,7 +289,7 @@ export default function TratamientosPage() {
     });
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-8 w-full animate-in fade-in duration-500">
                 <Toaster />
                 <div className="flex justify-between items-center">
@@ -545,6 +545,6 @@ export default function TratamientosPage() {
                     tenantId={currentTenant}
                 />
             )}
-        </AdminLayout>
+        </>
     );
 }

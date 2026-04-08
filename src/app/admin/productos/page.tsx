@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Plus, Edit2, Trash2, ShoppingBag, Tag, TrendingDown } from "lucide-react";
@@ -67,7 +67,7 @@ export default function ProductosPage() {
     };
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-8 w-full animate-in fade-in duration-500">
                 <Toaster />
 
@@ -209,6 +209,6 @@ export default function ProductosPage() {
                     tenantId={currentTenant}
                 />
             )}
-        </AdminLayout>
+        </>
     );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Gift, Trophy, Plus, Trash2, Edit3, RotateCcw, Copy, Check, X, Save, Power, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -274,15 +273,15 @@ export default function PromosWebPage() {
     };
 
     if (loading) return (
-        <AdminLayout>
+        <>
             <div className="flex items-center justify-center h-64 text-gray-400 animate-pulse">
                 Cargando Promos Web...
             </div>
-        </AdminLayout>
+        </>
     );
 
     return (
-        <AdminLayout>
+        <>
             <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto p-4 md:p-8">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -695,6 +694,6 @@ export default function PromosWebPage() {
                     </div>
                 </div>
             )}
-        </AdminLayout>
+        </>
     );
 }

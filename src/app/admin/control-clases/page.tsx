@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { claseService, Clase } from "@/lib/services/claseService";
 import { getTurnosPorFecha, TurnoDB } from "@/lib/services/agendaService";
 import { format, addDays, startOfToday, parseISO } from "date-fns";
@@ -63,7 +63,7 @@ export default function ControlClasesPage() {
     ];
 
     return (
-        <AdminLayout>
+        <>
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
                 <div className="flex justify-between items-end">
                     <div>
@@ -164,6 +164,6 @@ export default function ControlClasesPage() {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }

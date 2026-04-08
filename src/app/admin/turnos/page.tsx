@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Calendar as CalendarIcon, Clock, User, Tag, Search, Filter, Plus, ChevronRight, CalendarDays, List, CheckCircle2, AlertCircle, Check, X as XIcon, Phone, Edit3, Zap } from "lucide-react";
@@ -302,7 +301,7 @@ Preséntalo al profesor al llegar.`);
     };
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-8 w-full animate-in fade-in duration-500">
                 <Toaster />
                 
@@ -673,6 +672,6 @@ Preséntalo al profesor al llegar.`);
                     tenantId={currentTenant}
                 />
             </div>
-        </AdminLayout>
+        </>
     );
 }

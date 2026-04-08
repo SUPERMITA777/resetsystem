@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Users, CalendarCheck, TrendingUp, Globe, ArrowRight, Smartphone } from "lucide-react";
 import { WebConfigModal } from "@/components/admin/web/WebConfigModal";
 import { Button } from "@/components/ui/Button";
@@ -11,8 +10,7 @@ export default function DashboardPage() {
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
     return (
-        <AdminLayout>
-            <div className="flex flex-col gap-10 w-full animate-in fade-in duration-300">
+        <div className="flex flex-col gap-10 w-full animate-in fade-in duration-300">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter leading-none">Dashboard</h1>
@@ -98,6 +96,5 @@ export default function DashboardPage() {
                     onSaveSuccess={() => {}}
                 />
             </div>
-        </AdminLayout>
     );
 }

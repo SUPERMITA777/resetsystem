@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Settings, LayoutGrid, CalendarDays, Calendar as CalendarMonth } from "lucide-react";
 import { format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
@@ -18,9 +17,12 @@ import { getTurnosPorFecha, getTurnosPorRango, createTurno, updateTurno, updateT
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { getBoxNames, setBoxName } from "@/lib/services/boxNamesService";
 import { TurnoData } from "@/components/agenda/TurnoCard";
+import { TopbarSetter } from "@/lib/context/AdminTopbarContext";
 import toast from "react-hot-toast";
 
 export default function AgendaPage() {
+    // ... rest of the component
+
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isClaseModalOpen, setIsClaseModalOpen] = useState(false);
@@ -326,7 +328,8 @@ export default function AgendaPage() {
     );
 
     return (
-        <AdminLayout topbarContent={topbarControls}>
+        <>
+            <TopbarSetter>{topbarControls}</TopbarSetter>
             <div className="flex flex-col h-full w-full animate-in fade-in duration-500 pt-0">
                 {/* Grid Section */}
                 <div className="flex-1 overflow-hidden relative bg-white rounded-[2rem] shadow-2xl shadow-gray-200 border border-gray-50 -mt-2">
@@ -425,6 +428,6 @@ export default function AgendaPage() {
                 cliente={selectedClienteForCredits}
                 tenantId={currentTenant}
             />
-        </AdminLayout>
+        </>
     );
 }

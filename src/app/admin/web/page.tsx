@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import {
     Globe, Layout as LayoutIcon, Palette, Image as ImageIcon,
     MessageSquare, Save, ChevronRight, Check, Sparkles,
@@ -168,20 +167,17 @@ export default function WebConfigPage() {
 
     if (loading) {
         return (
-            <AdminLayout>
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="animate-pulse flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-100 rounded-full animate-spin border-4 border-black border-t-transparent" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cargando Configuración...</span>
-                    </div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="animate-pulse flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full animate-spin border-4 border-black border-t-transparent" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cargando Configuración...</span>
                 </div>
-            </AdminLayout>
+            </div>
         );
     }
 
     return (
-        <AdminLayout>
-            <div className="space-y-10 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
+        <div className="space-y-10 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
                 <Toaster />
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
@@ -701,6 +697,5 @@ export default function WebConfigPage() {
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20">Cualquier cambio guardado se reflejará instantáneamente</p>
                 </div>
             </div>
-        </AdminLayout>
     );
 }

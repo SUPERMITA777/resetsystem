@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout/admin/AdminLayout";
+
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -101,7 +101,7 @@ export default function ClientesPage() {
     };
 
     return (
-        <AdminLayout>
+        <>
             <div className="flex flex-col gap-8 w-full animate-in fade-in duration-500">
                 <Toaster />
                 
@@ -374,6 +374,6 @@ export default function ClientesPage() {
                 tenantId={currentTenant}
                 cliente={selectedCliente}
             />
-        </AdminLayout>
+        </>
     );
 }
