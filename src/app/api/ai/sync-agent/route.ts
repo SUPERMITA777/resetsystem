@@ -9,14 +9,21 @@ import { getAdminDb } from "@/lib/firebase-admin";
  * responde directamente en el cuerpo del HTTP Response.
  */
 export async function POST(req: Request) {
+    let collection = "";
+    let action = "";
+    let docId = "";
+
     try {
         const body = await req.json();
+        console.log("[SyncAgent] Received request:", JSON.stringify(body));
         
-        // Estructura esperada desde el EXE:
-        // { tenantId: "resetspa", sender: "549110000000@s.whatsapp.net", text: "Hola", fromMe: boolean }
+        collection = body.collection;
+        action = body.action;
+        docId = body.docId;
         const { tenantId, sender, text, fromMe } = body;
 
         if (!tenantId || !sender || !text) {
+            console.error("[SyncAgent] Missing required fields:", { tenantId, sender, text });
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
@@ -29,8 +36,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ reply: `🚨 DIAGNÓSTICO: Modelos disponibles en este entorno: ${modelList}` });
         }
 
+        console.log("[SyncAgent] Fetching tenant info for:", tenantId);
         const tenant = await getTenantServer(tenantId);
         if (!tenant) {
+            console.error("[SyncAgent] Tenant not found:", tenantId);
             return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
         }
 
@@ -71,17 +80,20 @@ export async function POST(req: Request) {
         }
 
         // 4. Procesar con Gemini (A este punto, el delay y el typing lo gestiona el propio EXE local).
+        console.log("[SyncAgent] Invoking geminiService.chatNoemi for:", tenant.slug);
         const responseText = await geminiService.chatNoemi(tenant.slug, text);
 
         if (!responseText) {
+            console.warn("[SyncAgent] Gemini returned empty response");
             return NextResponse.json({ status: "ignored_empty_response" });
         }
 
+        console.log("[SyncAgent] Gemini success response length:", responseText.length);
         // 5. Retornar la respuesta síncronamente al EXE
         return NextResponse.json({ reply: responseText });
 
     } catch (error: any) {
-        console.error("Error en Sync Webhook:", error);
+        console.error("[SyncAgent] Global Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
