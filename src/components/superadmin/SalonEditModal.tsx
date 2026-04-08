@@ -254,6 +254,7 @@ export function SalonEditModal({ isOpen, onClose, tenant, onUpdate }: SalonEditM
                             { id: 'fitness', label: 'Fitness', icon: Dumbbell },
                             { id: 'marketing', label: 'Marketing Web', icon: Globe },
                             { id: 'ai_agents', label: 'Agentes IA', icon: Bot },
+                            { id: 'noemi_chat', label: 'Chat con Noemí (Web)', icon: Sparkles },
                             { id: 'reportes', label: 'Reportes', icon: FileBarChart },
                         ].map((m) => {
                             const Icon = m.icon;

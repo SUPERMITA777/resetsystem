@@ -8,6 +8,7 @@ import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, S
 import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 export default function SalonPublicPage() {
     const params = useParams();
@@ -329,6 +330,7 @@ export default function SalonPublicPage() {
         <>
             <style dangerouslySetInnerHTML={{ __html: customStyles }} />
             {renderLayout()}
+            <ChatWidget tenant={tenant as any} />
         </>
     );
 }

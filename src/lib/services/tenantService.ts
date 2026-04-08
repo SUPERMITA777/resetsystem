@@ -80,6 +80,7 @@ export interface TenantData {
         fitness?: boolean;
         marketing?: boolean;
         ai_agents?: boolean;
+        noemi_chat?: boolean;
         reportes?: boolean;
     };
     ai_usage?: {
