@@ -10,11 +10,14 @@ import { Store, Users, Save, Phone, Image as ImageIcon, ShieldAlert } from "luci
 import { getTenant, createOrUpdateTenant, TenantData } from "@/lib/services/tenantService";
 import { LogoUploader } from "@/components/ui/LogoUploader";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'salon' | 'users' | 'backup'>('salon');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { role } = useAuth();
+    const isSuperadmin = role === 'superadmin';
 
     // Form state
     const [nombreSalon, setNombreSalon] = useState('');
@@ -161,9 +164,14 @@ export default function SettingsPage() {
                                             type="number"
                                             value={configBoxes}
                                             onChange={(e) => setConfigBoxes(Number(e.target.value))}
-                                            className="rounded-xl border-gray-200 h-12"
+                                            className={`rounded-xl h-12 ${!isSuperadmin ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'border-gray-200'}`}
+                                            disabled={!isSuperadmin}
                                         />
-                                        <p className="text-xs text-gray-400 mt-2">Define cuántos turnos simultáneos se pueden agendar.</p>
+                                        <p className="text-xs text-gray-400 mt-2">
+                                            {isSuperadmin 
+                                                ? 'Define cuántos turnos simultáneos se pueden agendar.' 
+                                                : 'Ajustable únicamente por Superadmin.'}
+                                        </p>
                                     </div>
 
                                     <div>

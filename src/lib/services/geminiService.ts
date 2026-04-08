@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, Part, SchemaType } from "@google/generative-ai";
-import { getTenant } from "./tenantService";
+import { getTenant, createOrUpdateTenant } from "./tenantService";
 import { createTurno, getTurnosPorWhatsApp, updateTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
 import { availabilityService } from "./availabilityService";
@@ -7,6 +7,9 @@ import { format } from "date-fns";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
+
+const ARS_PER_1000_TOKENS = 2;
+const LIMIT_REACHED_MESSAGE = "Estimado cliente, el servicio de asistente inteligente ha alcanzado su límite de consumo mensual y se encuentra temporalmente pausado. Por favor, contacte con el salón para más información.";
 
 /**
  * Intenta obtener un modelo probando diferentes alias y versiones de API si falla.
@@ -58,6 +61,12 @@ export const geminiService = {
     async chatNoemi(tenantId: string, userMessage: string, history: ChatMessage[] = [], context: { userName?: string, whatsapp?: string } = {}, audio?: AudioData) {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.noemi?.active) return null;
+
+        // Validar Presupuesto
+        if (tenant.ai_usage && tenant.ai_usage.ars_limit > 0 && tenant.ai_usage.ars_spent >= tenant.ai_usage.ars_limit) {
+            console.warn(`[Gemini] Límite de presupuesto alcanzado para tenant ${tenantId}`);
+            return `⚡ ${LIMIT_REACHED_MESSAGE}`;
+        }
 
         // 1. Obtener servicios del salón para el contexto
         const servicios = await serviceManagement.getAllSubtratamientos(tenantId);
@@ -314,6 +323,22 @@ export const geminiService = {
             call = response.functionCalls()?.[0];
         }
 
+        // Actualizar consumo
+        const usage = response.usageMetadata;
+        if (usage) {
+            const tokens = usage.totalTokenCount || 0;
+            const cost = (tokens / 1000) * ARS_PER_1000_TOKENS;
+            
+            const currentUsage = tenant.ai_usage || { tokens_spent: 0, ars_spent: 0, ars_limit: 0 };
+            await createOrUpdateTenant(tenantId, {
+                ai_usage: {
+                    ...currentUsage,
+                    tokens_spent: (currentUsage.tokens_spent || 0) + tokens,
+                    ars_spent: (currentUsage.ars_spent || 0) + cost
+                }
+            });
+        }
+
         return `⚡ ${response.text()}`;
     },
 
@@ -323,6 +348,12 @@ export const geminiService = {
     async chatVeronica(tenantId: string, userMessage: string, history: ChatMessage[] = [], audio?: AudioData) {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.veronica?.active) return null;
+
+        // Validar Presupuesto
+        if (tenant.ai_usage && tenant.ai_usage.ars_limit > 0 && tenant.ai_usage.ars_spent >= tenant.ai_usage.ars_limit) {
+            console.warn(`[Gemini] Límite de presupuesto alcanzado para tenant ${tenantId}`);
+            return `⚡ ${LIMIT_REACHED_MESSAGE}`;
+        }
 
         const model = await getGenerativeModelWithFallback({ model: "gemini-flash-latest" });
 
@@ -358,7 +389,25 @@ export const geminiService = {
         userParts.push({ text: userMessage || (audio ? "Por favor, escucha este audio y responde al cliente." : "") });
 
         const result = await chat.sendMessage(userParts);
-        const responseText = result.response.text();
+        const response = result.response;
+
+        // Actualizar consumo
+        const usage = response.usageMetadata;
+        if (usage) {
+            const tokens = usage.totalTokenCount || 0;
+            const cost = (tokens / 1000) * ARS_PER_1000_TOKENS;
+            
+            const currentUsage = tenant.ai_usage || { tokens_spent: 0, ars_spent: 0, ars_limit: 0 };
+            await createOrUpdateTenant(tenantId, {
+                ai_usage: {
+                    ...currentUsage,
+                    tokens_spent: (currentUsage.tokens_spent || 0) + tokens,
+                    ars_spent: (currentUsage.ars_spent || 0) + cost
+                }
+            });
+        }
+
+        const responseText = response.text();
         return `⚡ ${responseText}`;
     }
 };

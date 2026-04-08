@@ -70,6 +70,23 @@ export interface TenantData {
         };
         evolution_api_url?: string;
     };
+    modules?: {
+        turnos_agenda?: boolean;
+        clientes?: boolean;
+        staff?: boolean;
+        tratamientos?: boolean;
+        clases?: boolean;
+        productos?: boolean;
+        fitness?: boolean;
+        marketing?: boolean;
+        ai_agents?: boolean;
+        reportes?: boolean;
+    };
+    ai_usage?: {
+        tokens_spent: number;
+        ars_spent: number;
+        ars_limit: number;
+    };
 }
 
 const COLLECTION_NAME = "tenants";

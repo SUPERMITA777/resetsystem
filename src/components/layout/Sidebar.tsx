@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 export function Sidebar() {
     const [tenantName, setTenantName] = useState("RESET SYSTEM");
     const [tenantId, setTenantId] = useState("resetspa");
+    const [tenantData, setTenantData] = useState<TenantData | null>(null);
 
     const { user } = useAuth();
     const router = useRouter();
@@ -30,11 +31,20 @@ export function Sidebar() {
         const id = localStorage.getItem('currentTenant') || 'resetspa';
         setTenantId(id);
         getTenant(id).then(data => {
-            if (data?.nombre_salon) {
-                setTenantName(data.nombre_salon);
+            if (data) {
+                setTenantData(data);
+                if (data.nombre_salon) {
+                    setTenantName(data.nombre_salon);
+                }
             }
         });
     }, []);
+
+    const isModuleEnabled = (moduleId: keyof NonNullable<TenantData['modules']>) => {
+        if (!tenantData) return true; // Loading or default
+        if (!tenantData.modules) return true; // Legacy support
+        return !!tenantData.modules[moduleId];
+    };
 
     return (
         <aside className="w-72 bg-[var(--background)]/80 backdrop-blur-xl border-r border-[var(--secondary)] flex flex-col py-8 h-screen sticky top-0 hidden md:flex overflow-y-auto no-scrollbar shadow-2xl shadow-black/5 z-30">
@@ -58,85 +68,116 @@ export function Sidebar() {
 
             <nav className="flex flex-col gap-1.5 w-full px-6 flex-1">
                 <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 opacity-70">Operaciones</p>
-                <Link href="/admin/turnos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <Activity className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Turnos
-                </Link>
-                <Link href="/admin/agenda" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <CalendarDays className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Agenda
-                </Link>
-                <Link href="/admin/clientes" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <UserIcon className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Clientes
-                </Link>
-                <Link href="/admin/staff" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <Users className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Profesionales
-                </Link>
-                <Link href="/admin/tratamientos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <Sparkles className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Tratamientos
-                </Link>
-                <Link href="/admin/clases" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Clases
-                </Link>
-                <Link href="/admin/control-clases" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group border-b border-[var(--secondary)]/30 mb-2">
-                    <QrCode className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    CONTROL CLASES
-                </Link>
-                <Link href="/admin/productos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <ShoppingBag className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Productos
-                </Link>
-                <Link href="/admin/fitness" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                    <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                    Fitness
-                </Link>
+                
+                {isModuleEnabled('turnos_agenda') && (
+                    <>
+                        <Link href="/admin/turnos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <Activity className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Turnos
+                        </Link>
+                        <Link href="/admin/agenda" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <CalendarDays className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Agenda
+                        </Link>
+                    </>
+                )}
 
-                <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">
-                    <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 opacity-70">Marketing & Web</p>
-                    <Link href="/admin/web" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                        <Globe className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                        Configuración Web
+                {isModuleEnabled('clientes') && (
+                    <Link href="/admin/clientes" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <UserIcon className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Clientes
                     </Link>
-                    <Link href="/admin/promos-web" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                        <Gift className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                        Promos Web
-                    </Link>
-                    <a 
-                        href={`/${tenantId}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 active:scale-[0.98] transition-all text-xs font-black uppercase tracking-widest mt-4 group"
-                    >
-                        <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        Ver mi Web Pública
-                    </a>
-                </div>
+                )}
 
-                <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">
-                    <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 opacity-70">Agentes IA</p>
-                    <Link href="/admin/ai-agents/noemi" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                        <Bot className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                        Noemi - Ventas
+                {isModuleEnabled('staff') && (
+                    <Link href="/admin/staff" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Users className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Profesionales
                     </Link>
-                    <Link href="/admin/ai-agents/veronica" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                        <MessageSquare className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                        Verónica - Recordatorios
+                )}
+
+                {isModuleEnabled('tratamientos') && (
+                    <Link href="/admin/tratamientos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Sparkles className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Tratamientos
                     </Link>
-                    <Link href="/admin/ai-agents/connections" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
-                        <Smartphone className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                        Mis Conexiones (QR)
+                )}
+
+                {isModuleEnabled('clases') && (
+                    <>
+                        <Link href="/admin/clases" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Clases
+                        </Link>
+                        <Link href="/admin/control-clases" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group border-b border-[var(--secondary)]/30 mb-2">
+                            <QrCode className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            CONTROL CLASES
+                        </Link>
+                    </>
+                )}
+
+                {isModuleEnabled('productos') && (
+                    <Link href="/admin/productos" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <ShoppingBag className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Productos
                     </Link>
-                </div>
+                )}
+
+                {isModuleEnabled('fitness') && (
+                    <Link href="/admin/fitness" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                        <Dumbbell className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                        Fitness
+                    </Link>
+                )}
+
+                {isModuleEnabled('marketing') && (
+                    <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">
+                        <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 opacity-70">Marketing & Web</p>
+                        <Link href="/admin/web" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <Globe className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Configuración Web
+                        </Link>
+                        <Link href="/admin/promos-web" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <Gift className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Promos Web
+                        </Link>
+                        <a 
+                            href={`/${tenantId}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 active:scale-[0.98] transition-all text-xs font-black uppercase tracking-widest mt-4 group"
+                        >
+                            <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            Ver mi Web Pública
+                        </a>
+                    </div>
+                )}
+
+                {isModuleEnabled('ai_agents') && (
+                    <div className="pt-6 mt-4 border-t border-[var(--secondary)]/50">
+                        <p className="px-5 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 opacity-70">Agentes IA</p>
+                        <Link href="/admin/ai-agents/noemi" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <Bot className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Noemi - Ventas
+                        </Link>
+                        <Link href="/admin/ai-agents/veronica" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <MessageSquare className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Verónica - Recordatorios
+                        </Link>
+                        <Link href="/admin/ai-agents/connections" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
+                            <Smartphone className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Mis Conexiones (QR)
+                        </Link>
+                    </div>
+                )}
 
                 <div className="mt-auto pt-6 border-t border-[var(--secondary)]/50">
-                    <Link href="/admin/reportes" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group mb-1">
-                        <FileBarChart className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
-                        Reportes
-                    </Link>
+                    {isModuleEnabled('reportes') && (
+                        <Link href="/admin/reportes" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group mb-1">
+                            <FileBarChart className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
+                            Reportes
+                        </Link>
+                    )}
                     <Link href="/admin/settings" className="flex items-center gap-3.5 px-5 py-3.5 rounded-2xl hover:bg-[var(--secondary)] active:scale-95 transition-all text-sm font-bold group">
                         <Settings className="w-5 h-5 text-[var(--primary)] group-hover:rotate-12 transition-transform" />
                         Ajustes
