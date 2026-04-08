@@ -27,6 +27,7 @@ interface ChatWidgetProps {
 }
 
 export function ChatWidget({ tenant }: ChatWidgetProps) {
+    const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -34,9 +35,13 @@ export function ChatWidget({ tenant }: ChatWidgetProps) {
     const [history, setHistory] = useState<GeminiChatMessage[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     // Saludo inicial
     useEffect(() => {
-        if (isOpen && messages.length === 0) {
+        if (isMounted && isOpen && messages.length === 0) {
             const welcomeMsg: Message = {
                 id: "welcome",
                 role: "model",
@@ -45,7 +50,7 @@ export function ChatWidget({ tenant }: ChatWidgetProps) {
             };
             setMessages([welcomeMsg]);
         }
-    }, [isOpen, messages.length, tenant.nombre_salon]);
+    }, [isMounted, isOpen, messages.length, tenant.nombre_salon]);
 
     // Auto-scroll al final
     useEffect(() => {
@@ -54,6 +59,7 @@ export function ChatWidget({ tenant }: ChatWidgetProps) {
         }
     }, [messages, isLoading]);
 
+    if (!isMounted) return null;
     if (!tenant.modules?.noemi_chat) return null;
 
     const handleSendMessage = async (e?: React.FormEvent) => {

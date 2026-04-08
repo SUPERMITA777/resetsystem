@@ -330,7 +330,7 @@ export default function SalonPublicPage() {
         <>
             <style dangerouslySetInnerHTML={{ __html: customStyles }} />
             {renderLayout()}
-            <ChatWidget tenant={tenant as any} />
+            <ChatWidget tenant={{ ...tenant, id: slug } as any} />
         </>
     );
 }

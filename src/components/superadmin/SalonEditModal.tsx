@@ -56,6 +56,7 @@ export function SalonEditModal({ isOpen, onClose, tenant, onUpdate }: SalonEditM
                     fitness: false,
                     marketing: true,
                     ai_agents: false,
+                    noemi_chat: false,
                     reportes: true,
                 },
                 ai_usage: tenant.ai_usage || {
