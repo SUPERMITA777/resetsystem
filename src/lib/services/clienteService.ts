@@ -1,20 +1,5 @@
-import { db } from "../firebase";
+import { dbGet, dbList, dbSet, dbAdd, dbUpdate, dbDelete } from "./apiBridge";
 import { addIngresoCredito } from "./reportesService";
-import {
-    collection,
-    doc,
-    setDoc,
-    getDoc,
-    getDocs,
-    query,
-    where,
-    updateDoc,
-    deleteDoc,
-    addDoc,
-    serverTimestamp,
-    orderBy
-} from "firebase/firestore";
-
 
 export interface Cliente {
     id: string;
@@ -29,7 +14,7 @@ export interface Cliente {
     direccionValidada?: boolean;
     createdAt?: any;
     ultimaVisita?: string;
-    creditos?: number; // Added for the new credits system
+    creditos?: number;
     fechaNacimiento?: string; // YYYY-MM-DD
 }
 
@@ -42,85 +27,73 @@ export interface CreditoPaquete {
     notas?: string;
 }
 
-
 export const clienteService = {
     async getClientes(tenantId: string): Promise<Cliente[]> {
-        const ref = collection(db, "tenants", tenantId, "clientes");
-        const snap = await getDocs(ref);
-        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cliente));
+        return await dbList(`tenants/${tenantId}/clientes`);
     },
 
     async getClienteByTelefono(tenantId: string, telefono: string): Promise<Cliente | null> {
-        const q = query(
-            collection(db, "tenants", tenantId, "clientes"),
-            where("telefono", "==", telefono)
-        );
-        const snap = await getDocs(q);
-        if (snap.empty) return null;
-        return { id: snap.docs[0].id, ...snap.docs[0].data() } as Cliente;
+        const list = await dbList(`tenants/${tenantId}/clientes`, [
+            { field: "telefono", operator: "==", value: telefono }
+        ]);
+        return list.length > 0 ? list[0] : null;
     },
 
     async createCliente(tenantId: string, data: Omit<Cliente, "id">) {
-        const ref = collection(db, "tenants", tenantId, "clientes");
-        const newDoc = doc(ref);
-        await setDoc(newDoc, {
+        const res = await dbAdd(`tenants/${tenantId}/clientes`, {
             ...data,
-            id: newDoc.id,
             tenantId,
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         });
-        return newDoc.id;
+        // Seteamos el ID dentro del doc por consistencia legacy
+        await dbUpdate(`tenants/${tenantId}/clientes`, res.id, { id: res.id });
+        return res.id;
     },
 
     async updateCliente(tenantId: string, id: string, data: Partial<Cliente>) {
-        const ref = doc(db, "tenants", tenantId, "clientes", id);
-        await updateDoc(ref, data);
+        await dbUpdate(`tenants/${tenantId}/clientes`, id, data);
     },
 
     async deleteCliente(tenantId: string, id: string) {
-        const ref = doc(db, "tenants", tenantId, "clientes", id);
-        await deleteDoc(ref);
+        await dbDelete(`tenants/${tenantId}/clientes`, id);
     },
 
     async addCredits(tenantId: string, id: string, amount: number, paymentData: { monto: number, metodo: string, fecha: string }, duracionDias: number = 30) {
-        const ref = doc(db, "tenants", tenantId, "clientes", id);
-        
-        // Calcular fecha de vencimiento
         const fechaVencimiento = new Date();
         fechaVencimiento.setDate(fechaVencimiento.getDate() + duracionDias);
         
-        // Crear paquete de créditos
-        const paquetesRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_activos");
-        await addDoc(paquetesRef, {
+        // Crear paquete de créditos via proxy
+        await dbAdd(`tenants/${tenantId}/clientes/${id}/creditos_activos`, {
             cantidadInicial: amount,
             cantidadRestante: amount,
-            fechaVencimiento: fechaVencimiento,
-            createdAt: serverTimestamp()
+            fechaVencimiento: fechaVencimiento.toISOString(),
+            createdAt: new Date().toISOString()
         });
 
-        const snap = await getDoc(ref);
-        const currentCredits = (snap.data() as Cliente).creditos || 0;
+        const cliente = await dbGet(`tenants/${tenantId}/clientes`, id);
+        if (!cliente) throw new Error("Cliente no encontrado");
+
+        const currentCredits = cliente.creditos || 0;
         const newCredits = currentCredits + amount;
         
-        await updateDoc(ref, { creditos: newCredits });
+        await dbUpdate(`tenants/${tenantId}/clientes`, id, { creditos: newCredits });
 
         // Log transaction
-        const historyRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_historial");
-        await addDoc(historyRef, {
+        await dbAdd(`tenants/${tenantId}/clientes/${id}/creditos_historial`, {
             tipo: 'CARGA',
             cantidad: amount,
             nuevoSaldo: newCredits,
             pago: paymentData,
             duracionDias,
-            fechaVencimiento,
-            createdAt: serverTimestamp()
+            fechaVencimiento: fechaVencimiento.toISOString(),
+            createdAt: new Date().toISOString()
         });
 
         // Registrar ingreso en reportes
         try {
             await addIngresoCredito(tenantId, {
                 clienteId: id,
-                clienteNombre: (snap.data() as Cliente).nombre + ' ' + ((snap.data() as Cliente).apellido || ''),
+                clienteNombre: cliente.nombre + ' ' + (cliente.apellido || ''),
                 monto: paymentData.monto,
                 metodo: paymentData.metodo as "EFECTIVO" | "TRANSFERENCIA",
                 cantidad: amount,
@@ -134,93 +107,73 @@ export const clienteService = {
     },
 
     async syncValidCredits(tenantId: string, id: string): Promise<number> {
-        const ref = doc(db, "tenants", tenantId, "clientes", id);
-        const paquetesRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_activos");
+        const now = new Date().toISOString();
+        const paquetes = await dbList(`tenants/${tenantId}/clientes/${id}/creditos_activos`, [
+            { field: "fechaVencimiento", operator: ">", value: now }
+        ]);
         
-        const now = new Date();
-        const q = query(
-            paquetesRef,
-            where("fechaVencimiento", ">", now)
-        );
-        
-        const snapPaquetes = await getDocs(q);
-        const totalValido = snapPaquetes.docs.reduce((acc, doc) => {
-            const data = doc.data();
-            return acc + (data.cantidadRestante > 0 ? data.cantidadRestante : 0);
+        const totalValido = paquetes.reduce((acc: number, p: any) => {
+            return acc + (p.cantidadRestante > 0 ? p.cantidadRestante : 0);
         }, 0);
         
-        await updateDoc(ref, { creditos: totalValido });
+        await dbUpdate(`tenants/${tenantId}/clientes`, id, { creditos: totalValido });
         return totalValido;
     },
 
     async deductCredits(tenantId: string, id: string, amount: number): Promise<number> {
-        const ref = doc(db, "tenants", tenantId, "clientes", id);
-        const snap = await getDoc(ref);
-        const clienteData = snap.data() as Cliente;
-        const currentCredits = clienteData.creditos || 0;
+        const cliente = await dbGet(`tenants/${tenantId}/clientes`, id);
+        if (!cliente) throw new Error("Cliente no encontrado");
         
-        // 1. Obtener paquetes activos ordenados por vencimiento
-        const paquetesRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_activos");
-        const now = new Date();
+        const currentCredits = cliente.creditos || 0;
+        const now = new Date().toISOString();
         
-        // Primero intentamos consumir de paquetes válidos (no vencidos)
-        const q = query(
-            paquetesRef, 
-            where("fechaVencimiento", ">", now),
-            orderBy("fechaVencimiento", "asc")
-        );
-        const paquetesSnap = await getDocs(q);
+        // Obtener paquetes activos
+        const paquetes = await dbList(`tenants/${tenantId}/clientes/${id}/creditos_activos`, [
+            { field: "fechaVencimiento", operator: ">", value: now }
+        ]);
+        
+        // Ordenar por vencimiento (el proxy list no garantiza orden si no lo pedimos, pero podemos hacerlo aquí)
+        paquetes.sort((a: any, b: any) => (a.fechaVencimiento > b.fechaVencimiento ? 1 : -1));
         
         let remainingToDeduct = amount;
+        const paquetesValidos = paquetes.filter((p: any) => p.cantidadRestante > 0);
         
-        // Filtrar en memoria los que tienen saldo > 0
-        const paquetesValidos = paquetesSnap.docs.filter(d => d.data().cantidadRestante > 0);
-        
-        // Si no hay paquetes pero hay saldo (legacy), manejarlos
         if (paquetesValidos.length === 0 && currentCredits > 0) {
-            // Migración legacy: crear un paquete con el saldo actual
             const fechaVencimientoLegacy = new Date();
             fechaVencimientoLegacy.setDate(fechaVencimientoLegacy.getDate() + 30);
-            await addDoc(paquetesRef, {
+            await dbAdd(`tenants/${tenantId}/clientes/${id}/creditos_activos`, {
                 cantidadInicial: currentCredits,
                 cantidadRestante: currentCredits,
-                fechaVencimiento: fechaVencimientoLegacy,
-                createdAt: serverTimestamp(),
+                fechaVencimiento: fechaVencimientoLegacy.toISOString(),
+                createdAt: new Date().toISOString(),
                 notas: "Migración automática legacy"
             });
-            // Recargar paquetes
             return this.deductCredits(tenantId, id, amount);
         }
 
-        for (const docPaquete of paquetesValidos) {
+        for (const p of paquetesValidos) {
             if (remainingToDeduct <= 0) break;
             
-            const paquete = docPaquete.data();
-            const availableInPaquete = paquete.cantidadRestante;
+            const availableInPaquete = p.cantidadRestante;
             const toDeductFromPaquete = Math.min(remainingToDeduct, availableInPaquete);
             
-            await updateDoc(docPaquete.ref, {
+            await dbUpdate(`tenants/${tenantId}/clientes/${id}/creditos_activos`, p.id, {
                 cantidadRestante: availableInPaquete - toDeductFromPaquete
             });
             
             remainingToDeduct -= toDeductFromPaquete;
         }
 
-        // Si después de consumir paquetes aún queda por deducir, 
-        // significa que el saldo 'creditos' estaba desincronizado o es insuficiente.
         const newCreditsValue = Math.max(0, currentCredits - amount);
-        await updateDoc(ref, { creditos: newCreditsValue });
+        await dbUpdate(`tenants/${tenantId}/clientes`, id, { creditos: newCreditsValue });
 
-        // Log transaction
-        const historyRef = collection(db, "tenants", tenantId, "clientes", id, "creditos_historial");
-        await addDoc(historyRef, {
+        await dbAdd(`tenants/${tenantId}/clientes/${id}/creditos_historial`, {
             tipo: 'CONSUMO',
             cantidad: amount,
             nuevoSaldo: newCreditsValue,
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         });
         
         return newCreditsValue;
     }
-
 };

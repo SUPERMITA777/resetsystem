@@ -1,13 +1,4 @@
-import { db } from "../firebase";
-import {
-    collection,
-    doc,
-    addDoc,
-    getDocs,
-    deleteDoc,
-    query,
-    where,
-} from "firebase/firestore";
+import { dbList, dbAdd, dbDelete } from "./apiBridge";
 import { TurnoDB } from "./agendaService";
 
 // ──────────────────────────────────────────────
@@ -86,19 +77,16 @@ export function calcularIngresos(turnos: TurnoDB[]): ResumenPagos {
 }
 
 // ──────────────────────────────────────────────
-// Egresos – Firestore CRUD
+// Egresos – Firestore CRUD via Proxy
 // ──────────────────────────────────────────────
 
 export async function getEgresosDelDia(
     tenantId: string,
     fecha: string
 ): Promise<EgresoData[]> {
-    const q = query(
-        collection(db, `tenants/${tenantId}/egresos`),
-        where("fecha", "==", fecha)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as EgresoData));
+    return await dbList(`tenants/${tenantId}/egresos`, [
+        { field: "fecha", operator: "==", value: fecha }
+    ]);
 }
 
 export async function getEgresosDelPeriodo(
@@ -106,47 +94,38 @@ export async function getEgresosDelPeriodo(
     fechaInicio: string,
     fechaFin: string
 ): Promise<EgresoData[]> {
-    const q = query(
-        collection(db, `tenants/${tenantId}/egresos`),
-        where("fecha", ">=", fechaInicio),
-        where("fecha", "<=", fechaFin)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as EgresoData));
+    return await dbList(`tenants/${tenantId}/egresos`, [
+        { field: "fecha", operator: ">=", value: fechaInicio },
+        { field: "fecha", operator: "<=", value: fechaFin }
+    ]);
 }
 
 export async function addEgreso(
     tenantId: string,
     egreso: Omit<EgresoData, "id">
 ): Promise<string> {
-    const ref = await addDoc(
-        collection(db, `tenants/${tenantId}/egresos`),
-        egreso
-    );
-    return ref.id;
+    const res = await dbAdd(`tenants/${tenantId}/egresos`, egreso);
+    return res.id;
 }
 
 export async function deleteEgreso(
     tenantId: string,
     egresoId: string
 ): Promise<void> {
-    await deleteDoc(doc(db, `tenants/${tenantId}/egresos`, egresoId));
+    await dbDelete(`tenants/${tenantId}/egresos`, egresoId);
 }
 
 // ──────────────────────────────────────────────
-// Ingresos por Créditos
+// Ingresos por Créditos via Proxy
 // ──────────────────────────────────────────────
 
 export async function getIngresosCreditosDelDia(
     tenantId: string,
     fecha: string
 ): Promise<IngresoCredito[]> {
-    const q = query(
-        collection(db, `tenants/${tenantId}/ingresos_creditos`),
-        where("fecha", "==", fecha)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as IngresoCredito));
+    return await dbList(`tenants/${tenantId}/ingresos_creditos`, [
+        { field: "fecha", operator: "==", value: fecha }
+    ]);
 }
 
 export async function getIngresosCreditosDelPeriodo(
@@ -154,24 +133,18 @@ export async function getIngresosCreditosDelPeriodo(
     fechaInicio: string,
     fechaFin: string
 ): Promise<IngresoCredito[]> {
-    const q = query(
-        collection(db, `tenants/${tenantId}/ingresos_creditos`),
-        where("fecha", ">=", fechaInicio),
-        where("fecha", "<=", fechaFin)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as IngresoCredito));
+    return await dbList(`tenants/${tenantId}/ingresos_creditos`, [
+        { field: "fecha", operator: ">=", value: fechaInicio },
+        { field: "fecha", operator: "<=", value: fechaFin }
+    ]);
 }
 
 export async function addIngresoCredito(
     tenantId: string,
     ingreso: Omit<IngresoCredito, "id">
 ): Promise<string> {
-    const ref = await addDoc(
-        collection(db, `tenants/${tenantId}/ingresos_creditos`),
-        ingreso
-    );
-    return ref.id;
+    const res = await dbAdd(`tenants/${tenantId}/ingresos_creditos`, ingreso);
+    return res.id;
 }
 
 // ──────────────────────────────────────────────
