@@ -33,7 +33,7 @@ export function WebConfigModal({ isOpen, onClose, tenantId, onSaveSuccess }: Web
         tema_visual: 'nude' as TenantData['tema_visual'],
         
         // Web Config specific
-        layout_type: 'classic' as 'classic' | 'modern' | 'minimal',
+        layout_type: 'classic' as 'classic' | 'modern' | 'minimal' | 'premium',
         primary_color: '#000000',
         secondary_color: '#ffffff',
         accent_color: '#D4A5B2',
