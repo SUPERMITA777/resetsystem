@@ -66,12 +66,40 @@ export interface TenantData {
 const COLLECTION_NAME = "tenants";
 
 export async function createOrUpdateTenant(slug: string, data: Partial<TenantData>) {
-    console.log(`Firestore: Guardando en tenants/${slug}:`, data);
+    console.log(`Guardando en tenants/${slug}:`, data);
+
+    // Si estamos en el navegador, usamos el puente API para evitar problemas de permisos
+    if (typeof window !== 'undefined') {
+        try {
+            const res = await fetch('/api/admin/tenant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug, data })
+            });
+            if (!res.ok) throw new Error("Error en puente API de Guardado");
+            return;
+        } catch (error) {
+            console.error("Error guardando via API Bridge, reintentando via Firestore directo...", error);
+        }
+    }
+
     const tenantRef = doc(db, COLLECTION_NAME, slug);
     await setDoc(tenantRef, data, { merge: true });
 }
 
 export async function getTenant(slug: string): Promise<TenantData | null> {
+    
+    // Si estamos en el navegador, usamos el puente API para evitar problemas de permisos
+    if (typeof window !== 'undefined') {
+        try {
+            const res = await fetch(`/api/admin/tenant?slug=${slug}`);
+            const result = await res.json();
+            if (result.success) return result.data;
+        } catch (error) {
+            console.error("Error obteniendo via API Bridge, reintentando via Firestore directo...", error);
+        }
+    }
+
     const tenantRef = doc(db, COLLECTION_NAME, slug);
     
     // Implementar timeout de 5s para evitar bloqueos en SSR

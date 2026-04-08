@@ -19,11 +19,8 @@ export default function NoemiAIPage() {
         async function load() {
             setLoading(true);
             try {
-                const res = await fetch(`/api/admin/tenant?slug=${tenantId}`);
-                const result = await res.json();
-                
-                if (result.success && result.data) {
-                    const data = result.data as TenantData;
+                const data = await getTenant(tenantId);
+                if (data) {
                     setTenant(data);
                     if (data.ai_config?.noemi) {
                         setIsActive(data.ai_config.noemi.active);
@@ -42,7 +39,7 @@ export default function NoemiAIPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const updatedData = {
+            const updatedData: Partial<TenantData> = {
                 ai_config: {
                     ...tenant?.ai_config,
                     noemi: {
@@ -54,15 +51,8 @@ export default function NoemiAIPage() {
                 }
             };
 
-            const res = await fetch('/api/admin/tenant', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: tenantId, data: updatedData })
-            });
-
-            if (res.ok) {
-                setTenant(prev => prev ? { ...prev, ...updatedData } : null);
-            }
+            await createOrUpdateTenant(tenantId, updatedData);
+            setTenant(prev => prev ? ({ ...prev, ...updatedData }) : null);
         } catch (error) {
             console.error("Error saving Noemi config:", error);
         } finally {
