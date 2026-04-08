@@ -109,3 +109,9 @@ export async function getInscriptosPorClaseYHorario(tenantId: string, claseId: s
         { field: "horaInicio", operator: "==", value: horaInicio }
     ]);
 }
+// Obtener turnos por WhatsApp del cliente
+export async function getTurnosPorWhatsApp(tenantId: string, whatsapp: string): Promise<TurnoDB[]> {
+    return await dbList(`tenants/${tenantId}/agenda`, [
+        { field: "whatsapp", operator: "==", value: whatsapp }
+    ]);
+}

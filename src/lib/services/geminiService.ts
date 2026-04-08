@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, Part, SchemaType } from "@google/generative-ai";
 import { getTenant } from "./tenantService";
-import { createTurno } from "./agendaService";
+import { createTurno, getTurnosPorWhatsApp, updateTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
 import { availabilityService } from "./availabilityService";
 import { format } from "date-fns";
@@ -73,12 +73,13 @@ export const geminiService = {
                         type: SchemaType.OBJECT,
                         properties: {
                             clienteNombre: { type: SchemaType.STRING, description: "Nombre del cliente" },
-                            servicioNombre: { type: SchemaType.STRING, description: "Nombre del servicio/tratamiento" },
+                            servicioNombre: { type: SchemaType.STRING, description: "Nombre del tratamiento" },
+                            subtratamientoNombre: { type: SchemaType.STRING, description: "Nombre del subtratamiento (especificidad)" },
                             fecha: { type: SchemaType.STRING, description: "Fecha en formato YYYY-MM-DD" },
                             hora: { type: SchemaType.STRING, description: "Hora en formato HH:mm" },
                             whatsapp: { type: SchemaType.STRING, description: "Número de WhatsApp del cliente" }
                         },
-                        required: ["clienteNombre", "servicioNombre", "fecha", "hora"]
+                        required: ["clienteNombre", "servicioNombre", "subtratamientoNombre", "fecha", "hora"]
                     }
                 }, {
                     name: "consultar_disponibilidad",
@@ -91,6 +92,36 @@ export const geminiService = {
                         },
                         required: ["servicioNombre", "fecha"]
                     }
+                }, {
+                    name: "buscar_mis_turnos",
+                    description: "Busca los turnos que tiene el cliente agendados por su WhatsApp.",
+                    parameters: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            whatsapp: { type: SchemaType.STRING, description: "Número de WhatsApp del cliente" }
+                        },
+                        required: ["whatsapp"]
+                    }
+                }, {
+                    name: "modificar_turno",
+                    description: "Modifica un turno existente (reprogramar, cambiar status, etc.).",
+                    parameters: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            turnoId: { type: SchemaType.STRING, description: "ID del turno a modificar" },
+                            data: {
+                                type: SchemaType.OBJECT,
+                                properties: {
+                                    fecha: { type: SchemaType.STRING, description: "Nueva fecha YYYY-MM-DD" },
+                                    horaInicio: { type: SchemaType.STRING, description: "Nueva hora HH:mm" },
+                                    status: { type: SchemaType.STRING, enum: ["PENDIENTE", "RESERVADO", "CONFIRMADO", "CANCELADO", "COMPLETADO"] },
+                                    tratamientoAbreviado: { type: SchemaType.STRING },
+                                    subtratamientoAbreviado: { type: SchemaType.STRING }
+                                }
+                            }
+                        },
+                        required: ["turnoId", "data"]
+                    }
                 }]
             }]
         });
@@ -101,27 +132,25 @@ export const geminiService = {
 
         const systemPrompt = `
             Eres Noemí, la experta en ventas de "${tenant.nombre_salon}".
-            Tu objetivo es cerrar ventas agendando turnos en la agenda.
+            Tu objetivo es gestionar la agenda de forma profesional y eficiente.
             
             Fecha actual: ${fechaActual} (${diaSemana})
             
             Información del cliente:
-            - Nombre: ${context.userName || "Desconocido (Preguntar si es necesario)"}
+            - Nombre: ${context.userName || "Desconocido"}
             - WhatsApp: ${context.whatsapp || "Desconocido"}
             
             Servicios disponibles:
             ${serviciosContext}
             
             Instrucciones CRÍTICAS:
-            - PERSISTENCIA: No repitas preguntas o consejos que ya diste anteriormente en esta conversación. Revisa el historial para mantener la fluidez.
-            - DISPONIBILIDAD: No preguntes "¿Qué día y hora te queda bien?". En su lugar, usa "consultar_disponibilidad" para ver qué hay libre y PROPÓN tú 2 o 3 opciones al cliente.
-            - Si el cliente te dice un día (ej: "mañana", "el jueves"), usa "consultar_disponibilidad" para ese día.
-            - Sé amable, usa emojis y mantén el tono "${tenant.ai_config.noemi.tone}".
-            - Si el cliente quiere un turno, verifica que el servicio exista en la lista.
-            - Una vez que tengas Nombre, Servicio, Fecha y Hora, usa la función "agendar_turno_pendiente".
-            - IMPORTANTE: Dile al cliente que el turno ha sido solicitado y que el administrador lo confirmará en breve.
-            - Si te preguntan algo que no sabes, di que consultarás con el equipo humano.
-            - Tus reglas personalizadas: ${tenant.ai_config.noemi.rules || "Ninguna."}
+            - PERSISTENCIA: No repitas preguntas que ya se respondieron. Usa el historial.
+            - SIN DUPLICADOS: Si el cliente quiere cambiar, reagendar o cancelar, usa 'buscar_mis_turnos' primero para encontrar su cita y luego 'modificar_turno'. NO crees una cita nueva.
+            - FICHA COMPLETA: Es OBLIGATORIO recolectar tanto el TRATAMIENTO como el SUBTRATAMIENTO. 
+              Si dicen "Limpieza facial", pregunta qué tipo (Classic, Premium, etc.) antes de agendar.
+            - DISPONIBILIDAD: Propón 2 o 3 opciones usando 'consultar_disponibilidad'.
+            - Una vez que tengas Nombre, Tratamiento, Subtratamiento, Fecha y Hora, usa "agendar_turno_pendiente".
+            - Sé amable, usa emojis y tono "${tenant.ai_config.noemi.tone}".
         `;
 
         const chat = model.startChat({
@@ -161,6 +190,7 @@ export const geminiService = {
                         clienteAbreviado: args.clienteNombre,
                         nombre: args.clienteNombre,
                         tratamientoAbreviado: args.servicioNombre,
+                        subtratamientoAbreviado: args.subtratamientoNombre,
                         duracionMinutos: servicioEncontrado?.duracion_minutos || 60,
                         boxId: "box-1",
                         fecha: args.fecha,
@@ -179,7 +209,39 @@ export const geminiService = {
                     }]);
                 } catch (error) {
                     console.error("Error en agendar_turno_pendiente:", error);
-                    return "Lo siento, tuve un problema al agendar. ¿Probamos de nuevo?";
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "agendar_turno_pendiente",
+                            response: { content: "Error al agendar el turno." }
+                        }
+                    }]);
+                }
+            } else if (call.name === "buscar_mis_turnos") {
+                const args = call.args as any;
+                try {
+                    const turnos = await getTurnosPorWhatsApp(tenantId, args.whatsapp);
+                    const proximos = turnos.filter(t => t.status !== "CANCELADO");
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "buscar_mis_turnos",
+                            response: { content: `Turnos encontrados: ${proximos.map(t => `${t.fecha} ${t.horaInicio} (${t.tratamientoAbreviado}) ID:${t.id}`).join(", ") || "Ninguno."}` }
+                        }
+                    }]);
+                } catch (error) {
+                    result = await chat.sendMessage([{ functionResponse: { name: "buscar_mis_turnos", response: { content: "Error al buscar turnos." } } }]);
+                }
+            } else if (call.name === "modificar_turno") {
+                const args = call.args as any;
+                try {
+                    await updateTurno(tenantId, args.turnoId, args.data);
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "modificar_turno",
+                            response: { content: "Turno modificado exitosamente." }
+                        }
+                    }]);
+                } catch (error) {
+                    result = await chat.sendMessage([{ functionResponse: { name: "modificar_turno", response: { content: "Error al modificar." } } }]);
                 }
             } else if (call.name === "consultar_disponibilidad") {
                 const args = call.args as any;
