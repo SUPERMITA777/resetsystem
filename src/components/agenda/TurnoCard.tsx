@@ -78,24 +78,22 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
     const heightPercent = (turno.duracionMinutos / intervalToUse) * 100;
 
     const statusColors = {
-        PENDIENTE: 'bg-amber-400',
-        RESERVADO: 'bg-orange-500',
-        CONFIRMADO: 'bg-emerald-500',
-        COMPLETADO: 'bg-blue-500',
-        CANCELADO: 'bg-red-500'
+        CANCELADO: 'bg-red-100 text-red-800 border-red-200',
+        PENDIENTE: 'bg-orange-100 text-orange-800 border-orange-200',
+        COMPLETADO: 'bg-green-100 text-green-800 border-green-200',
+        CONFIRMADO: 'bg-sky-100 text-sky-800 border-sky-200',
+        RESERVADO: 'bg-yellow-100 text-yellow-800 border-yellow-200'
     };
 
     const status = (turno as any).status || 'RESERVADO';
-    let bgColor = statusColors[status as keyof typeof statusColors] || 'bg-black';
+    let colorClasses = statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-200';
 
     // Inteligencia de Clases: Naranja (incompleto), Verde (completo)
     const isClase = !!turno.claseId;
-    let textColor = 'text-white';
     let isFull = false;
     if (isClase && turno.claseInfo) {
         isFull = turno.claseInfo.inscriptosCount >= turno.claseInfo.cupo;
-        bgColor = isFull ? 'bg-emerald-100' : 'bg-orange-100';
-        textColor = isFull ? 'text-emerald-700' : 'text-orange-700';
+        colorClasses = isFull ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-orange-100 text-orange-800 border-orange-200';
     }
 
     return (
@@ -105,15 +103,15 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
             onClick={onClick}
             {...listeners}
             {...attributes}
-            className={`absolute left-0 right-0 mx-0.5 rounded-md px-1.5 py-1 text-[9px] ${textColor} shadow-xl transition-all pointer-events-auto flex flex-col overflow-hidden
+            className={`absolute left-0 right-0 mx-0.5 rounded-md px-1.5 py-1 text-[9px] shadow-sm transition-all pointer-events-auto flex flex-col overflow-hidden border
         ${disabled
                 ? isClase
-                    ? `cursor-not-allowed opacity-60 ${bgColor}`
-                    : 'cursor-not-allowed opacity-60 bg-gray-300 grayscale'
-                : `cursor-grab active:cursor-grabbing hover:brightness-110 ${bgColor}`
+                    ? `cursor-not-allowed opacity-60 ${colorClasses}`
+                    : 'cursor-not-allowed opacity-60 bg-gray-50 text-gray-400 border-gray-100 grayscale'
+                : `cursor-grab active:cursor-grabbing hover:brightness-105 ${colorClasses}`
             }
         ${isDragging ? 'z-50 opacity-80 ring-2 ring-white scale-105' : 'z-10'}
-        ${isClase ? 'border-l-4 border-white/30' : ''}
+        ${isClase ? 'border-l-4' : ''}
       `}
         >
             <div className="flex justify-between items-start w-full">

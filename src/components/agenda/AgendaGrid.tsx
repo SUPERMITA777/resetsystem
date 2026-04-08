@@ -137,11 +137,11 @@ export function AgendaGrid({ boxesCount = 7, turnos, onTurnoMove, config, view, 
                                 <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px]">
                                     {dayTurnos.slice(0, 3).map(t => {
                                         const statusColors = {
-                                            PENDIENTE: 'bg-amber-50 text-amber-700 border-amber-200',
-                                            RESERVADO: 'bg-orange-50 text-orange-700 border-orange-200',
-                                            CONFIRMADO: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                            COMPLETADO: 'bg-blue-50 text-blue-700 border-blue-200',
-                                            CANCELADO: 'bg-red-50 text-red-700 border-red-200'
+                                            CANCELADO: 'bg-red-50 text-red-700 border-red-200',
+                                            PENDIENTE: 'bg-orange-50 text-orange-700 border-orange-200',
+                                            COMPLETADO: 'bg-green-50 text-green-700 border-green-200',
+                                            CONFIRMADO: 'bg-sky-50 text-sky-700 border-sky-200',
+                                            RESERVADO: 'bg-yellow-50 text-yellow-700 border-yellow-200'
                                         };
                                         let colorClass = statusColors[t.status as keyof typeof statusColors] || statusColors.RESERVADO;
                                         
