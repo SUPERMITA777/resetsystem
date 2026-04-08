@@ -138,7 +138,7 @@ export function NuevoTurnoModal({
                 setCarrito([]);
             }
             if (editTurno.tratamientoId) {
-                loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || []);
+                loadSubAndSync(editTurno.tratamientoId, editTurno.subIds || [], editTurno.tratamientoAbreviado);
             }
         } else {
             resetForm();
@@ -226,12 +226,21 @@ export function NuevoTurnoModal({
             setSubtratamientos(data);
         } catch { } finally { setLoadingSubs(false); }
     };
-    const loadSubAndSync = async (tratId: string, subIds: string[]) => {
+    const loadSubAndSync = async (tratId: string, subIds: string[], subAbreviado?: string) => {
         setLoadingSubs(true);
         try {
             const data = await serviceManagement.getSubtratamientos(currentTenant, tratId);
             setSubtratamientos(data);
-            setSelectedSubs(data.filter(s => subIds.includes(s.id)));
+            
+            let matched = data.filter(s => subIds.includes(s.id));
+            
+            // Fallback: Si no hay match por ID pero tenemos nombre abreviado
+            if (matched.length === 0 && subAbreviado) {
+                const subNames = subAbreviado.split(',').map(n => n.trim().toLowerCase());
+                matched = data.filter(s => subNames.some(name => s.nombre.toLowerCase().includes(name)));
+            }
+            
+            setSelectedSubs(matched);
         } catch { } finally { setLoadingSubs(false); }
     };
     const handleAddSub = (id: string) => {

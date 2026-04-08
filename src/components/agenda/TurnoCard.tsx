@@ -107,7 +107,7 @@ export function TurnoCard({ turno, disabled = false, interval, onClick, onInscri
         ${disabled
                 ? isClase
                     ? `cursor-not-allowed opacity-60 ${colorClasses}`
-                    : 'cursor-not-allowed opacity-60 bg-gray-50 text-gray-400 border-gray-100 grayscale'
+                    : `cursor-not-allowed opacity-60 ${colorClasses} brightness-95`
                 : `cursor-grab active:cursor-grabbing hover:brightness-105 ${colorClasses}`
             }
         ${isDragging ? 'z-50 opacity-80 ring-2 ring-white scale-105' : 'z-10'}

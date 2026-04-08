@@ -184,21 +184,41 @@ export const geminiService = {
             if (call.name === "agendar_turno_pendiente") {
                 const args = call.args as any;
                 try {
-                    const servicioEncontrado = servicios.find(s => s.nombre.toLowerCase().includes(args.servicioNombre.toLowerCase()));
+                    // Buscar el subtratamiento por nombre (el agente ahora envía servicioNombre y subtratamientoNombre)
+                    const termRel = (args.subtratamientoNombre || args.servicioNombre).toLowerCase();
+                    const subEncontrado = servicios.find(s => s.nombre.toLowerCase().includes(termRel));
                     
+                    if (!subEncontrado) {
+                        result = await chat.sendMessage([{
+                            functionResponse: {
+                                name: "agendar_turno_pendiente",
+                                response: { content: "Error: No se encontró el servicio específico solicitado en la base de datos." }
+                            }
+                        }]);
+                        return;
+                    }
+
+                    const subtratamientosSnap = [{
+                        id: subEncontrado.id,
+                        nombre: subEncontrado.nombre,
+                        precio: subEncontrado.precio,
+                        duracion: subEncontrado.duracion_minutos
+                    }];
+
                     await createTurno(tenantId, {
                         clienteAbreviado: args.clienteNombre,
                         nombre: args.clienteNombre,
-                        tratamientoAbreviado: args.servicioNombre,
-                        subtratamientoAbreviado: args.subtratamientoNombre,
-                        duracionMinutos: servicioEncontrado?.duracion_minutos || 60,
+                        tratamientoAbreviado: subEncontrado.nombre,
+                        subIds: [subEncontrado.id],
+                        subtratamientosSnap,
+                        duracionMinutos: subEncontrado.duracion_minutos || 60,
                         boxId: "box-1",
                         fecha: args.fecha,
                         horaInicio: args.hora,
                         whatsapp: args.whatsapp || context.whatsapp || "",
                         status: 'PENDIENTE',
-                        total: servicioEncontrado?.precio || 0,
-                        tratamientoId: servicioEncontrado?.tratamientoId || ""
+                        total: subEncontrado.precio || 0,
+                        tratamientoId: subEncontrado.tratamientoId || ""
                     });
 
                     result = await chat.sendMessage([{
@@ -233,7 +253,23 @@ export const geminiService = {
             } else if (call.name === "modificar_turno") {
                 const args = call.args as any;
                 try {
-                    await updateTurno(tenantId, args.turnoId, args.data);
+                    const updateData = { ...args.data };
+                    
+                    // Si cambia el tratamiento, intentar reconstruir los snaps y IDs
+                    if (updateData.subtratamientoAbreviado) {
+                        const sub = servicios.find(s => s.nombre.toLowerCase().includes(updateData.subtratamientoAbreviado.toLowerCase()));
+                        if (sub) {
+                            updateData.subIds = [sub.id];
+                            updateData.tratamientoId = sub.tratamientoId;
+                            updateData.total = sub.precio;
+                            updateData.duracionMinutos = sub.duracion_minutos;
+                            updateData.subtratamientosSnap = [{
+                                id: sub.id, nombre: sub.nombre, precio: sub.precio, duracion: sub.duracion_minutos
+                            }];
+                        }
+                    }
+
+                    await updateTurno(tenantId, args.turnoId, updateData);
                     result = await chat.sendMessage([{
                         functionResponse: {
                             name: "modificar_turno",
