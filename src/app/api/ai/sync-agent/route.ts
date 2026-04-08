@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { geminiService } from "@/lib/services/geminiService";
 import { getTenantServer } from "@/lib/services/serverDb";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { clienteService } from "@/lib/services/clienteService";
 
 /**
  * Endpoint Síncrono para el Agente Local (.exe).
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
         collection = body.collection;
         action = body.action;
         docId = body.docId;
-        const { tenantId, sender, text, fromMe } = body;
+        const { tenantId, sender, text, fromMe, audio, mediaUrl, mimeType } = body;
 
         if (!tenantId || !sender || !text) {
             console.error("[SyncAgent] Missing required fields:", { tenantId, sender, text });
@@ -79,17 +80,70 @@ export async function POST(req: Request) {
             return NextResponse.json({ status: "ignored_muted" });
         }
 
-        // 4. Procesar con Gemini (A este punto, el delay y el typing lo gestiona el propio EXE local).
+        // 4. Obtener Información de Contexto (Nombre, WhatsApp)
+        const whatsappRaw = sender.split("@")[0].replace(/\D/g, "");
+        const cliente = await clienteService.getClienteByTelefono(tenant.slug, whatsappRaw);
+        const context = {
+            userName: cliente ? `${cliente.nombre} ${cliente.apellido || ""}`.trim() : undefined,
+            whatsapp: whatsappRaw
+        };
+
+        // 5. Recuperar Historial de Conversación (últimos 10 mensajes)
+        const historyRef = adminDb.collection("tenants").doc(tenant.slug)
+            .collection("ai_chats").doc(sender)
+            .collection("messages");
+        
+        const historySnap = await historyRef.orderBy("timestamp", "desc").limit(10).get();
+        const history = historySnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+                role: data.role as "user" | "model",
+                parts: [{ text: data.text }]
+            };
+        }).reverse();
+
+        // 6. Preparar Audio si existe
+        let audioData: any = null;
+        if (audio) {
+            audioData = { data: audio, mimeType: mimeType || "audio/ogg" };
+        } else if (mediaUrl) {
+            try {
+                const resp = await fetch(mediaUrl);
+                const arrayBuffer = await resp.arrayBuffer();
+                audioData = {
+                    data: Buffer.from(arrayBuffer).toString('base64'),
+                    mimeType: mimeType || resp.headers.get("content-type") || "audio/ogg"
+                };
+            } catch (e) {
+                console.error("[SyncAgent] Error fetching mediaUrl:", e);
+            }
+        }
+
+        // 7. Procesar con Gemini
         console.log("[SyncAgent] Invoking geminiService.chatNoemi for:", tenant.slug);
-        const responseText = await geminiService.chatNoemi(tenant.slug, text);
+        const responseText = await geminiService.chatNoemi(tenant.slug, text, history, context, audioData);
 
         if (!responseText) {
             console.warn("[SyncAgent] Gemini returned empty response");
             return NextResponse.json({ status: "ignored_empty_response" });
         }
 
+        // 8. Guardar Interacción en el Historial
+        const timestamp = new Date().toISOString();
+        const userText = text || (audioData ? "[Audio]" : "...");
+        await historyRef.add({
+            role: "user",
+            text: userText,
+            timestamp: timestamp
+        });
+        await historyRef.add({
+            role: "model",
+            text: responseText.replace("⚡ ", ""),
+            timestamp: new Date().toISOString()
+        });
+
         console.log("[SyncAgent] Gemini success response length:", responseText.length);
-        // 5. Retornar la respuesta síncronamente al EXE
+        // 9. Retornar la respuesta síncronamente al EXE
         return NextResponse.json({ reply: responseText });
 
     } catch (error: any) {

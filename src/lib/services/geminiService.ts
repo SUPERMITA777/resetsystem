@@ -2,6 +2,8 @@ import { GoogleGenerativeAI, Part, SchemaType } from "@google/generative-ai";
 import { getTenant } from "./tenantService";
 import { createTurno } from "./agendaService";
 import { serviceManagement } from "./serviceManagement";
+import { availabilityService } from "./availabilityService";
+import { format } from "date-fns";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -41,6 +43,11 @@ export interface ChatMessage {
     parts: Part[];
 }
 
+export interface AudioData {
+    data: string; // base64
+    mimeType: string;
+}
+
 /**
  * Servicio para interactuar con Google Gemini para las agentes Noemí y Verónica
  */
@@ -48,7 +55,7 @@ export const geminiService = {
     /**
      * Generar respuesta de Noemí (Ventas) con capacidad de agendamiento
      */
-    async chatNoemi(tenantId: string, userMessage: string, history: ChatMessage[] = []) {
+    async chatNoemi(tenantId: string, userMessage: string, history: ChatMessage[] = [], context: { userName?: string, whatsapp?: string } = {}, audio?: AudioData) {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.noemi?.active) return null;
 
@@ -73,18 +80,42 @@ export const geminiService = {
                         },
                         required: ["clienteNombre", "servicioNombre", "fecha", "hora"]
                     }
+                }, {
+                    name: "consultar_disponibilidad",
+                    description: "Consulta los horarios disponibles para un tratamiento en una fecha específica.",
+                    parameters: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            servicioNombre: { type: SchemaType.STRING, description: "Nombre del servicio/tratamiento" },
+                            fecha: { type: SchemaType.STRING, description: "Fecha en formato YYYY-MM-DD" }
+                        },
+                        required: ["servicioNombre", "fecha"]
+                    }
                 }]
             }]
         });
+
+        const now = new Date();
+        const fechaActual = format(now, 'yyyy-MM-dd');
+        const diaSemana = format(now, 'EEEE', { locale: require('date-fns/locale').es });
 
         const systemPrompt = `
             Eres Noemí, la experta en ventas de "${tenant.nombre_salon}".
             Tu objetivo es cerrar ventas agendando turnos en la agenda.
             
+            Fecha actual: ${fechaActual} (${diaSemana})
+            
+            Información del cliente:
+            - Nombre: ${context.userName || "Desconocido (Preguntar si es necesario)"}
+            - WhatsApp: ${context.whatsapp || "Desconocido"}
+            
             Servicios disponibles:
             ${serviciosContext}
             
-            Instrucciones:
+            Instrucciones CRÍTICAS:
+            - PERSISTENCIA: No repitas preguntas o consejos que ya diste anteriormente en esta conversación. Revisa el historial para mantener la fluidez.
+            - DISPONIBILIDAD: No preguntes "¿Qué día y hora te queda bien?". En su lugar, usa "consultar_disponibilidad" para ver qué hay libre y PROPÓN tú 2 o 3 opciones al cliente.
+            - Si el cliente te dice un día (ej: "mañana", "el jueves"), usa "consultar_disponibilidad" para ese día.
             - Sé amable, usa emojis y mantén el tono "${tenant.ai_config.noemi.tone}".
             - Si el cliente quiere un turno, verifica que el servicio exista en la lista.
             - Una vez que tengas Nombre, Servicio, Fecha y Hora, usa la función "agendar_turno_pendiente".
@@ -101,41 +132,88 @@ export const geminiService = {
             ],
         });
 
-        const result = await chat.sendMessage(userMessage);
-        const response = result.response;
-        const call = response.functionCalls()?.[0];
+        const userParts: Part[] = [];
+        if (audio) {
+            userParts.push({
+                inlineData: {
+                    data: audio.data,
+                    mimeType: audio.mimeType
+                }
+            });
+        }
+        userParts.push({ text: userMessage || (audio ? "Por favor, escucha este audio y responde al cliente." : "") });
 
-        if (call && call.name === "agendar_turno_pendiente") {
-            const args = call.args as any;
-            try {
-                // Buscar el ID del tratamiento/subtratamiento basándose en el nombre (búsqueda simple)
-                const servicioEncontrado = servicios.find(s => s.nombre.toLowerCase().includes(args.servicioNombre.toLowerCase()));
-                
-                await createTurno(tenantId, {
-                    clienteAbreviado: args.clienteNombre,
-                    nombre: args.clienteNombre,
-                    tratamientoAbreviado: args.servicioNombre,
-                    duracionMinutos: servicioEncontrado?.duracion_minutos || 60,
-                    boxId: "box-1", // Por defecto a box-1, ajustable
-                    fecha: args.fecha,
-                    horaInicio: args.hora,
-                    whatsapp: args.whatsapp || "",
-                    status: 'PENDIENTE', // Requisito del usuario
-                    total: servicioEncontrado?.precio || 0,
-                    tratamientoId: servicioEncontrado?.tratamientoId || ""
-                });
+        let result = await chat.sendMessage(userParts);
+        let response = result.response;
+        let call = response.functionCalls()?.[0];
 
-                const toolResponse = await chat.sendMessage([{
-                    functionResponse: {
-                        name: "agendar_turno_pendiente",
-                        response: { content: "Turno creado exitosamente con estatus PENDIENTE." }
+        // Manejo de Tool Calls en bucle (máximo 2 por si acaso)
+        let iterations = 0;
+        while (call && iterations < 2) {
+            iterations++;
+            
+            if (call.name === "agendar_turno_pendiente") {
+                const args = call.args as any;
+                try {
+                    const servicioEncontrado = servicios.find(s => s.nombre.toLowerCase().includes(args.servicioNombre.toLowerCase()));
+                    
+                    await createTurno(tenantId, {
+                        clienteAbreviado: args.clienteNombre,
+                        nombre: args.clienteNombre,
+                        tratamientoAbreviado: args.servicioNombre,
+                        duracionMinutos: servicioEncontrado?.duracion_minutos || 60,
+                        boxId: "box-1",
+                        fecha: args.fecha,
+                        horaInicio: args.hora,
+                        whatsapp: args.whatsapp || context.whatsapp || "",
+                        status: 'PENDIENTE',
+                        total: servicioEncontrado?.precio || 0,
+                        tratamientoId: servicioEncontrado?.tratamientoId || ""
+                    });
+
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "agendar_turno_pendiente",
+                            response: { content: "Turno creado exitosamente con estatus PENDIENTE." }
+                        }
+                    }]);
+                } catch (error) {
+                    console.error("Error en agendar_turno_pendiente:", error);
+                    return "Lo siento, tuve un problema al agendar. ¿Probamos de nuevo?";
+                }
+            } else if (call.name === "consultar_disponibilidad") {
+                const args = call.args as any;
+                try {
+                    const servicioEncontrado = servicios.find(s => s.nombre.toLowerCase().includes(args.servicioNombre.toLowerCase()));
+                    if (!servicioEncontrado) {
+                        result = await chat.sendMessage([{
+                            functionResponse: {
+                                name: "consultar_disponibilidad",
+                                response: { content: "Error: El servicio indicado no existe." }
+                            }
+                        }]);
+                    } else {
+                        const slots = await availabilityService.getAvailableSlots(tenantId, servicioEncontrado.tratamientoId, new Date(args.fecha + 'T12:00:00'));
+                        result = await chat.sendMessage([{
+                            functionResponse: {
+                                name: "consultar_disponibilidad",
+                                response: { content: `Horarios libres para ${args.fecha}: ${slots.length > 0 ? slots.join(", ") : "No hay disponibilidad para este día."}` }
+                            }
+                        }]);
                     }
-                }]);
-                return `⚡ ${toolResponse.response.text()}`;
-            } catch (error) {
-                console.error("Error en function call agendar_turno:", error);
-                return "Lo siento, tuve un problema técnico al intentar agendar tu turno. ¿Podrías intentar de nuevo en unos minutos?";
+                } catch (error) {
+                    console.error("Error en consultar_disponibilidad:", error);
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "consultar_disponibilidad",
+                            response: { content: "Error técnico al consultar disponibilidad." }
+                        }
+                    }]);
+                }
             }
+            
+            response = result.response;
+            call = response.functionCalls()?.[0];
         }
 
         return `⚡ ${response.text()}`;
@@ -144,7 +222,7 @@ export const geminiService = {
     /**
      * Generar respuesta de Verónica (Recordatorios)
      */
-    async chatVeronica(tenantId: string, userMessage: string, history: ChatMessage[] = []) {
+    async chatVeronica(tenantId: string, userMessage: string, history: ChatMessage[] = [], audio?: AudioData) {
         const tenant = await getTenant(tenantId);
         if (!tenant || !tenant.ai_config?.veronica?.active) return null;
 
@@ -170,7 +248,18 @@ export const geminiService = {
             ],
         });
 
-        const result = await chat.sendMessage(userMessage);
+        const userParts: Part[] = [];
+        if (audio) {
+            userParts.push({
+                inlineData: {
+                    data: audio.data,
+                    mimeType: audio.mimeType
+                }
+            });
+        }
+        userParts.push({ text: userMessage || (audio ? "Por favor, escucha este audio y responde al cliente." : "") });
+
+        const result = await chat.sendMessage(userParts);
         const responseText = result.response.text();
         return `⚡ ${responseText}`;
     }

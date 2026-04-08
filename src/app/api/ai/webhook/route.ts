@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTenant } from "@/lib/services/tenantService";
 import { geminiService } from "@/lib/services/geminiService";
 import { createTurno } from "@/lib/services/agendaService";
+import { clienteService } from "@/lib/services/clienteService";
+import { getAdminDb } from "@/lib/firebase-admin";
 
 /**
  * Webhook principal para recibir mensajes de WhatsApp/Instagram (Evolution API)
@@ -23,14 +25,21 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Extraer datos del mensaje
+        const audioMessage = body.data?.message?.audioMessage;
         const messageData = {
             sender: body.data?.key?.remoteJid || body.data?.from,
-            text: body.data?.message?.conversation || body.data?.content || "",
+            text: body.data?.message?.conversation || 
+                  body.data?.message?.extendedTextMessage?.text ||
+                  body.data?.content || "",
             isGroup: body.data?.key?.remoteJid?.includes("@g.us"),
-            timestamp: body.data?.messageTimestamp || Date.now()
+            timestamp: body.data?.messageTimestamp || Date.now(),
+            audio: audioMessage ? {
+                url: audioMessage.url,
+                mimeType: audioMessage.mimetype || "audio/ogg"
+            } : null
         };
 
-        if (messageData.isGroup || !messageData.text) {
+        if (messageData.isGroup || (!messageData.text && !messageData.audio)) {
             return NextResponse.json({ status: "ignored" });
         }
 
@@ -65,13 +74,49 @@ export async function POST(req: NextRequest) {
         }
 
         // 3c. Verificar si el chat está silenciado
-        const { db } = await import("@/lib/firebase");
-        const { doc, getDoc } = await import("firebase/firestore");
-        const muteSnap = await getDoc(doc(db, "tenants", tenant.slug, "ai_muted_chats", messageData.sender));
+        const adminDb = getAdminDb();
+        const muteRef = adminDb.collection("tenants").doc(tenant.slug).collection("ai_muted_chats").doc(messageData.sender);
+        const muteSnap = await muteRef.get();
         
-        if (muteSnap.exists()) {
+        if (muteSnap.exists) {
             console.log(`AI Webhook: Chat ${messageData.sender} está silenciado. Ignorando.`);
             return NextResponse.json({ status: "ignored_muted_chat" });
+        }
+
+        // 4. Obtener Información de Contexto (Nombre, WhatsApp) e Historial
+        const whatsappRaw = messageData.sender.split("@")[0].replace(/\D/g, "");
+        const cliente = await clienteService.getClienteByTelefono(tenant.slug, whatsappRaw);
+        const context = {
+            userName: cliente ? `${cliente.nombre} ${cliente.apellido || ""}`.trim() : undefined,
+            whatsapp: whatsappRaw
+        };
+
+        const historyRef = adminDb.collection("tenants").doc(tenant.slug)
+            .collection("ai_chats").doc(messageData.sender)
+            .collection("messages");
+        
+        const historySnap = await historyRef.orderBy("timestamp", "desc").limit(10).get();
+        const history = historySnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+                role: data.role as "user" | "model",
+                parts: [{ text: data.text }]
+            };
+        }).reverse();
+
+        // 5. Preparar Audio si existe
+        let audioData: any = null;
+        if (messageData.audio?.url) {
+            try {
+                const resp = await fetch(messageData.audio.url);
+                const arrayBuffer = await resp.arrayBuffer();
+                audioData = {
+                    data: Buffer.from(arrayBuffer).toString('base64'),
+                    mimeType: messageData.audio.mimeType
+                };
+            } catch (e) {
+                console.error("AI Webhook: Error downloading audio", e);
+            }
         }
 
         // --- EFECTO HUMANO ---
@@ -89,9 +134,8 @@ export async function POST(req: NextRequest) {
         await new Promise(resolve => setTimeout(resolve, delay));
         // ---------------------
 
-        // 4. Elegir Agente (Noemí o Verónica)
-        const { geminiService } = await import("@/lib/services/geminiService");
-        const responseText = await geminiService.chatNoemi(tenant.slug, messageData.text);
+        // 6. Elegir Agente y Procesar
+        const responseText = await geminiService.chatNoemi(tenant.slug, messageData.text, history, context, audioData);
 
         if (!responseText) {
             return NextResponse.json({ status: "no_ai_response" });
@@ -102,6 +146,20 @@ export async function POST(req: NextRequest) {
         if (responseText.includes("AGENDAR_TURNO_TRIGGER")) {
              // Lógica de agendamiento como PENDIENTE
         }
+
+        // 7. Guardar Interacción en el Historial
+        const timestamp = new Date().toISOString();
+        const userText = messageData.text || (audioData ? "[Audio]" : "...");
+        await historyRef.add({
+            role: "user",
+            text: userText,
+            timestamp: timestamp
+        });
+        await historyRef.add({
+            role: "model",
+            text: responseText.replace("⚡ ", ""),
+            timestamp: new Date().toISOString()
+        });
 
         return NextResponse.json({ 
             status: "success", 
