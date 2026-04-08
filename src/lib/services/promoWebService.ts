@@ -1,4 +1,3 @@
-import { Timestamp } from "firebase/firestore";
 import { dbGet, dbList, dbSet, dbAdd, dbUpdate, dbDelete } from "./apiBridge";
 
 export interface PromoWeb {
@@ -8,7 +7,7 @@ export interface PromoWeb {
     whatsapp_negocio: string;
     subtitulo_logo?: string;
     short_code?: string;
-    createdAt?: Timestamp;
+    createdAt?: any;
 }
 
 export interface Premio {
@@ -16,7 +15,7 @@ export interface Premio {
     nombre: string;
     descripcion: string;
     tipo: "descuento" | "regalo" | "otro";
-    vencimiento: Timestamp;
+    vencimiento: any; // ISO string o timestamp object
     probabilidad: number;
     stock?: number;
     activo: boolean;
@@ -28,7 +27,7 @@ export interface Participante {
     whatsapp: string;
     premioId: string;
     premioNombre: string;
-    ganado_en: Timestamp;
+    ganado_en: any;
 }
 
 export interface ShortLink {
@@ -69,7 +68,7 @@ export async function getPromo(tenantId: string, promoId: string): Promise<Promo
 }
 
 export async function createPromo(tenantId: string, data: Omit<PromoWeb, "id" | "createdAt">): Promise<string> {
-    const res = await dbAdd(`tenants/${tenantId}/promos_web`, { ...data, createdAt: new Date() });
+    const res = await dbAdd(`tenants/${tenantId}/promos_web`, { ...data, createdAt: new Date().toISOString() });
     return res.id;
 }
 
@@ -108,10 +107,9 @@ export async function registrarParticipante(tenantId: string, promoId: string, d
     await dbSet(`tenants/${tenantId}/promos_web/${promoId}/participantes`, normalized, { 
         ...data, 
         whatsapp: normalized, 
-        ganado_en: new Date() 
+        ganado_en: new Date().toISOString()
     });
 
-    // Incrementar ganadores (esto requiere lógica que idealmente debería ser atómica, pero proxiamos por ahora)
     const premio = await dbGet(`tenants/${tenantId}/promos_web/${promoId}/premios`, data.premioId);
     if (premio) {
         const updates: any = { ganadores: (premio.ganadores || 0) + 1 };
@@ -135,10 +133,21 @@ export async function resetParticipante(tenantId: string, promoId: string, phone
 // ─── SORTEO ───────────────────────────────────────────────────────────────────
 
 export function sortearPremio(premios: Premio[]): Premio | null {
-    const now = Math.floor(Date.now() / 1000);
-    const elegibles = premios.filter(
-        (p) => p.activo && (p.vencimiento?.seconds || 0) > now && (typeof p.stock !== "number" || p.stock > 0)
-    );
+    const now = Date.now();
+    const elegibles = premios.filter((p) => {
+        // Manejar fecha de vencimiento que viene del proxy (Admin SDK as ISO o Timestamp object)
+        let vencimientoMs = 0;
+        if (p.vencimiento?._seconds) {
+            vencimientoMs = p.vencimiento._seconds * 1000;
+        } else if (typeof p.vencimiento === "string") {
+            vencimientoMs = new Date(p.vencimiento).getTime();
+        } else if (p.vencimiento instanceof Date) {
+            vencimientoMs = p.vencimiento.getTime();
+        }
+
+        return p.activo && vencimientoMs > now && (typeof p.stock !== "number" || p.stock > 0);
+    });
+    
     if (elegibles.length === 0) return null;
 
     const total = elegibles.reduce((sum, p) => sum + (p.probabilidad || 1), 0);

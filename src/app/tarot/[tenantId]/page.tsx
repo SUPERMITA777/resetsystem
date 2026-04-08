@@ -6,7 +6,6 @@ import { tarotService, TarotCard, TarotReading } from "@/lib/services/tarotServi
 import { getTarotReading } from "@/lib/actions/tarotActions";
 import { Loader2, Sparkles, Send, RotateCcw, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
-import { Timestamp } from "firebase/firestore";
 
 type SpreadType = 1 | 3 | 5;
 type Stage = "setup" | "shuffle" | "pick" | "reveal" | "reading";
@@ -96,7 +95,7 @@ export default function TarotPublicPage() {
                     pregunta: question,
                     cartas: selected,
                     interpretacion: res.text || "",
-                    createdAt: Timestamp.now()
+                    createdAt: new Date().toISOString()
                 });
             } catch (err) {
                 console.error("Error saving reading:", err);

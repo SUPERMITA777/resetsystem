@@ -12,7 +12,6 @@ import {
 } from "@/lib/services/promoWebService";
 import { clienteService } from "@/lib/services/clienteService";
 import { TenantData } from "@/lib/services/tenantService";
-import { Timestamp as FirebaseTimestamp } from "firebase/firestore";
 
 type Stage = "form" | "spinning" | "prize" | "already_played" | "no_prizes" | "inactive";
 
@@ -99,7 +98,7 @@ export default function PromoClientView({ tenantId, promoId, initialPromo, initi
                 whatsapp: cleanPhone,
                 premioId: ganado.id,
                 premioNombre: ganado.nombre,
-                ganado_en: FirebaseTimestamp.now(),
+                ganado_en: new Date().toISOString(),
             });
 
             try {

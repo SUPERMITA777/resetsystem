@@ -39,14 +39,9 @@ if (typeof window !== 'undefined') {
     auth = getAuth(app);
 
     try {
-        db = initializeFirestore(app, {
-            localCache: persistentLocalCache({
-                tabManager: persistentMultipleTabManager()
-            }),
-            experimentalForceLongPolling: true,
-        });
-    } catch {
         db = getFirestore(app);
+    } catch (e) {
+        console.error("Error initializing Firestore:", e);
     }
 
     storage = getStorage(app);

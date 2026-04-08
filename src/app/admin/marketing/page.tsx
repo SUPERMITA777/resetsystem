@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Smartphone, Instagram, Facebook, Globe, Image as ImageIcon, Search, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getTenant, createOrUpdateTenant } from '@/lib/services/tenantService';
 
 export default function MarketingPage() {
     const [loading, setLoading] = useState(true);
@@ -22,16 +21,18 @@ export default function MarketingPage() {
         seo_description: ''
     });
 
-    const tenantId = 'resetspa'; // Mocked
+    // En producción esto vendría del contexto de Auth o de la URL
+    const [tenantId, setTenantId] = useState('resetspa');
 
     useEffect(() => {
+        const id = localStorage.getItem('currentTenant') || 'resetspa';
+        setTenantId(id);
+
         async function loadMarketingData() {
             setLoading(true);
             try {
-                const docRef = doc(db, 'tenants', tenantId);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const tenantData = snap.data();
+                const tenantData = await getTenant(id);
+                if (tenantData) {
                     setData({
                         description: tenantData.descripcion || '',
                         instagram: tenantData.redes?.instagram || '',
@@ -55,15 +56,20 @@ export default function MarketingPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const docRef = doc(db, 'tenants', tenantId);
-            await updateDoc(docRef, {
+            await createOrUpdateTenant(tenantId, {
                 descripcion: data.description,
-                "redes.instagram": data.instagram,
-                "redes.facebook": data.facebook,
-                "redes.tiktok": data.tiktok,
-                "datos_contacto.whatsapp": data.whatsapp_public,
-                "seo.title": data.seo_title,
-                "seo.description": data.seo_description
+                redes: {
+                    instagram: data.instagram,
+                    facebook: data.facebook,
+                    tiktok: data.tiktok,
+                },
+                datos_contacto: {
+                    whatsapp: data.whatsapp_public
+                },
+                seo: {
+                    title: data.seo_title,
+                    description: data.seo_description
+                }
             });
             toast.success("¡Configuración de Marketing guardada!");
         } catch (error) {

@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { CheckCircle2, ChevronRight, Store, LayoutGrid, Users, Scissors } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc, collection, setDoc, writeBatch, getDoc } from 'firebase/firestore';
+import { dbGet, dbBatch, BatchOperation } from '@/lib/services/apiBridge';
 
 const STEPS = [
     { id: 'salon', title: 'Mi Salón', icon: Store, description: 'Datos básicos de tu negocio.' },
@@ -58,65 +57,84 @@ export function OnboardingWizard() {
             let tenantId = baseSlug;
             let counter = 1;
             
-            // Verificar si el tenant ya existe
+            // Verificar si el tenant ya existe (via Proxy)
             while (true) {
-                const checkRef = doc(db, 'tenants', tenantId);
-                const checkSnap = await getDoc(checkRef);
-                if (!checkSnap.exists()) {
+                const checkSnap = await dbGet('tenants', tenantId);
+                if (!checkSnap) {
                     break;
                 }
                 tenantId = `${baseSlug}-${counter}`;
                 counter++;
             }
 
-            const batch = writeBatch(db);
+            const operations: BatchOperation[] = [];
 
             // 1. Crear Configuración del Salón
-            const tenantRef = doc(db, 'tenants', tenantId);
-            batch.set(tenantRef, {
-                slug: tenantId,
-                nombre_salon: salonName || 'Mi Salón',
-                datos_contacto: {
-                    whatsapp: phone || '',
-                    direccion: address || '',
-                    telefono: '',
-                    descripcion: '',
-                    instagram: ''
-                },
-                config_boxes: boxesCount,
-                status: 'active',
-                createdAt: new Date(),
-                tema_visual: 'nude'
+            operations.push({
+                type: 'set',
+                collection: 'tenants',
+                docId: tenantId,
+                data: {
+                    slug: tenantId,
+                    nombre_salon: salonName || 'Mi Salón',
+                    datos_contacto: {
+                        whatsapp: phone || '',
+                        direccion: address || '',
+                        telefono: '',
+                        descripcion: '',
+                        instagram: ''
+                    },
+                    config_boxes: boxesCount,
+                    status: 'active',
+                    createdAt: new Date().toISOString(),
+                    tema_visual: 'nude'
+                }
             });
 
-            // 2. Crear primer empleado
+            // 2. Crear primer empleado (Generamos un ID aleatorio para el proxy)
+            const staffId = `staff_${Math.random().toString(36).substr(2, 9)}`;
             if (staffName) {
-                const newStaffRef = doc(collection(db, `tenants/${tenantId}/empleados`));
-                batch.set(newStaffRef, {
-                    nombre: staffName,
-                    tipo_pago: staffRole, // 'fixed' | 'commission' | 'hybrid'
-                    porcentaje_comision: staffRole === 'commission' ? 50 : 0
+                operations.push({
+                    type: 'set',
+                    collection: `tenants/${tenantId}/empleados`,
+                    docId: staffId,
+                    data: {
+                        id: staffId,
+                        nombre: staffName,
+                        tipo_pago: staffRole,
+                        porcentaje_comision: staffRole === 'commission' ? 50 : 0
+                    }
                 });
             }
 
-            // 3. Tus Servicios (Estructura Jerárquica)
+            // 3. Tus Servicios
             if (serviceName) {
-                // Crear Categoría
-                const categoryRef = doc(collection(db, `tenants/${tenantId}/tratamientos`));
-                batch.set(categoryRef, { nombre: 'Servicios Principales' });
+                const categoryId = `cat_${Math.random().toString(36).substr(2, 9)}`;
+                const serviceId = `svc_${Math.random().toString(36).substr(2, 9)}`;
 
-                // Crear Subtratamiento (Servicio final)
-                const serviceRef = doc(collection(db, `tenants/${tenantId}/subtratamientos`));
-                batch.set(serviceRef, {
-                    categoria_id: categoryRef.id,
-                    nombre: serviceName,
-                    precio: parseFloat(servicePrice) || 0,
-                    duracion_minutos: 60 // default
+                operations.push({
+                    type: 'set',
+                    collection: `tenants/${tenantId}/tratamientos`,
+                    docId: categoryId,
+                    data: { id: categoryId, nombre: 'Servicios Principales' }
+                });
+
+                operations.push({
+                    type: 'set',
+                    collection: `tenants/${tenantId}/subtratamientos`,
+                    docId: serviceId,
+                    data: {
+                        id: serviceId,
+                        categoria_id: categoryId,
+                        nombre: serviceName,
+                        precio: parseFloat(servicePrice) || 0,
+                        duracion_minutos: 60
+                    }
                 });
             }
 
-            // Ejecutar todas las escrituras juntas (Atómico)
-            await batch.commit();
+            // Ejecutar batch vía Proxy
+            await dbBatch(operations);
 
             toast.success('¡Salón configurado exitosamente!', { id: loadingToast });
             router.push('/admin/dashboard');

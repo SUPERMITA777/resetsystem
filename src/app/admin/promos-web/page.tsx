@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Gift, Trophy, Plus, Trash2, Edit3, RotateCcw, Copy, Check, X, Save, Power, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
-import { Timestamp } from "firebase/firestore";
 import {
     PromoWeb, Premio,
     getPromos, createPromo, updatePromo,
@@ -34,6 +33,15 @@ const emptyForm = (): PremioForm => ({
     stock: "",
     activo: true,
 });
+
+// Helper para convertir fechas que vienen del proxy
+function parseProxyDate(dateObj: any): Date | null {
+    if (!dateObj) return null;
+    if (typeof dateObj === 'string') return new Date(dateObj);
+    if (dateObj._seconds) return new Date(dateObj._seconds * 1000);
+    if (dateObj.seconds) return new Date(dateObj.seconds * 1000);
+    return null;
+}
 
 export default function PromosWebPage() {
     const TENANT_ID = typeof window !== "undefined" ? localStorage.getItem("currentTenant") || "resetspa" : "resetspa";
@@ -77,7 +85,7 @@ export default function PromosWebPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [TENANT_ID]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -113,8 +121,8 @@ export default function PromosWebPage() {
                         valB = b.premioNombre?.toLowerCase() || "";
                         break;
                     case 'fecha':
-                        valA = a.ganado_en?.seconds || 0;
-                        valB = b.ganado_en?.seconds || 0;
+                        valA = parseProxyDate(a.ganado_en)?.getTime() || 0;
+                        valB = parseProxyDate(b.ganado_en)?.getTime() || 0;
                         break;
                 }
 
@@ -192,7 +200,7 @@ export default function PromosWebPage() {
     const handleOpenPremioModal = (premio?: Premio) => {
         if (premio) {
             setEditingPremio(premio);
-            const d = premio.vencimiento?.toDate?.();
+            const d = parseProxyDate(premio.vencimiento);
             setPremioForm({
                 nombre: premio.nombre,
                 descripcion: premio.descripcion,
@@ -215,7 +223,9 @@ export default function PromosWebPage() {
             toast.error("Completá nombre y fecha de vencimiento");
             return;
         }
-        const vencimiento = Timestamp.fromDate(new Date(premioForm.vencimientoStr + "T23:59:59"));
+        
+        // Enviamos la fecha como string ISO para que el Proxy la maneje
+        const vencimiento = new Date(premioForm.vencimientoStr + "T23:59:59").toISOString();
         const data = { ...premioForm, vencimiento } as any;
         if (data.stock === "") {
             delete data.stock;
@@ -450,7 +460,7 @@ export default function PromosWebPage() {
                                                 <span>•</span>
                                                 <span>Stock: {typeof p.stock === "number" ? p.stock : "∞"}</span>
                                                 <span>•</span>
-                                                <span>Vence: {p.vencimiento?.toDate?.()?.toLocaleDateString("es-AR") || "—"}</span>
+                                                <span>Vence: {parseProxyDate(p.vencimiento)?.toLocaleDateString("es-AR") || "—"}</span>
                                                 <span>•</span>
                                                 <span>🏆 {p.ganadores || 0}</span>
                                             </div>
@@ -571,7 +581,7 @@ export default function PromosWebPage() {
                                                             </span>
                                                         </td>
                                                         <td className="px-5 py-3 text-gray-400 text-xs">
-                                                            {g.ganado_en?.toDate?.()?.toLocaleDateString("es-AR") || "—"}
+                                                            {parseProxyDate(g.ganado_en)?.toLocaleDateString("es-AR") || "—"}
                                                         </td>
                                                         <td className="px-5 py-3">
                                                             <button

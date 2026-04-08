@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { serviceManagement, Tratamiento, Subtratamiento } from '@/lib/services/serviceManagement';
 import { getTenant, TenantData } from '@/lib/services/tenantService';
-import { getTurnosPorFecha } from '@/lib/services/agendaService';
+import { getTurnosPorFecha, createTurno } from '@/lib/services/agendaService';
 import toast from 'react-hot-toast';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { dbAdd } from '@/lib/services/apiBridge';
 
 interface PublicBookingFlowProps {
     tenantName: string;
@@ -169,16 +168,15 @@ export function PublicBookingFlow({ tenantName }: PublicBookingFlowProps) {
             fecha: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null,
             hora: selectedHora,
             status: 'pendiente',
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         };
 
         try {
-            // 1. Guardar en leads_whatsapp subcollection
-            await addDoc(collection(db, 'tenants', slug, 'leads_whatsapp'), leadData);
+            // 1. Guardar en leads_whatsapp subcollection vía Proxy
+            await dbAdd(`tenants/${slug}/leads_whatsapp`, leadData);
 
             // 2. Opcional: Crear turno en agenda como PENDIENTE
             if (selectedDate && selectedHora && slug) {
-                const { createTurno } = await import('@/lib/services/agendaService');
                 await createTurno(slug, {
                     clienteAbreviado: name,
                     tratamientoAbreviado: selectedTratamiento?.nombre || '',

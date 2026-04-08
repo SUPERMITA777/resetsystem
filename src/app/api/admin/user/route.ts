@@ -14,7 +14,9 @@ export async function GET(req: Request) {
         const doc = await db.collection("users").doc(uid).get();
 
         if (!doc.exists) {
-            return NextResponse.json({ error: "User profile not found" }, { status: 404 });
+            // No devolvemos 404 para no romper el AuthProvider
+            // Simplemente indicamos que no hay perfil aún
+            return NextResponse.json({ success: true, data: null });
         }
 
         return NextResponse.json({ success: true, data: doc.data() });

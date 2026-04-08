@@ -1,5 +1,5 @@
-import { db, storage } from "../firebase";
-import { collection, doc, addDoc, getDocs, deleteDoc, query, where, orderBy } from "firebase/firestore";
+import { storage } from "../firebase";
+import { dbList, dbAdd, dbDelete } from "./apiBridge";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 export interface FitnessTrack {
@@ -8,7 +8,7 @@ export interface FitnessTrack {
     url: string;
     bpm: number;
     tenantId: string;
-    createdAt: Date;
+    createdAt: any;
 }
 
 export const uploadTrackFile = async (file: File, tenantId: string): Promise<string> => {
@@ -18,20 +18,18 @@ export const uploadTrackFile = async (file: File, tenantId: string): Promise<str
 };
 
 export const addFitnessTrack = async (track: Omit<FitnessTrack, 'id'>): Promise<string> => {
-    const colRef = collection(db, "fitness_tracks");
-    const docRef = await addDoc(colRef, {
+    const res = await dbAdd("fitness_tracks", {
         ...track,
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
     });
-    return docRef.id;
+    return res.id;
 };
 
 export const getFitnessTracks = async (tenantId: string): Promise<FitnessTrack[]> => {
-    const colRef = collection(db, "fitness_tracks");
-    const q = query(colRef, where("tenantId", "==", tenantId));
-    const snapshot = await getDocs(q);
-    const tracks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FitnessTrack));
-    return tracks.sort((a, b) => a.name.localeCompare(b.name));
+    const list = await dbList("fitness_tracks", [
+        { field: "tenantId", operator: "==", value: tenantId }
+    ]);
+    return list.sort((a: any, b: any) => a.name.localeCompare(b.name));
 };
 
 export const deleteFitnessTrack = async (trackId: string, fileUrl: string) => {
@@ -43,6 +41,6 @@ export const deleteFitnessTrack = async (trackId: string, fileUrl: string) => {
         console.warn("Storage file might not exist or already deleted", e);
     }
     
-    // Delete from firestore
-    await deleteDoc(doc(db, "fitness_tracks", trackId));
+    // Delete from firestore via proxy
+    await dbDelete("fitness_tracks", trackId);
 };

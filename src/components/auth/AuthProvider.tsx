@@ -2,9 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { app, db } from "@/lib/firebase";
-
-import { doc, getDoc } from "firebase/firestore";
+import { app } from "@/lib/firebase";
 
 interface AuthContextType {
     user: User | null;
@@ -37,18 +35,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     
                     if (result.success && result.data) {
                         const profile = result.data;
-                        const isUserStaff = profile.role === 'staff' || profile.role === 'salon_admin';
+                        const isUserStaff = profile.role === 'staff' || profile.role === 'salon_admin' || profile.role === 'superadmin';
                         setIsStaff(isUserStaff);
                         setRole(profile.role || null);
-                        setStaffId(isUserStaff ? firebaseUser.uid : null);
+                        setStaffId(profile.uid || firebaseUser.uid);
                         setTenantId(profile.tenantId || null);
                     } else {
+                        // El usuario existe en Firebase pero no tiene un perfil registrado en la DB
+                        console.warn("[Auth] No hay perfil en Firestore para:", firebaseUser.email);
                         setIsStaff(false);
                         setRole(null);
                         setStaffId(null);
                         setTenantId(null);
                     }
                 } catch (e) {
+                    console.error("[Auth] Error fetching profile:", e);
                     setIsStaff(false);
                     setRole(null);
                     setStaffId(null);

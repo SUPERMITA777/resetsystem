@@ -1,17 +1,4 @@
-import { db } from "../firebase";
-import {
-    collection,
-    doc,
-    setDoc,
-    getDoc,
-    getDocs,
-    query,
-    where,
-    deleteDoc,
-    updateDoc,
-    serverTimestamp,
-    orderBy
-} from "firebase/firestore";
+import { dbGet, dbList, dbUpdate, dbAdd, dbDelete } from "./apiBridge";
 
 export interface Horario {
     id: string;
@@ -35,7 +22,7 @@ export interface Clase {
     horarios: Horario[];
     createdAt?: any;
     status: 'active' | 'cancelled';
-    // Compatibilidad (se usará el primer horario si existe o se dejará vacío)
+    // Compatibilidad
     fecha?: string;
     hora?: string;
     inscriptosCount?: number;
@@ -45,52 +32,37 @@ const COLLECTION_NAME = "clases";
 
 export const claseService = {
     async createClase(tenantId: string, data: Omit<Clase, "id" | "tenantId" | "status" | "horarios"> & { horarios?: Horario[] }) {
-        const ref = collection(db, "tenants", tenantId, COLLECTION_NAME);
-        const newDoc = doc(ref);
-        const claseData: Clase = {
+        const res = await dbAdd(`tenants/${tenantId}/${COLLECTION_NAME}`, {
             ...data,
-            id: newDoc.id,
             tenantId,
             horarios: data.horarios || [],
             status: 'active',
-            createdAt: serverTimestamp()
-        };
-        await setDoc(newDoc, claseData);
-        return newDoc.id;
+            createdAt: new Date().toISOString()
+        });
+        await dbUpdate(`tenants/${tenantId}/${COLLECTION_NAME}`, res.id, { id: res.id });
+        return res.id;
     },
 
     async getClases(tenantId: string): Promise<Clase[]> {
-        const ref = collection(db, "tenants", tenantId, COLLECTION_NAME);
-        const q = query(ref, orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Clase));
+        const list = await dbList(`tenants/${tenantId}/${COLLECTION_NAME}`);
+        return list.sort((a: any, b: any) => (b.createdAt > a.createdAt ? 1 : -1));
     },
 
     async updateClase(tenantId: string, id: string, data: Partial<Clase>) {
-        const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, id);
-        await updateDoc(ref, data);
+        await dbUpdate(`tenants/${tenantId}/${COLLECTION_NAME}`, id, data);
     },
 
     async deleteClase(tenantId: string, id: string) {
-        const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, id);
-        await deleteDoc(ref);
+        await dbDelete(`tenants/${tenantId}/${COLLECTION_NAME}`, id);
     },
 
     async getClaseById(tenantId: string, id: string): Promise<Clase | null> {
-        const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, id);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-            return { ...snap.data(), id: snap.id } as Clase;
-        }
-        return null;
+        return await dbGet(`tenants/${tenantId}/${COLLECTION_NAME}`, id);
     },
 
     async rescheduleSession(tenantId: string, claseId: string, oldFecha: string, oldHora: string, newFecha: string, newHora: string, newBoxId?: string) {
-        const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, claseId);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-            const clase = snap.data() as Clase;
-            // 1. Actualizar el horario en el documento de la Clase
+        const clase = await this.getClaseById(tenantId, claseId);
+        if (clase) {
             const updatedHorarios = (clase.horarios || []).map(h => 
                 (h.fecha === oldFecha && h.hora === oldHora) ? { ...h, fecha: newFecha, hora: newHora } : h
             );
@@ -98,9 +70,8 @@ export const claseService = {
             const updateData: any = { horarios: updatedHorarios };
             if (newBoxId) updateData.boxId = newBoxId;
             
-            await updateDoc(ref, updateData);
+            await this.updateClase(tenantId, claseId, updateData);
 
-            // 2. Actualizar todos los turnos de alumnos vinculados a esta sesión en la Agenda
             const { getInscriptosPorClaseYHorario, updateTurnoPosicion } = await import("./agendaService");
             const inscriptos = await getInscriptosPorClaseYHorario(tenantId, claseId, oldFecha, oldHora);
             
@@ -113,25 +84,19 @@ export const claseService = {
     },
 
     async incrementInscriptos(tenantId: string, id: string, horarioId: string, amount: number = 1) {
-        const ref = doc(db, "tenants", tenantId, COLLECTION_NAME, id);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-            const clase = snap.data() as Clase;
+        const clase = await this.getClaseById(tenantId, id);
+        if (clase) {
             const updatedHorarios = (clase.horarios || []).map(h => 
                 h.id === horarioId ? { ...h, inscriptosCount: (h.inscriptosCount || 0) + amount } : h
             );
-            await updateDoc(ref, { horarios: updatedHorarios });
+            await this.updateClase(tenantId, id, { horarios: updatedHorarios });
         }
     },
 
     async getInscriptos(tenantId: string, claseId: string) {
-        // Obtenemos los turnos vinculados a esta clase que estén CONFIRMADOS o RESERVADOS
-        const q = query(
-            collection(db, "tenants", tenantId, "agenda"),
-            where("claseId", "==", claseId),
-            where("status", "in", ["CONFIRMADO", "RESERVADO", "COMPLETADO"])
-        );
-        const snap = await getDocs(q);
-        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        return await dbList(`tenants/${tenantId}/agenda`, [
+            { field: "claseId", operator: "==", value: claseId },
+            { field: "status", operator: "in", value: ["CONFIRMADO", "RESERVADO", "COMPLETADO"] }
+        ]);
     }
 };

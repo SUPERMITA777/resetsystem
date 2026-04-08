@@ -40,3 +40,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 local-agent/node_modules  
+
+# large files
+/public/downloads/ResetAgent_*
+/public/downloads/auth_info_baileys/
+local-agent/build/
+local-agent/dist/
+local-agent/test.exe
+local-agent/*.exe
+local-agent/*.bin
+local-agent/*.log
+

@@ -1,12 +1,4 @@
-import { db } from "../firebase";
-import {
-    collection,
-    addDoc,
-    getDocs,
-    query,
-    orderBy,
-    serverTimestamp
-} from "firebase/firestore";
+import { dbList, dbAdd } from "./apiBridge";
 
 export interface EntradaHistoria {
     id?: string;
@@ -20,23 +12,20 @@ export interface EntradaHistoria {
     createdAt?: any;
 }
 
-const path = (tenantId: string, clienteId: string) =>
-    collection(db, "tenants", tenantId, "clientes", clienteId, "historia_clinica");
+const getPath = (tenantId: string, clienteId: string) =>
+    `tenants/${tenantId}/clientes/${clienteId}/historia_clinica`;
 
 export const historiaClinicaService = {
     async getHistoria(tenantId: string, clienteId: string): Promise<EntradaHistoria[]> {
-        const ref = path(tenantId, clienteId);
-        const q = query(ref, orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as EntradaHistoria));
+        const list = await dbList(getPath(tenantId, clienteId));
+        return list.sort((a: any, b: any) => (b.createdAt > a.createdAt ? 1 : -1));
     },
 
     async addEntrada(tenantId: string, clienteId: string, entrada: Omit<EntradaHistoria, 'id' | 'createdAt'>): Promise<string> {
-        const ref = path(tenantId, clienteId);
-        const docRef = await addDoc(ref, {
+        const res = await dbAdd(getPath(tenantId, clienteId), {
             ...entrada,
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         });
-        return docRef.id;
+        return res.id;
     }
 };

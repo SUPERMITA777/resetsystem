@@ -1,5 +1,4 @@
-import { db } from "../firebase";
-import { collection, doc, setDoc, getDoc, getDocs, query, orderBy } from "firebase/firestore";
+import { dbGet, dbList, dbUpdate, dbAdd, dbSet } from "./apiBridge";
 
 export interface TenantData {
     slug: string;
@@ -8,9 +7,19 @@ export interface TenantData {
     config_boxes: number;
     tema_visual: "nude" | "lavender" | "sage";
     logo_url?: string;
+    descripcion?: string; // Agregado para marketing
+    redes?: {
+        instagram?: string;
+        facebook?: string;
+        tiktok?: string;
+    };
+    seo?: {
+        title?: string;
+        description?: string;
+    };
     status: 'active' | 'paused' | 'deleted';
-    activeUntil?: any; // Firestore Timestamp
-    createdAt?: any;  // Firestore Timestamp
+    activeUntil?: any;
+    createdAt?: any;
     agenda_config?: {
         intervalo: 10 | 15 | 30 | 60;
         horario_inicio: string; // "HH:mm"
@@ -59,78 +68,22 @@ export interface TenantData {
             auto_reschedule: boolean;
             smart_waitlist?: boolean;
         };
-        evolution_api_url?: string; // Para modo servidor local
+        evolution_api_url?: string;
     };
 }
 
 const COLLECTION_NAME = "tenants";
 
 export async function createOrUpdateTenant(slug: string, data: Partial<TenantData>) {
-    console.log(`Guardando en tenants/${slug}:`, data);
-
-    // Si estamos en el navegador, usamos el puente API para evitar problemas de permisos
-    if (typeof window !== 'undefined') {
-        try {
-            const res = await fetch('/api/admin/tenant', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug, data })
-            });
-            if (!res.ok) throw new Error("Error en puente API de Guardado");
-            return;
-        } catch (error) {
-            console.error("Error guardando via API Bridge, reintentando via Firestore directo...", error);
-        }
-    }
-
-    const tenantRef = doc(db, COLLECTION_NAME, slug);
-    await setDoc(tenantRef, data, { merge: true });
+    await dbUpdate(COLLECTION_NAME, slug, data);
 }
 
 export async function getTenant(slug: string): Promise<TenantData | null> {
-    
-    // Si estamos en el navegador, usamos el puente API para evitar problemas de permisos
-    if (typeof window !== 'undefined') {
-        try {
-            const res = await fetch(`/api/admin/tenant?slug=${slug}`);
-            const result = await res.json();
-            if (result.success) return result.data;
-        } catch (error) {
-            console.error("Error obteniendo via API Bridge, reintentando via Firestore directo...", error);
-        }
-    }
-
-    const tenantRef = doc(db, COLLECTION_NAME, slug);
-    
-    // Implementar timeout de 5s para evitar bloqueos en SSR
-    const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Timeout de conexión a BD")), 5000)
-    );
-
-    try {
-        const docSnap = await Promise.race([
-            getDoc(tenantRef),
-            timeoutPromise
-        ]) as any;
-
-        if (docSnap.exists()) {
-            return { ...docSnap.data() } as TenantData;
-        }
-    } catch (e) {
-        console.error(`Error obteniendo tenant ${slug}:`, e);
-        return null;
-    }
-
-    return null;
+    if (!slug) return null;
+    return await dbGet(COLLECTION_NAME, slug);
 }
 
 export async function getAllTenants(): Promise<(TenantData & { id: string })[]> {
-    const tenantsRef = collection(db, COLLECTION_NAME);
-    const q = query(tenantsRef, orderBy("nombre_salon", "asc"));
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    } as TenantData & { id: string }));
+    const list = await dbList(COLLECTION_NAME);
+    return list.map((t: any) => ({ ...t, id: t.id || t.slug }));
 }

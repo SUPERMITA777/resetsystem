@@ -6,8 +6,6 @@ import { getTenant, TenantData } from "@/lib/services/tenantService";
 import { Button } from "@/components/ui/Button";
 import { Clock, MapPin, Instagram, Phone, Globe, ChevronDown, Calendar, Users, Star, ArrowRight, XCircle } from "lucide-react";
 import { PublicBookingFlow } from "@/components/booking/PublicBookingFlow";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { PublicNavbar } from "@/components/layout/public/Navbar";
 import { PublicFooter } from "@/components/layout/public/Footer";
 
@@ -40,74 +38,73 @@ export default function SalonPublicPage() {
             }
         }, 8000);
 
-        const unsubscribe = onSnapshot(doc(db, "tenants", slug), (docSnap) => {
-            clearTimeout(timeoutId);
-            if (docSnap.exists()) {
-                const data = docSnap.data() as TenantData;
-                setTenant(data);
+        async function load() {
+            try {
+                const data = await getTenant(slug);
+                clearTimeout(timeoutId);
+                if (data) {
+                    setTenant(data);
 
-                // Handle default view redirection (Simplified)
-                const webConfig = data?.web_config;
-                const defaultView = webConfig?.default_view || 'tratamientos';
-                
-                if (typeof window !== 'undefined') {
-                    const searchParams = new URLSearchParams(window.location.search);
-                    const viewParam = searchParams.get('view');
-                    const currentPath = window.location.pathname.replace(/\/$/, ""); 
-                    const targetPath = `/${slug}`.replace(/\/$/, "");
+                    // Handle default view redirection (Simplified)
+                    const webConfig = data?.web_config;
+                    const defaultView = webConfig?.default_view || 'tratamientos';
+                    
+                    if (typeof window !== 'undefined') {
+                        const searchParams = new URLSearchParams(window.location.search);
+                        const viewParam = searchParams.get('view');
+                        const currentPath = window.location.pathname.replace(/\/$/, ""); 
+                        const targetPath = `/${slug}`.replace(/\/$/, "");
 
-                    // Solo redireccionar si estamos en la raíz del salón Y no hay un parámetro de vista explícito
-                    if (currentPath === targetPath && !viewParam) {
-                        if (defaultView === 'clases') {
-                            router.push(`/${slug}/clases`);
-                        } else if (defaultView === 'productos') {
-                            router.push(`/${slug}/productos`);
+                        // Solo redireccionar si estamos en la raíz del salón Y no hay un parámetro de vista explícito
+                        if (currentPath === targetPath && !viewParam) {
+                            if (defaultView === 'clases') {
+                                router.push(`/${slug}/clases`);
+                            } else if (defaultView === 'productos') {
+                                router.push(`/${slug}/productos`);
+                            }
                         }
                     }
+                    
+                    // Actualizar título y meta tags de la página
+                    if (data?.nombre_salon) {
+                        const seoTitle = webConfig?.seo_title || data.nombre_salon;
+                        const seoDesc = webConfig?.seo_description || data.datos_contacto?.descripcion || 'Reserva tu turno online';
+                        document.title = seoTitle;
+                        
+                        // Update meta description
+                        let metaDesc = document.querySelector('meta[name="description"]');
+                        if (metaDesc) metaDesc.setAttribute('content', seoDesc);
+                        
+                        // Update OG tags for social sharing
+                        const ogTitle = webConfig?.social_share_title || seoTitle;
+                        const ogDesc = webConfig?.social_share_description || seoDesc;
+                        const ogImage = webConfig?.hero_image_url || data.logo_url || '';
+                        
+                        const setMeta = (property: string, content: string) => {
+                            let el = document.querySelector(`meta[property="${property}"]`);
+                            if (!el) {
+                                el = document.createElement('meta');
+                                el.setAttribute('property', property);
+                                document.head.appendChild(el);
+                            }
+                            el.setAttribute('content', content);
+                        };
+                        setMeta('og:title', ogTitle);
+                        setMeta('og:description', ogDesc);
+                        if (ogImage) setMeta('og:image', ogImage);
+                    }
+                } else {
+                    setTenant(null);
                 }
-                
-                // Actualizar título y meta tags de la página
-                if (data?.nombre_salon) {
-                    const seoTitle = webConfig?.seo_title || data.nombre_salon;
-                    const seoDesc = webConfig?.seo_description || data.datos_contacto?.descripcion || 'Reserva tu turno online';
-                    document.title = seoTitle;
-                    
-                    // Update meta description
-                    let metaDesc = document.querySelector('meta[name="description"]');
-                    if (metaDesc) metaDesc.setAttribute('content', seoDesc);
-                    
-                    // Update OG tags for social sharing
-                    const ogTitle = webConfig?.social_share_title || seoTitle;
-                    const ogDesc = webConfig?.social_share_description || seoDesc;
-                    const ogImage = webConfig?.hero_image_url || data.logo_url || '';
-                    
-                    const setMeta = (property: string, content: string) => {
-                        let el = document.querySelector(`meta[property="${property}"]`);
-                        if (!el) {
-                            el = document.createElement('meta');
-                            el.setAttribute('property', property);
-                            document.head.appendChild(el);
-                        }
-                        el.setAttribute('content', content);
-                    };
-                    setMeta('og:title', ogTitle);
-                    setMeta('og:description', ogDesc);
-                    if (ogImage) setMeta('og:image', ogImage);
-                }
-            } else {
-                setTenant(null);
+            } catch (err: any) {
+                clearTimeout(timeoutId);
+                setError(`Error de base de datos: ${err.message}`);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-        }, (err) => {
-            clearTimeout(timeoutId);
-            setError(`Error de base de datos: ${err.message}`);
-            setLoading(false);
-        });
+        }
 
-        return () => {
-            clearTimeout(timeoutId);
-            unsubscribe();
-        };
+        load();
     }, [slug, router, pathname]);
 
     if (loading) {

@@ -1,5 +1,4 @@
-import { db } from "../firebase";
-import { collection, doc, getDoc, getDocs, setDoc, query, orderBy, Timestamp, where, limit } from "firebase/firestore";
+import { dbGet, dbList, dbAdd, dbSet, dbUpdate } from "./apiBridge";
 
 export interface TarotCard {
     id: string;
@@ -7,7 +6,7 @@ export interface TarotCard {
     significado_normal: string;
     significado_invertido: string;
     imagen_url: string;
-    createdAt?: Timestamp;
+    createdAt?: any;
 }
 
 export interface TarotReading {
@@ -22,7 +21,7 @@ export interface TarotReading {
         significado: string;
     }[];
     interpretacion: string;
-    createdAt: Timestamp;
+    createdAt: any;
 }
 
 const CARDS_COLLECTION = "tarot_cards";
@@ -30,37 +29,34 @@ const READINGS_COLLECTION = "tarot_readings";
 
 export const tarotService = {
     async getAllCards(): Promise<TarotCard[]> {
-        const snap = await getDocs(query(collection(db, CARDS_COLLECTION), orderBy("id", "asc")));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as TarotCard));
+        const list = await dbList(CARDS_COLLECTION);
+        return list.sort((a: any, b: any) => a.id.localeCompare(b.id));
     },
 
     async getCard(id: string): Promise<TarotCard | null> {
-        const snap = await getDoc(doc(db, CARDS_COLLECTION, id));
-        return snap.exists() ? ({ id: snap.id, ...snap.data() } as TarotCard) : null;
+        return await dbGet(CARDS_COLLECTION, id);
     },
 
     async saveCard(card: TarotCard): Promise<void> {
-        await setDoc(doc(db, CARDS_COLLECTION, card.id), {
+        await dbSet(CARDS_COLLECTION, card.id, {
             ...card,
-            createdAt: card.createdAt || Timestamp.now()
-        }, { merge: true });
+            createdAt: card.createdAt || new Date().toISOString()
+        });
     },
 
     async saveReading(reading: Omit<TarotReading, "id">): Promise<string> {
-        const ref = doc(collection(db, READINGS_COLLECTION));
-        await setDoc(ref, reading);
-        return ref.id;
+        const res = await dbAdd(READINGS_COLLECTION, {
+            ...reading,
+            createdAt: new Date().toISOString()
+        });
+        return res.id;
     },
 
     async getReadingsByTenant(tenantId: string): Promise<TarotReading[]> {
-        const q = query(
-            collection(db, READINGS_COLLECTION), 
-            where("tenantId", "==", tenantId),
-            orderBy("createdAt", "desc"),
-            limit(50)
-        );
-        const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as TarotReading));
+        const list = await dbList(READINGS_COLLECTION, [
+            { field: "tenantId", operator: "==", value: tenantId }
+        ]);
+        return list.sort((a: any, b: any) => (b.createdAt > a.createdAt ? 1 : -1)).slice(0, 50);
     },
 
     async seedCards(cards: TarotCard[]): Promise<void> {

@@ -50,7 +50,9 @@ export async function POST(req: Request) {
 
             case "update":
                 if (!docId) return NextResponse.json({ error: "Missing docId" }, { status: 400 });
-                await colRef.doc(docId).update(data);
+                // Usamos set con merge: true en lugar de update para evitar errores si el documento no existe
+                // y para asegurar que la operación sea atómica y permitida.
+                await colRef.doc(docId).set(data, { merge: true });
                 return NextResponse.json({ success: true });
 
             case "delete":
@@ -58,11 +60,28 @@ export async function POST(req: Request) {
                 await colRef.doc(docId).delete();
                 return NextResponse.json({ success: true });
 
+            case "batch":
+                const { operations } = data;
+                if (!operations || !Array.isArray(operations)) {
+                    return NextResponse.json({ error: "Missing operations array for batch" }, { status: 400 });
+                }
+                const batch = db.batch();
+                operations.forEach((op: any) => {
+                    const { type, collection: opCol, docId: opDocId, data: opData } = op;
+                    const ref = db.collection(opCol).doc(opDocId);
+                    if (type === "set") batch.set(ref, opData, { merge: true });
+                    else if (type === "update") batch.update(ref, opData);
+                    else if (type === "delete") batch.delete(ref);
+                    else if (type === "create") batch.set(ref, opData);
+                });
+                await batch.commit();
+                return NextResponse.json({ success: true });
+
             default:
                 return NextResponse.json({ error: "Invalid action" }, { status: 400 });
         }
     } catch (error: any) {
-        console.error("[ProxyAPI] Error:", error);
+        console.error(`[ProxyAPI] Error performing ${action} on ${collection}${docId ? '/' + docId : ''}:`, error);
         return NextResponse.json({ 
             error: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 

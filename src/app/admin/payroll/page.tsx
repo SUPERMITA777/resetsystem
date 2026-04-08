@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Users, DollarSign, TrendingUp, Calendar, CheckCircle, FileText, Download } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { dbList } from '@/lib/services/apiBridge';
 import toast from 'react-hot-toast';
 
 interface EmployeeReport {
@@ -24,30 +23,27 @@ export default function PayrollPage() {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-    const tenantId = 'resetspa'; // Mocked
+    const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
     useEffect(() => {
         async function calculatePayroll() {
             setLoading(true);
             try {
-                // 1. Obtener empleados
-                const staffRef = collection(db, 'tenants', tenantId, 'empleados');
-                const staffSnap = await getDocs(staffRef);
-                const staffList = staffSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                // 1. Obtener empleados (vía Proxy)
+                const staffList = await dbList(`tenants/${tenantId}/empleados`);
 
-                // 2. Obtener turnos completados para el mes seleccionado
-                // (En producción filtraríamos por rango de fechas)
-                const agendaRef = collection(db, 'tenants', tenantId, 'agenda');
-                const q = query(agendaRef, where('status', '==', 'completado'));
-                const agendaSnap = await getDocs(q);
-                const turnosCompletados = agendaSnap.docs.map(d => d.data());
+                // 2. Obtener turnos completados (vía Proxy)
+                // Usamos el estatus en minúscula o mayúscula según como esté guardado
+                const turnosCompletados = await dbList(`tenants/${tenantId}/agenda`, [
+                    { field: 'status', operator: '==', value: 'completado' }
+                ]);
 
                 // 3. Procesar reportes
                 const processedReports: EmployeeReport[] = staffList.map((emp: any) => {
-                    const empTurnos = turnosCompletados.filter(t => t.empleado_id === emp.id);
-                    const totalComisiones = empTurnos.reduce((acc, t) => {
+                    const empTurnos = turnosCompletados.filter((t: any) => t.empleado_id === emp.id);
+                    const totalComisiones = empTurnos.reduce((acc: number, t: any) => {
                         const comision = emp.tipo_pago === 'commission' || emp.tipo_pago === 'hybrid'
-                            ? (t.precio * (emp.porcentaje_comision / 100))
+                            ? ((t.precio || 0) * ((emp.porcentaje_comision || 0) / 100))
                             : 0;
                         return acc + comision;
                     }, 0);
@@ -74,7 +70,7 @@ export default function PayrollPage() {
             }
         }
         calculatePayroll();
-    }, [selectedMonth, selectedYear]);
+    }, [selectedMonth, selectedYear, tenantId]);
 
     const totalGeneral = reports.reduce((acc, r) => acc + r.total_a_pagar, 0);
 
@@ -135,8 +131,8 @@ export default function PayrollPage() {
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="w-4 h-4" />
                         <select className="bg-transparent font-bold outline-none" value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
-                            <option value={2}>Marzo</option>
-                            <option value={1}>Febrero</option>
+                            <option value={new Date().getMonth()}>{new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date())}</option>
+                            <option value={new Date().getMonth() - 1}>{new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(new Date().setMonth(new Date().getMonth() - 1)))}</option>
                         </select>
                     </div>
                 </div>

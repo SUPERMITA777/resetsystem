@@ -1,16 +1,4 @@
-import { db } from "../firebase";
-import {
-    collection,
-    doc,
-    setDoc,
-    getDoc,
-    getDocs,
-    query,
-    where,
-    orderBy,
-    serverTimestamp,
-    updateDoc
-} from "firebase/firestore";
+import { dbGet, dbList, dbUpdate, dbAdd, dbSet } from "./apiBridge";
 
 export type UserRole = 'superadmin' | 'salon_admin' | 'staff';
 
@@ -29,53 +17,32 @@ export interface UserProfile {
 const COLLECTION_NAME = "users";
 
 export async function createUserProfile(uid: string, profile: Partial<UserProfile>) {
-    const userRef = doc(db, COLLECTION_NAME, uid);
-    await setDoc(userRef, {
+    await dbSet(COLLECTION_NAME, uid, {
         ...profile,
         uid,
         status: profile.status || 'active',
-        createdAt: serverTimestamp(),
-    }, { merge: true });
+        createdAt: new Date().toISOString(),
+    });
 }
 
 export async function updateUserProfile(uid: string, data: Partial<UserProfile>) {
-    const userRef = doc(db, COLLECTION_NAME, uid);
-    await updateDoc(userRef, data);
+    await dbUpdate(COLLECTION_NAME, uid, data);
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     if (!uid) return null;
-    const userRef = doc(db, COLLECTION_NAME, uid);
-    const docSnap = await getDoc(userRef);
-
-    if (docSnap.exists()) {
-        return docSnap.data() as UserProfile;
-    }
-
-    return null;
+    return await dbGet(COLLECTION_NAME, uid);
 }
 
 export async function getUsersByTenant(tenantId: string): Promise<UserProfile[]> {
-    const usersRef = collection(db, COLLECTION_NAME);
-    const q = query(
-        usersRef,
-        where("tenantId", "==", tenantId)
-    );
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(doc => ({
-        ...doc.data(),
-        uid: doc.id
-    } as UserProfile));
+    return await dbList(COLLECTION_NAME, [
+        { field: "tenantId", operator: "==", value: tenantId }
+    ]);
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
-    const usersRef = collection(db, COLLECTION_NAME);
-    const q = query(usersRef, orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(doc => ({
-        ...doc.data(),
-        uid: doc.id
-    } as UserProfile));
+    // Nota: El proxy actualmente soporta filtros básicos. 
+    // Si necesitamos ordenamiento complejo lo manejamos en el cliente tras recibir la lista.
+    const list = await dbList(COLLECTION_NAME);
+    return list.sort((a: any, b: any) => (b.createdAt > a.createdAt ? 1 : -1));
 }
