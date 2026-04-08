@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
                 mimeType: audioMessage.mimetype || "audio/ogg"
             } : null
         };
+        console.log("AI Webhook: Message Data extracted", messageData);
 
         if (messageData.isGroup || (!messageData.text && !messageData.audio)) {
             return NextResponse.json({ status: "ignored" });
@@ -85,10 +86,13 @@ export async function POST(req: NextRequest) {
 
         // 4. Obtener Información de Contexto (Nombre, WhatsApp) e Historial
         const whatsappRaw = messageData.sender.split("@")[0].replace(/\D/g, "");
-        const cliente = await clienteService.getClienteByTelefono(tenant.slug, whatsappRaw);
+        // Validar si parece un número de teléfono (10-14 dígitos) para evitar IDs de mensajes
+        const isValidPhone = whatsappRaw.length >= 10 && whatsappRaw.length <= 14;
+        const cliente = isValidPhone ? await clienteService.getClienteByTelefono(tenant.slug, whatsappRaw) : null;
+        
         const context = {
             userName: cliente ? `${cliente.nombre} ${cliente.apellido || ""}`.trim() : undefined,
-            whatsapp: whatsappRaw
+            whatsapp: isValidPhone ? whatsappRaw : undefined
         };
 
         const historyRef = adminDb.collection("tenants").doc(tenant.slug)

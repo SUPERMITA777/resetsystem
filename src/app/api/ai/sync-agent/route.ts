@@ -16,12 +16,8 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        console.log("[SyncAgent] Received request:", JSON.stringify(body));
-        
-        collection = body.collection;
-        action = body.action;
-        docId = body.docId;
         const { tenantId, sender, text, fromMe, audio, mediaUrl, mimeType } = body;
+        console.log("[SyncAgent] Received Request:", { tenantId, sender, text, fromMe, hasAudio: !!audio, hasMedia: !!mediaUrl });
 
         if (!tenantId || !sender || !text) {
             console.error("[SyncAgent] Missing required fields:", { tenantId, sender, text });
@@ -82,10 +78,13 @@ export async function POST(req: Request) {
 
         // 4. Obtener Información de Contexto (Nombre, WhatsApp)
         const whatsappRaw = sender.split("@")[0].replace(/\D/g, "");
-        const cliente = await clienteService.getClienteByTelefono(tenant.slug, whatsappRaw);
+        // Validar si parece un número de teléfono (10-14 dígitos) para evitar IDs de mensajes
+        const isValidPhone = whatsappRaw.length >= 10 && whatsappRaw.length <= 14;
+        const cliente = isValidPhone ? await clienteService.getClienteByTelefono(tenant.slug, whatsappRaw) : null;
+        
         const context = {
             userName: cliente ? `${cliente.nombre} ${cliente.apellido || ""}`.trim() : undefined,
-            whatsapp: whatsappRaw
+            whatsapp: isValidPhone ? whatsappRaw : undefined
         };
 
         // 5. Recuperar Historial de Conversación (últimos 10 mensajes)
