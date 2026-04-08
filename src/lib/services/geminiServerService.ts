@@ -113,6 +113,28 @@ export const geminiServerService = {
                         },
                         required: ["turnoId", "data"]
                     }
+                }, {
+                    name: "listar_clases_disponibles",
+                    description: "Lista todas las clases (funcionales, yoga, pilates, etc.) disponibles en el salón.",
+                    parameters: {
+                        type: SchemaType.OBJECT,
+                        properties: {},
+                        required: []
+                    }
+                }, {
+                    name: "inscribir_en_clase",
+                    description: "Inscribe a un cliente en una sesión específica de una clase.",
+                    parameters: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            claseId: { type: SchemaType.STRING },
+                            fecha: { type: SchemaType.STRING },
+                            hora: { type: SchemaType.STRING },
+                            clienteNombre: { type: SchemaType.STRING },
+                            whatsapp: { type: SchemaType.STRING }
+                        },
+                        required: ["claseId", "fecha", "hora", "clienteNombre"]
+                    }
                 }]
             }]
         });
@@ -131,6 +153,7 @@ export const geminiServerService = {
             Instrucciones: 
             - Tono "${tenant.ai_config.noemi.tone}". Usa emojis.
             - IMPORTANTE: Si al consultar disponibilidad (consultar_disponibilidad) no encuentras horarios, NUNCA te quedes callada. Informa al cliente que no hay disponibilidad automática y dile explícitamente que un representante humano lo contactará de inmediato para ofrecerle un turno personalizado.
+            - CLASES: También puedes buscar e inscribir alumnos en clases grupales (yoga, pilates, etc.) usando listar_clases_disponibles e inscribir_en_clase.
         `;
 
         const chat = model.startChat({
@@ -196,6 +219,40 @@ export const geminiServerService = {
                 const args = call.args as any;
                 await updateTurno(tenantId, args.turnoId, args.data);
                 result = await chat.sendMessage([{ functionResponse: { name: "modificar_turno", response: { content: "Turno modificado exitosamente." } } }]);
+            } else if (call.name === "listar_clases_disponibles") {
+                const clases = await claseService.getClases(tenantId);
+                const activeClases = clases.filter(c => c.status === 'active');
+                const responseContent = activeClases.length > 0
+                    ? `Clases disponibles:\n${activeClases.map(c => `- ${c.nombre} (ID: ${c.id}): $${c.valorCreditos} créditos. Horarios: ${c.horarios?.map(h => `${h.fecha} ${h.hora}`).join(", ") || 'No hay sesiones programadas'}`).join("\n")}`
+                    : "No hay clases disponibles actualmente.";
+                result = await chat.sendMessage([{ functionResponse: { name: "listar_clases_disponibles", response: { content: responseContent } } }]);
+            } else if (call.name === "inscribir_en_clase") {
+                const args = call.args as any;
+                const clase = await claseService.getClaseById(tenantId, args.claseId);
+                if (clase) {
+                    const horario = clase.horarios?.find(h => h.fecha === args.fecha && h.hora === args.hora);
+                    if (horario) {
+                        await createTurno(tenantId, {
+                            clienteAbreviado: args.clienteNombre,
+                            nombre: args.clienteNombre,
+                            tratamientoAbreviado: `Clase: ${clase.nombre}`,
+                            fecha: args.fecha,
+                            horaInicio: args.hora,
+                            duracionMinutos: clase.duracion || 60,
+                            whatsapp: args.whatsapp || context.whatsapp || "",
+                            status: 'CONFIRMADO', // Las clases suelen ser cupos directos
+                            claseId: args.claseId,
+                            boxId: clase.boxId || "box-generico",
+                            total: 0 // Se maneja por créditos usualmente
+                        });
+                        await claseService.incrementInscriptos(tenantId, args.claseId, horario.id, 1);
+                        result = await chat.sendMessage([{ functionResponse: { name: "inscribir_en_clase", response: { content: "Inscripción en clase realizada exitosamente." } } }]);
+                    } else {
+                        result = await chat.sendMessage([{ functionResponse: { name: "inscribir_en_clase", response: { content: "No se encontró la sesión en la fecha y hora indicadas." } } }]);
+                    }
+                } else {
+                    result = await chat.sendMessage([{ functionResponse: { name: "inscribir_en_clase", response: { content: "Clase no encontrada." } } }]);
+                }
             }
             
             response = result.response;
