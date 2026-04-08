@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/layout/admin/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Clock, Tag, Box, User, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Clock, Tag, Box, User, Download, Upload, FileSpreadsheet, Search, X } from "lucide-react";
 import { serviceManagement, Tratamiento, Subtratamiento } from "@/lib/services/serviceManagement";
 import { TratamientoModal } from "../../../components/admin/treatments/TratamientoModal";
 import { SubtratamientoModal } from "../../../components/admin/treatments/SubtratamientoModal";
@@ -24,6 +24,7 @@ export default function TratamientosPage() {
     const [subItems, setSubItems] = useState<Record<string, Subtratamiento[]>>({});
     const [importing, setImporting] = useState(false);
     const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
@@ -277,6 +278,16 @@ export default function TratamientosPage() {
         }
     };
 
+    const filteredTratamientos = tratamientos.filter(t => {
+        if (!searchTerm) return true;
+        const q = searchTerm.toLowerCase();
+        const matchTrat = t.nombre.toLowerCase().includes(q) || t.descripcion?.toLowerCase().includes(q);
+        const matchSub = (subItems[t.id] || []).some(s => 
+            s.nombre.toLowerCase().includes(q) || s.descripcion?.toLowerCase().includes(q)
+        );
+        return matchTrat || matchSub;
+    });
+
     return (
         <AdminLayout>
             <div className="flex flex-col gap-8 w-full animate-in fade-in duration-500">
@@ -358,15 +369,39 @@ export default function TratamientosPage() {
                     </div>
                 </div>
 
+                <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-premium-soft border border-gray-100">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar tratamiento o servicio..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-black/10 transition-all"
+                        />
+                        {searchTerm && (
+                            <button 
+                                onClick={() => setSearchTerm("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Mostrando {filteredTratamientos.length} de {tratamientos.length} resultados
+                    </div>
+                </div>
+
                 <div className="grid gap-6">
                     {loading ? (
                         <div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest animate-pulse">Cargando...</div>
-                    ) : tratamientos.length === 0 ? (
+                    ) : filteredTratamientos.length === 0 ? (
                         <Card className="p-12 text-center">
-                            <p className="text-gray-400 font-medium italic">No hay tratamientos creados aún.</p>
+                            <p className="text-gray-400 font-medium italic">No se encontraron resultados para "{searchTerm}".</p>
                         </Card>
                     ) : (
-                        tratamientos.map(t => (
+                        filteredTratamientos.map(t => (
                             <Card key={t.id} className="overflow-hidden border-none shadow-premium-soft transition-all hover:shadow-premium group">
                                 <div className="flex items-center justify-between p-6 cursor-pointer" onClick={() => toggleExpand(t.id)}>
                                     <div className="flex items-center gap-4">

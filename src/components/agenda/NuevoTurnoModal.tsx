@@ -207,7 +207,7 @@ export function NuevoTurnoModal({
     const loadTratamientos = async () => {
         try {
             const data = await serviceManagement.getTratamientos(currentTenant);
-            setTratamientos(data.filter(t => t.habilitado));
+            setTratamientos(data.filter(t => t.habilitado).sort((a, b) => a.nombre.localeCompare(b.nombre)));
         } catch { }
     };
     const loadProductos = async () => {
@@ -223,14 +223,14 @@ export function NuevoTurnoModal({
         setLoadingSubs(true);
         try {
             const data = await serviceManagement.getSubtratamientos(currentTenant, id);
-            setSubtratamientos(data);
+            setSubtratamientos(data.sort((a, b) => a.nombre.localeCompare(b.nombre)));
         } catch { } finally { setLoadingSubs(false); }
     };
     const loadSubAndSync = async (tratId: string, subIds: string[], subAbreviado?: string) => {
         setLoadingSubs(true);
         try {
             const data = await serviceManagement.getSubtratamientos(currentTenant, tratId);
-            setSubtratamientos(data);
+            setSubtratamientos(data.sort((a, b) => a.nombre.localeCompare(b.nombre)));
             
             let matched = data.filter(s => subIds.includes(s.id));
             
