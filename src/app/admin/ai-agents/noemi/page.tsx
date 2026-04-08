@@ -18,14 +18,21 @@ export default function NoemiAIPage() {
     useEffect(() => {
         async function load() {
             setLoading(true);
-            const data = await getTenant(tenantId);
-            if (data) {
-                setTenant(data);
-                if (data.ai_config?.noemi) {
-                    setIsActive(data.ai_config.noemi.active);
-                    setTone(data.ai_config.noemi.tone);
-                    setRules(data.ai_config.noemi.rules || "");
+            try {
+                const res = await fetch(`/api/admin/tenant?slug=${tenantId}`);
+                const result = await res.json();
+                
+                if (result.success && result.data) {
+                    const data = result.data as TenantData;
+                    setTenant(data);
+                    if (data.ai_config?.noemi) {
+                        setIsActive(data.ai_config.noemi.active);
+                        setTone(data.ai_config.noemi.tone);
+                        setRules(data.ai_config.noemi.rules || "");
+                    }
                 }
+            } catch (err) {
+                console.error("Error loading admin data:", err);
             }
             setLoading(false);
         }
@@ -35,32 +42,27 @@ export default function NoemiAIPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await createOrUpdateTenant(tenantId, {
+            const updatedData = {
                 ai_config: {
                     ...tenant?.ai_config,
                     noemi: {
+                        ...tenant?.ai_config?.noemi,
                         active: isActive,
-                        tone,
-                        rules,
-                        whatsapp_connected: tenant?.ai_config?.noemi?.whatsapp_connected || false,
-                        instagram_connected: tenant?.ai_config?.noemi?.instagram_connected || false
+                        tone: tone,
+                        rules: rules
                     }
                 }
+            };
+
+            const res = await fetch('/api/admin/tenant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: tenantId, data: updatedData })
             });
-            // Update local state
-            setTenant(prev => prev ? ({
-                ...prev,
-                ai_config: {
-                    ...prev.ai_config,
-                    noemi: {
-                        active: isActive,
-                        tone,
-                        rules,
-                        whatsapp_connected: prev.ai_config?.noemi?.whatsapp_connected || false,
-                        instagram_connected: prev.ai_config?.noemi?.instagram_connected || false
-                    }
-                }
-            }) : null);
+
+            if (res.ok) {
+                setTenant(prev => prev ? { ...prev, ...updatedData } : null);
+            }
         } catch (error) {
             console.error("Error saving Noemi config:", error);
         } finally {

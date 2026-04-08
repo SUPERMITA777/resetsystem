@@ -19,15 +19,22 @@ export default function VeronicaAIPage() {
     useEffect(() => {
         async function load() {
             setLoading(true);
-            const data = await getTenant(tenantId);
-            if (data) {
-                setTenant(data);
-                if (data.ai_config?.veronica) {
-                    setIsActive(data.ai_config.veronica.active);
-                    setTiming(data.ai_config.veronica.timing);
-                    setAutoReschedule(data.ai_config.veronica.auto_reschedule);
-                    setSmartWaitlist(data.ai_config.veronica.smart_waitlist || false);
+            try {
+                const res = await fetch(`/api/admin/tenant?slug=${tenantId}`);
+                const result = await res.json();
+                
+                if (result.success && result.data) {
+                    const data = result.data as TenantData;
+                    setTenant(data);
+                    if (data.ai_config?.veronica) {
+                        setIsActive(data.ai_config.veronica.active);
+                        setTiming(data.ai_config.veronica.timing);
+                        setAutoReschedule(data.ai_config.veronica.auto_reschedule);
+                        setSmartWaitlist(data.ai_config.veronica.smart_waitlist || false);
+                    }
                 }
+            } catch (err) {
+                console.error("Error loading admin data:", err);
             }
             setLoading(false);
         }
@@ -37,7 +44,7 @@ export default function VeronicaAIPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await createOrUpdateTenant(tenantId, {
+            const updatedData = {
                 ai_config: {
                     ...tenant?.ai_config,
                     veronica: {
@@ -47,20 +54,17 @@ export default function VeronicaAIPage() {
                         smart_waitlist: smartWaitlist
                     }
                 }
+            };
+
+            const res = await fetch('/api/admin/tenant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: tenantId, data: updatedData })
             });
-            // Update local state
-            setTenant(prev => prev ? ({
-                ...prev,
-                ai_config: {
-                    ...prev.ai_config,
-                    veronica: {
-                        active: isActive,
-                        timing,
-                        auto_reschedule: autoReschedule,
-                        smart_waitlist: smartWaitlist
-                    }
-                }
-            }) : null);
+
+            if (res.ok) {
+                setTenant(prev => prev ? { ...prev, ...updatedData } : null);
+            }
         } catch (error) {
             console.error("Error saving Veronica config:", error);
         } finally {
