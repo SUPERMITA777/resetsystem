@@ -31,11 +31,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const auth = getAuth(app);
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                const userDocRef = doc(db, 'users', firebaseUser.uid);
                 try {
-                    const snap = await getDoc(userDocRef);
-                    if (snap.exists()) {
-                        const profile = snap.data();
+                    const res = await fetch(`/api/admin/user?uid=${firebaseUser.uid}`);
+                    const result = await res.json();
+                    
+                    if (result.success && result.data) {
+                        const profile = result.data;
                         const isUserStaff = profile.role === 'staff' || profile.role === 'salon_admin';
                         setIsStaff(isUserStaff);
                         setRole(profile.role || null);
