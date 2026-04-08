@@ -9,6 +9,8 @@ import { getUsersByTenant } from "./userService";
 import { getEgresosDelDia, getIngresosCreditosDelDia, buildResumen, calcularIngresos } from "./reportesService";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { claseService } from "./claseService";
+import { clienteService } from "./clienteService";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -238,6 +240,49 @@ export const geminiServerService = {
                         name: "delete_appointment",
                         description: "Elimina un turno de la agenda definitivamente por su ID.",
                         parameters: { type: SchemaType.OBJECT, properties: { turnoId: { type: SchemaType.STRING } }, required: ["turnoId"] }
+                    },
+                    {
+                        name: "get_clients",
+                        description: "Busca clientes en la base de datos por nombre o teléfono.",
+                        parameters: { type: SchemaType.OBJECT, properties: { query: { type: SchemaType.STRING, description: "Nombre o WhatsApp del cliente" } }, required: ["query"] }
+                    },
+                    {
+                        name: "create_appointment",
+                        description: "Crea un nuevo turno para tratamiento.",
+                        parameters: { 
+                            type: SchemaType.OBJECT, 
+                            properties: { 
+                                clienteNombre: { type: SchemaType.STRING },
+                                tratamientoId: { type: SchemaType.STRING },
+                                subIds: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                                fecha: { type: SchemaType.STRING, description: "YYYY-MM-DD" },
+                                hora: { type: SchemaType.STRING, description: "HH:mm" },
+                                whatsapp: { type: SchemaType.STRING },
+                                profesionalId: { type: SchemaType.STRING },
+                                total: { type: SchemaType.NUMBER }
+                            }, 
+                            required: ["clienteNombre", "tratamientoId", "fecha", "hora", "profesionalId"] 
+                        }
+                    },
+                    {
+                        name: "enroll_client_class",
+                        description: "Inscribe a un cliente en una clase grupal.",
+                        parameters: { 
+                            type: SchemaType.OBJECT, 
+                            properties: { 
+                                clienteNombre: { type: SchemaType.STRING },
+                                claseId: { type: SchemaType.STRING },
+                                fecha: { type: SchemaType.STRING, description: "YYYY-MM-DD" },
+                                hora: { type: SchemaType.STRING, description: "HH:mm" },
+                                whatsapp: { type: SchemaType.STRING }
+                            }, 
+                            required: ["clienteNombre", "claseId", "fecha", "hora"] 
+                        }
+                    },
+                    {
+                        name: "get_class_list",
+                        description: "Obtiene la lista de clases grupales configuradas.",
+                        parameters: { type: SchemaType.OBJECT, properties: {} }
                     }
                 ]
             }]
@@ -248,19 +293,20 @@ export const geminiServerService = {
         const diaSemana = format(now, 'EEEE', { locale: es });
 
         const systemPrompt = `
-            Eres Noemí, la asistente ejecutiva proactiva de "${tenant.nombre_salon}".
-            Estás hablando directamente con el JEFE.
+            Eres Noemí, la secretaria ejecutiva y asistente de acceso total de "${tenant.nombre_salon}".
+            Tienes PODER TOTAL sobre el sistema para ayudar al JEFE a gestionar el negocio.
             
             UBICACIÓN TEMPORAL (ARGENTINA):
             - Fecha actual: ${fechaActual}
             - Día de la semana: ${diaSemana}
             
-            PROTOCOLO DE SEGURIDAD (OBLIGATORIO):
-            1. Antes de realizar cualquier cambio destructivo o de datos (como 'update_price' o 'delete_appointment'), DEBES:
-               a) Describir exactamente qué vas a hacer.
-               b) Preguntar: "¿Estás seguro de que quieres realizar esta acción? Por favor, confírmame con un SÍ para proceder."
-            2. ESPERA al siguiente mensaje del jefe. SOLO si el jefe responde "SÍ", "Confirmado" o similar, emite la llamada a la función en tu siguiente respuesta.
-            3. Para consultas de información (agenda, staff, estadísticas), responde directamente usando las herramientas.
+            PROTOCOLO DE CONFIRMACIÓN (ESTRICTO):
+            1. Para cualquier acción que CREE, MODIFIQUE o ELIMINE datos (turnos, precios, inscripciones), DEBES:
+               a) Explicar qué vas a hacer.
+               b) Preguntar: "¿Confirma que desea realizar esta acción, Jefe?" (o similar).
+               c) SOLO después de que el jefe diga "SÍ", "Procedé", "Dale" o similar, ejecutas la herramienta en el siguiente turno.
+            2. NUNCA ejecutes una acción de escritura sin confirmación previa del jefe.
+            3. Para consultas (ver agenda, buscar clientes, ver precios), responde directamente usando las herramientas.
             
             Base de conocimiento actual:
             ${tenant.ai_knowledge || "Aún no tienes conocimiento extra."}
@@ -316,6 +362,56 @@ export const geminiServerService = {
                 const args = call.args as any;
                 await deleteTurno(tenantId, args.turnoId);
                 result = await chat.sendMessage([{ functionResponse: { name: "delete_appointment", response: { content: "Turno eliminado exitosamente." } } }]);
+            } else if (call.name === "get_clients") {
+                const args = call.args as any;
+                const clients = await clienteService.getClientes(tenantId);
+                const query = args.query.toLowerCase();
+                const filtered = clients.filter(c => 
+                    c.nombre.toLowerCase().includes(query) || 
+                    c.apellido?.toLowerCase().includes(query) || 
+                    c.telefono?.includes(query)
+                ).slice(0, 10);
+                const responseList = filtered.map(c => `- ${c.nombre} ${c.apellido || ""}: WA:${c.telefono} (ID:${c.id})`).join("\n") || "No se encontraron clientes.";
+                result = await chat.sendMessage([{ functionResponse: { name: "get_clients", response: { content: responseList } } }]);
+            } else if (call.name === "get_class_list") {
+                const classes = await claseService.getClases(tenantId);
+                const listText = classes.map(c => `- ${c.nombre} ($${c.valorCreditos || 0}): Duración ${c.duracion}min (ID:${c.id})`).join("\n") || "No hay clases configuradas.";
+                result = await chat.sendMessage([{ functionResponse: { name: "get_class_list", response: { content: listText } } }]);
+            } else if (call.name === "create_appointment") {
+                const args = call.args as any;
+                const treatment = (await serviceManagement.getTratamientos(tenantId)).find(t => t.id === args.tratamientoId);
+                const subtratamientos = args.subIds ? servicios.filter(s => args.subIds.includes(s.id)) : [];
+                
+                const turnoId = await createTurno(tenantId, {
+                    clienteAbreviado: args.clienteNombre,
+                    tratamientoAbreviado: treatment?.nombre || "Tratamiento",
+                    tratamientoId: args.tratamientoId,
+                    subIds: args.subIds || [],
+                    fecha: args.fecha,
+                    horaInicio: args.hora,
+                    whatsapp: args.whatsapp || "",
+                    profesionalId: args.profesionalId,
+                    duracionMinutos: subtratamientos.reduce((acc, s) => acc + (s?.duracion_minutos || 0), 0) || 60,
+                    total: args.total || subtratamientos.reduce((acc, s) => acc + (s?.precio || 0), 0),
+                    boxId: "box-1", // Default box
+                    status: "CONFIRMADO"
+                });
+                result = await chat.sendMessage([{ functionResponse: { name: "create_appointment", response: { content: `Turno agendado con ID: ${turnoId}` } } }]);
+            } else if (call.name === "enroll_client_class") {
+                const args = call.args as any;
+                const clase = await claseService.getClaseById(tenantId, args.claseId);
+                const turnoId = await createTurno(tenantId, {
+                    clienteAbreviado: args.clienteNombre,
+                    tratamientoAbreviado: clase?.nombre || "Clase",
+                    claseId: args.claseId,
+                    fecha: args.fecha,
+                    horaInicio: args.hora,
+                    whatsapp: args.whatsapp || "",
+                    boxId: clase?.boxId || "aula-1",
+                    duracionMinutos: clase?.duracion || 60,
+                    status: "CONFIRMADO"
+                });
+                result = await chat.sendMessage([{ functionResponse: { name: "enroll_client_class", response: { content: `Inscripción realizada con ID: ${turnoId}` } } }]);
             }
             response = result.response;
             call = response.functionCalls()?.[0];
