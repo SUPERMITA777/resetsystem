@@ -1,15 +1,4 @@
-import { db } from "../firebase";
-import {
-    collection,
-    doc,
-    setDoc,
-    getDoc,
-    getDocs,
-    query,
-    where,
-    deleteDoc,
-    updateDoc
-} from "firebase/firestore";
+import { dbGet, dbList, dbSet, dbUpdate, dbDelete, dbAdd } from "./apiBridge";
 
 export interface Subtratamiento {
     id: string;
@@ -38,7 +27,6 @@ export interface Tratamiento {
         fecha_inicio?: string | null; // YYYY-MM-DD (Opcional para rangos temporales)
         fecha_fin?: string | null; // YYYY-MM-DD
     }[];
-    // En Firestore, los subtratamientos irán en una subcolección
 }
 
 /**
@@ -47,56 +35,41 @@ export interface Tratamiento {
 export const serviceManagement = {
     // CATEGORÍAS (TRATAMIENTOS)
     async createTratamiento(tenantId: string, data: Omit<Tratamiento, "id">) {
-        const ref = collection(db, "tenants", tenantId, "tratamientos");
-        const newDoc = doc(ref);
-        await setDoc(newDoc, { ...data, id: newDoc.id });
-        return newDoc.id;
+        const res = await dbAdd(`tenants/${tenantId}/tratamientos`, data);
+        await dbUpdate(`tenants/${tenantId}/tratamientos`, res.id, { id: res.id });
+        return res.id;
     },
 
     async getTratamientos(tenantId: string): Promise<Tratamiento[]> {
-        const ref = collection(db, "tenants", tenantId, "tratamientos");
-        const snap = await getDocs(ref);
-        return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tratamiento));
+        return await dbList(`tenants/${tenantId}/tratamientos`);
     },
 
     async updateTratamiento(tenantId: string, id: string, data: Partial<Tratamiento>) {
-        const ref = doc(db, "tenants", tenantId, "tratamientos", id);
-        await updateDoc(ref, data);
+        await dbUpdate(`tenants/${tenantId}/tratamientos`, id, data);
     },
 
     async deleteTratamiento(tenantId: string, id: string) {
-        if (!tenantId || !id || tenantId.trim() === "" || id.trim() === "") {
-            console.error("deleteTratamiento called with invalid IDs:", { tenantId, id });
-            throw new Error("ID de tenant o tratamiento inválido");
-        }
-        const ref = doc(db, "tenants", tenantId.trim(), "tratamientos", id.trim());
-        await deleteDoc(ref);
+        await dbDelete(`tenants/${tenantId}/tratamientos`, id);
     },
 
     // SERVICIOS (SUBTRATAMIENTOS)
     async createSubtratamiento(tenantId: string, tratamientoId: string, data: Omit<Subtratamiento, "id">) {
-        const ref = collection(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos");
-        const newDoc = doc(ref);
-        await setDoc(newDoc, { ...data, id: newDoc.id });
-        return newDoc.id;
+        const res = await dbAdd(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`, data);
+        await dbUpdate(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`, res.id, { id: res.id });
+        return res.id;
     },
 
     async getSubtratamientos(tenantId: string, tratamientoId: string): Promise<Subtratamiento[]> {
         if (!tratamientoId) return [];
-        const ref = collection(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos");
-        const snap = await getDocs(ref);
-        return snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Subtratamiento));
+        return await dbList(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`);
     },
 
     async updateSubtratamiento(tenantId: string, tratamientoId: string, id: string, data: Partial<Subtratamiento>) {
-        const ref = doc(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos", id);
-        await updateDoc(ref, data);
+        await dbUpdate(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`, id, data);
     },
 
     async deleteSubtratamiento(tenantId: string, tratamientoId: string, id: string) {
-        if (!tenantId || !tratamientoId || !id) throw new Error("Parámetros faltantes para eliminar subtratamiento");
-        const ref = doc(db, "tenants", tenantId, "tratamientos", tratamientoId, "subtratamientos", id);
-        await deleteDoc(ref);
+        await dbDelete(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`, id);
     },
 
     /**

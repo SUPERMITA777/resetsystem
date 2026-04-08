@@ -1,13 +1,4 @@
-import { db } from "../firebase";
-import {
-    collection,
-    doc,
-    setDoc,
-    getDocs,
-    deleteDoc,
-    updateDoc,
-    increment,
-} from "firebase/firestore";
+import { dbGet, dbList, dbUpdate, dbDelete, dbAdd } from "./apiBridge";
 
 export interface Producto {
     id: string;
@@ -29,35 +20,33 @@ export interface CarritoItem {
 
 export const productService = {
     async createProducto(tenantId: string, data: Omit<Producto, "id">): Promise<string> {
-        const ref = collection(db, "tenants", tenantId, "productos");
-        const newDoc = doc(ref);
-        await setDoc(newDoc, { ...data, id: newDoc.id, createdAt: Date.now() });
-        return newDoc.id;
+        const res = await dbAdd(`tenants/${tenantId}/productos`, { ...data, createdAt: Date.now() });
+        await dbUpdate(`tenants/${tenantId}/productos`, res.id, { id: res.id });
+        return res.id;
     },
 
     async getProductos(tenantId: string): Promise<Producto[]> {
-        const ref = collection(db, "tenants", tenantId, "productos");
-        const snap = await getDocs(ref);
-        return snap.docs.map(d => ({ ...d.data(), id: d.id } as Producto));
+        return await dbList(`tenants/${tenantId}/productos`);
     },
 
     async updateProducto(tenantId: string, id: string, data: Partial<Producto>): Promise<void> {
-        const ref = doc(db, "tenants", tenantId, "productos", id);
-        await updateDoc(ref, data as any);
+        await dbUpdate(`tenants/${tenantId}/productos`, id, data);
     },
 
     async deleteProducto(tenantId: string, id: string): Promise<void> {
-        if (!tenantId || !id) throw new Error("Parámetros faltantes para eliminar producto");
-        const ref = doc(db, "tenants", tenantId, "productos", id);
-        await deleteDoc(ref);
+        await dbDelete(`tenants/${tenantId}/productos`, id);
     },
 
     /**
-     * Decrement product stock atomically.
-     * Uses Firestore server-side increment to avoid race conditions.
+     * Decrement product stock.
      */
     async decrementStock(tenantId: string, productoId: string, cantidad: number): Promise<void> {
-        const ref = doc(db, "tenants", tenantId, "productos", productoId);
-        await updateDoc(ref, { stock: increment(-cantidad) });
+        const product = await dbGet(`tenants/${tenantId}/productos`, productoId);
+        if (product) {
+            const currentStock = product.stock || 0;
+            await dbUpdate(`tenants/${tenantId}/productos`, productoId, { 
+                stock: currentStock - cantidad 
+            });
+        }
     },
 };

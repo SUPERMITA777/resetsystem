@@ -1,5 +1,4 @@
-import { db } from "../firebase";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { dbGet, dbSet, dbUpdate } from "./apiBridge";
 
 /**
  * Box names per date are stored in:
@@ -15,10 +14,9 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 export async function getBoxNames(tenantId: string, date: string): Promise<Record<string, string>> {
     try {
-        const ref = doc(db, "tenants", tenantId, "box_names", date);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-            return snap.data() as Record<string, string>;
+        const data = await dbGet(`tenants/${tenantId}/box_names`, date);
+        if (data) {
+            return data as Record<string, string>;
         }
         return {};
     } catch (error) {
@@ -28,12 +26,11 @@ export async function getBoxNames(tenantId: string, date: string): Promise<Recor
 }
 
 export async function setBoxName(tenantId: string, date: string, boxId: string, name: string): Promise<void> {
-    const ref = doc(db, "tenants", tenantId, "box_names", date);
-    const snap = await getDoc(ref);
+    const existing = await dbGet(`tenants/${tenantId}/box_names`, date);
 
-    if (snap.exists()) {
-        await updateDoc(ref, { [boxId]: name });
+    if (existing) {
+        await dbUpdate(`tenants/${tenantId}/box_names`, date, { [boxId]: name });
     } else {
-        await setDoc(ref, { [boxId]: name });
+        await dbSet(`tenants/${tenantId}/box_names`, date, { [boxId]: name });
     }
 }
