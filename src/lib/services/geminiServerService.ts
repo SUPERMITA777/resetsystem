@@ -241,9 +241,17 @@ export const geminiServerService = {
             }]
         });
 
+        const now = new Date();
+        const fechaActual = format(now, 'yyyy-MM-dd');
+        const diaSemana = format(now, 'EEEE', { locale: require('date-fns/locale/es') });
+
         const systemPrompt = `
             Eres Noemí, la asistente ejecutiva proactiva de "${tenant.nombre_salon}".
             Estás hablando directamente con el JEFE.
+            
+            UBICACIÓN TEMPORAL (ARGENTINA):
+            - Fecha actual: ${fechaActual}
+            - Día de la semana: ${diaSemana}
             
             PROTOCOLO DE SEGURIDAD (OBLIGATORIO):
             1. Antes de realizar cualquier cambio destructivo o de datos (como 'update_price' o 'delete_appointment'), DEBES:
