@@ -122,12 +122,15 @@ export const geminiServerService = {
         const diaSemana = format(now, 'EEEE', { locale: es });
 
         const systemPrompt = `
-            Eres Noemí, la experta en ventas de "${tenant.nombre_salon}".
+            Eres Noemí, la experta en ventas de "${tenant.nombre_salon}". Estamos en ARGENTINA.
             Fecha actual: ${fechaActual} (${diaSemana})
             Conocimiento extra: ${tenant.ai_knowledge || "Ninguno."}
+            Reglas de comportamiento: ${tenant.ai_config.noemi.rules || "Ninguna."}
             Información del cliente: ${context.userName || "Desconocido"}, WhatsApp: ${context.whatsapp || "Desconocido"}
             Servicios disponibles:\n${serviciosContext}
-            Instrucciones: Tono "${tenant.ai_config.noemi.tone}". Usa emojis.
+            Instrucciones: 
+            - Tono "${tenant.ai_config.noemi.tone}". Usa emojis.
+            - IMPORTANTE: Si al consultar disponibilidad (consultar_disponibilidad) no encuentras horarios, NUNCA te quedes callada. Informa al cliente que no hay disponibilidad automática y dile explícitamente que un representante humano lo contactará de inmediato para ofrecerle un turno personalizado.
         `;
 
         const chat = model.startChat({
@@ -149,7 +152,6 @@ export const geminiServerService = {
         let iterations = 0;
         while (call && iterations < 2) {
             iterations++;
-            // Lógica de funciones (reutilizada de geminiService.ts adaptada)
             if (call.name === "agendar_turno_pendiente") {
                 const args = call.args as any;
                 const subEncontrado = servicios.find(s => s.nombre.toLowerCase().includes((args.subtratamientoNombre || args.servicioNombre).toLowerCase()));
@@ -171,12 +173,30 @@ export const geminiServerService = {
                     });
                     result = await chat.sendMessage([{ functionResponse: { name: "agendar_turno_pendiente", response: { content: "OK" } } }]);
                 }
+            } else if (call.name === "consultar_disponibilidad") {
+                const args = call.args as any;
+                const treatment = (await serviceManagement.getTratamientos(tenantId)).find(t => 
+                    t.nombre.toLowerCase().includes(args.servicioNombre.toLowerCase())
+                );
+                
+                if (treatment) {
+                    const slots = await availabilityService.getAvailableSlots(tenantId, treatment.id, new Date(args.fecha));
+                    const responseContent = slots.length > 0 
+                        ? `Horarios disponibles para ${treatment.nombre} el ${args.fecha}: ${slots.join(", ")}`
+                        : `No hay horarios disponibles para ${treatment.nombre} el ${args.fecha}. SUGERENCIA: Informa al cliente que no hay disponibilidad automática y dile que un representante humano lo contactará de inmediato para ofrecerle una alternativa personalizada.`;
+                    result = await chat.sendMessage([{ functionResponse: { name: "consultar_disponibilidad", response: { content: responseContent } } }]);
+                } else {
+                    result = await chat.sendMessage([{ functionResponse: { name: "consultar_disponibilidad", response: { content: "Servicio no encontrado." } } }]);
+                }
             } else if (call.name === "buscar_mis_turnos") {
                 const args = call.args as any;
                 const turnos = await getTurnosPorWhatsApp(tenantId, args.whatsapp);
-                result = await chat.sendMessage([{ functionResponse: { name: "buscar_mis_turnos", response: { content: `Turnos: ${turnos.map(t => `${t.fecha} ${t.horaInicio}`).join(", ")}` } } }]);
+                result = await chat.sendMessage([{ functionResponse: { name: "buscar_mis_turnos", response: { content: `Turnos: ${turnos.map(t => `${t.fecha} ${t.horaInicio} (${t.tratamientoAbreviado})`).join(", ")}` } } }]);
+            } else if (call.name === "modificar_turno") {
+                const args = call.args as any;
+                await updateTurno(tenantId, args.turnoId, args.data);
+                result = await chat.sendMessage([{ functionResponse: { name: "modificar_turno", response: { content: "Turno modificado exitosamente." } } }]);
             }
-            // (Omití por brevedad el resto pero lo incluire completo en la implementación real)
             
             response = result.response;
             call = response.functionCalls()?.[0];

@@ -10,7 +10,7 @@ export const evolutionService = {
     /**
      * Crea una nueva instancia de WhatsApp para el salón si no existe.
      */
-    async createInstance(instanceName: string, customUrl?: string) {
+    async createInstance(instanceName: string, type: 'whatsapp' | 'instagram' = 'whatsapp', customUrl?: string) {
         const baseUrl = customUrl || API_URL;
         try {
             const response = await fetch(`${baseUrl}/instance/create`, {
@@ -19,12 +19,36 @@ export const evolutionService = {
                 body: JSON.stringify({
                     instanceName,
                     token: '',
-                    qrcode: true
+                    qrcode: true,
+                    type: type // 'whatsapp' or 'instagram'
                 })
             });
             return await response.json();
         } catch (error: any) {
             console.error('Error creating instance:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Envía un mensaje de texto a un destino (número o ID de Instagram).
+     */
+    async sendMessage(instanceName: string, number: string, text: string, customUrl?: string) {
+        const baseUrl = customUrl || API_URL;
+        try {
+            const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    number,
+                    text,
+                    delay: 1000,
+                    linkPreview: true
+                })
+            });
+            return await response.json();
+        } catch (error: any) {
+            console.error('Error sending message:', error);
             return null;
         }
     },

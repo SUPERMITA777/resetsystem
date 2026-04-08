@@ -145,29 +145,36 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ status: "no_ai_response" });
         }
 
-        // 5. Lógica de Agendamiento Automático (Extracción de Intento)
-        // TODO: Implementar extracción de parámetros real con Gemini.
-        if (responseText.includes("AGENDAR_TURNO_TRIGGER")) {
-             // Lógica de agendamiento como PENDIENTE
-        }
+        // 7. ENVIAR RESPUESTA vía Evolution API
+        const cleanText = responseText.replace("⚡ ", "");
+        const evolutionUrl = tenant.ai_config?.evolution_api_url;
+        
+        await evolutionService.sendMessage(
+            tenant.slug, 
+            messageData.sender, 
+            cleanText, 
+            evolutionUrl
+        );
 
-        // 7. Guardar Interacción en el Historial
+        // 8. Guardar Interacción en el Historial
         const timestamp = new Date().toISOString();
         const userText = messageData.text || (audioData ? "[Audio]" : "...");
         await historyRef.add({
             role: "user",
             text: userText,
-            timestamp: timestamp
+            timestamp: timestamp,
+            platform: messageData.sender.includes('@s.whatsapp.net') ? 'whatsapp' : 'instagram'
         });
         await historyRef.add({
             role: "model",
-            text: responseText.replace("⚡ ", ""),
-            timestamp: new Date().toISOString()
+            text: cleanText,
+            timestamp: new Date().toISOString(),
+            platform: messageData.sender.includes('@s.whatsapp.net') ? 'whatsapp' : 'instagram'
         });
 
         return NextResponse.json({ 
             status: "success", 
-            reply: responseText, 
+            reply: cleanText, 
             agent: "Noemí" 
         });
 

@@ -24,9 +24,13 @@ export default function ChatHistoryPage() {
             const data = await chatLogService.getLogsByTenant(tenantId);
             // Ordenar por fecha descendente
             const sorted = data.sort((a, b) => {
-                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
-                return dateB.getTime() - dateA.getTime();
+                const getTime = (date: any) => {
+                    if (!date) return 0;
+                    if (date.toDate) return date.toDate().getTime();
+                    const d = new Date(date);
+                    return isNaN(d.getTime()) ? 0 : d.getTime();
+                };
+                return getTime(b.createdAt) - getTime(a.createdAt);
             });
             setLogs(sorted);
         } catch (error) {
@@ -41,15 +45,22 @@ export default function ChatHistoryPage() {
         log.sessionId?.includes(searchTerm)
     );
 
+    const parseDate = (date: any) => {
+        if (!date) return null;
+        if (date.toDate) return date.toDate();
+        const d = new Date(date);
+        return isNaN(d.getTime()) ? null : d;
+    };
+
     const formatDate = (date: any) => {
-        if (!date) return "-";
-        const d = date.toDate ? date.toDate() : new Date(date);
+        const d = parseDate(date);
+        if (!d) return "Fecha no disp.";
         return format(d, "PPP", { locale: es });
     };
 
     const formatTime = (date: any) => {
-        if (!date) return "-";
-        const d = date.toDate ? date.toDate() : new Date(date);
+        const d = parseDate(date);
+        if (!d) return "-";
         return format(d, "HH:mm");
     };
 

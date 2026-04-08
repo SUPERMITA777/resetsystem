@@ -9,8 +9,15 @@ export default function ConnectionsPage() {
     const [tenant, setTenant] = useState<TenantData | null>(null);
     const [selectedOS, setSelectedOS] = useState<'Windows' | 'Linux' | 'macOS'>('Windows');
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'whatsapp' | 'instagram'>('whatsapp');
 
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab === 'instagram') setActiveTab('instagram');
+    }, []);
 
     useEffect(() => {
         async function load() {
@@ -37,50 +44,94 @@ export default function ConnectionsPage() {
             {/* Header */}
             <div className="bg-white p-8 rounded-[2.5rem] border border-[var(--secondary)]/50 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--primary)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-                <div className="relative z-10">
-                    <h1 className="text-3xl font-extrabold tracking-tight text-[var(--foreground)] flex items-center gap-3">
-                        <Zap className="w-8 h-8 text-[var(--primary)]" />
-                        Conexión de Agentes
-                    </h1>
-                    <p className="text-gray-500 mt-2 font-medium max-w-2xl">
-                        Centraliza la comunicación de tus agentes. Cada salón es independiente y gestiona su propia conexión de WhatsApp para Noemí y Verónica.
-                    </p>
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl font-extrabold tracking-tight text-[var(--foreground)] flex items-center gap-3">
+                            <Zap className="w-8 h-8 text-[var(--primary)]" />
+                            Conexiones Multicanal
+                        </h1>
+                        <p className="text-gray-500 mt-2 font-medium max-w-xl">
+                            Gestiona cómo tus agentes interactúan con los clientes en cada plataforma.
+                        </p>
+                    </div>
+
+                    <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200">
+                        <button 
+                            onClick={() => setActiveTab('whatsapp')}
+                            className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'whatsapp' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-gray-500'}`}
+                        >
+                            WhatsApp
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('instagram')}
+                            className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'instagram' ? 'bg-white text-[#ee2a7b] shadow-sm' : 'text-gray-500'}`}
+                        >
+                            Instagram
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                {/* Conexión WhatsApp Principal */}
+                {/* Conexión Activa */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white rounded-[2.5rem] border-2 p-8 transition-all sticky top-8 border-[#25D366]/30 shadow-xl shadow-[#25D366]/5">
-                        <div className="flex flex-col items-center text-center space-y-6">
-                            <div className="w-20 h-20 bg-[#25D366] rounded-[2rem] flex items-center justify-center text-white transition-all transform hover:scale-105 duration-300">
-                                <Phone className="w-10 h-10 text-white" />
-                            </div>
-                            
-                            <div>
-                                <h2 className="text-2xl font-black">WhatsApp</h2>
-                                <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Standalone Agent</p>
-                            </div>
-
-                            <div className="w-full pt-4 space-y-4">
-                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                    <span className="text-xs font-black text-gray-400 uppercase">Salón (ID)</span>
-                                    <span className="text-xs font-bold text-gray-800">{tenantId}</span>
+                    {activeTab === 'whatsapp' ? (
+                        <div className="bg-white rounded-[2.5rem] border-2 p-8 transition-all sticky top-8 border-[#25D366]/30 shadow-xl shadow-[#25D366]/5">
+                            <div className="flex flex-col items-center text-center space-y-6">
+                                <div className="w-20 h-20 bg-[#25D366] rounded-[2rem] flex items-center justify-center text-white transition-all transform hover:scale-105 duration-300">
+                                    <Phone className="w-10 h-10 text-white" />
                                 </div>
-                                <div className="text-xs text-gray-500 bg-[var(--primary)]/5 p-4 rounded-xl border border-[var(--primary)]/10 text-left">
-                                    La conexión de WhatsApp ahora se gestiona directamente de forma segura desde la aplicación <b>Plug & Play</b> instalada en tu computadora.
+                                
+                                <div>
+                                    <h2 className="text-2xl font-black">WhatsApp</h2>
+                                    <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Standalone Agent</p>
+                                </div>
+
+                                <div className="w-full pt-4 space-y-4">
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                        <span className="text-xs font-black text-gray-400 uppercase">Salón (ID)</span>
+                                        <span className="text-xs font-bold text-gray-800">{tenantId}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 bg-[var(--primary)]/5 p-4 rounded-xl border border-[var(--primary)]/10 text-left">
+                                        La conexión de WhatsApp ahora se gestiona directamente de forma segura desde la aplicación <b>Plug & Play</b> instalada en tu computadora.
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-white rounded-[2.5rem] border-2 p-8 transition-all sticky top-8 border-[#ee2a7b]/30 shadow-xl shadow-[#ee2a7b]/5">
+                            <div className="flex flex-col items-center text-center space-y-6">
+                                <div className="w-20 h-20 bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] rounded-[2rem] flex items-center justify-center text-white transition-all transform hover:scale-105 duration-300">
+                                    <Smartphone className="w-10 h-10 text-white" />
+                                </div>
+                                
+                                <div>
+                                    <h2 className="text-2xl font-black">Instagram</h2>
+                                    <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Meta API Bridge</p>
+                                </div>
+
+                                <div className="w-full pt-4 space-y-4">
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                        <span className="text-xs font-black text-gray-400 uppercase">Estado</span>
+                                        <span className={`text-xs font-bold ${tenant?.ai_config?.noemi?.instagram_connected ? 'text-green-500' : 'text-amber-500'}`}>
+                                            {tenant?.ai_config?.noemi?.instagram_connected ? 'VINCULADO' : 'PENDIENTE'}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-gray-400 bg-gray-50 p-4 rounded-xl border border-gray-100 text-left">
+                                        Vincula tu cuenta de Instagram Business para que Noemí pueda responder mensajes directos y captar leads automáticamente.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Detalle de Agentes Activos */}
                 <div className="lg:col-span-2 space-y-8">
                     <h2 className="text-xl font-black flex items-center gap-3 text-gray-800">
                         <Bot className="w-6 h-6 text-[var(--primary)]" />
-                        Agentes que utilizarán este canal
+                        Agentes activos en {activeTab}
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
