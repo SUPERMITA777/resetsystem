@@ -8,6 +8,7 @@ import { chatLogService } from "./chatLogService";
 import { getUsersByTenant } from "./userService";
 import { getEgresosDelDia, getIngresosCreditosDelDia, buildResumen, calcularIngresos } from "./reportesService";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -116,7 +117,7 @@ export const geminiServerService = {
 
         const now = new Date();
         const fechaActual = format(now, 'yyyy-MM-dd');
-        const diaSemana = format(now, 'EEEE', { locale: require('date-fns/locale/es') });
+        const diaSemana = format(now, 'EEEE', { locale: es });
 
         const systemPrompt = `
             Eres Noemí, la experta en ventas de "${tenant.nombre_salon}".
@@ -220,7 +221,8 @@ export const geminiServerService = {
                     },
                     {
                         name: "get_staff",
-                        description: "Obtiene la lista de empleados y equipo del salón (profesionales, administradores)."
+                        description: "Obtiene la lista de empleados y equipo del salón (profesionales, administradores).",
+                        parameters: { type: SchemaType.OBJECT, properties: {} }
                     },
                     {
                         name: "get_daily_agenda",
@@ -243,7 +245,7 @@ export const geminiServerService = {
 
         const now = new Date();
         const fechaActual = format(now, 'yyyy-MM-dd');
-        const diaSemana = format(now, 'EEEE', { locale: require('date-fns/locale/es') });
+        const diaSemana = format(now, 'EEEE', { locale: es });
 
         const systemPrompt = `
             Eres Noemí, la asistente ejecutiva proactiva de "${tenant.nombre_salon}".
