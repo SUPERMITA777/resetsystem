@@ -811,7 +811,7 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                 </div>
 
                 <div className="card">
-                    {/* STAGE: FORM */}
+                    {/* ENCABEZADOS Y FORMULARIOS DEPENDIENTES DEL STAGE */}
                     {stage === "form" && (
                         <>
                             <h1 className="title">🎡 ¡GIRÁ Y<br />GANÁ!</h1>
@@ -826,38 +826,59 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                                 <span className="input-icon"><Phone size={16} /></span>
                                 <input className="input-field" placeholder="Tu WhatsApp 📱 (ej: 1123456789)" type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
                             </div>
+                        </>
+                    )}
 
-                            {/* WHEEL */}
-                            {slicesLoaded && slices.filter(s => s.activo).length > 0 && (
-                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-                                    <div className="wheel-container">
-                                        <div className="wheel-wrapper">
-                                            {/* Glow ring */}
-                                            {isSpinning && (
-                                                <div className="glow-ring" style={{
-                                                    inset: "-8px",
-                                                    background: "transparent",
-                                                    border: "3px solid rgba(167,139,250,0.5)",
-                                                    boxShadow: "0 0 30px rgba(167,139,250,0.4)"
-                                                }} />
-                                            )}
-                                            <div className="needle" />
-                                            <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
-                                            <button 
-                                                className="center-spin-btn" 
-                                                onClick={handleSortear} 
-                                                disabled={loading || isSpinning || !slicesLoaded}
-                                            >
-                                                {isSpinning ? "⏳" : "GIRAR"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {isSpinning && (
-                                        <p className="spinning-indicator" style={{ marginTop: "10px" }}>✨ ¡La ruleta está girando!</p>
+                    {stage === "spinning" && (
+                        <h1 className="title" style={{ marginBottom: "16px" }}>⏳ ¡Girando!</h1>
+                    )}
+
+                    {stage === "prize" && winner && (
+                        <>
+                            <h1 className="title">¡Felicitaciones<br />{nombre}! 🎉</h1>
+                            <p className="subtitle">¡La ruleta eligió tu premio! Reclamalo por WhatsApp.</p>
+                        </>
+                    )}
+
+                    {/* WHEEL ALWAYS RENDERED FOR THESE 3 STAGES */}
+                    {["form", "spinning", "prize"].includes(stage) && slicesLoaded && slices.filter(s => s.activo).length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginBottom: stage === "prize" ? "16px" : "0" }}>
+                            <div className="wheel-container">
+                                <div className={`wheel-wrapper ${stage === 'prize' ? 'is-prize' : ''}`}>
+                                    {isSpinning && stage !== "prize" && (
+                                        <div className="glow-ring" style={{
+                                            inset: "-8px",
+                                            background: "transparent",
+                                            border: "3px solid rgba(167,139,250,0.5)",
+                                            boxShadow: "0 0 30px rgba(167,139,250,0.4)"
+                                        }} />
+                                    )}
+                                    <div className="needle" />
+                                    <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                                    
+                                    {stage === "form" && (
+                                        <button 
+                                            className="center-spin-btn" 
+                                            onClick={handleSortear} 
+                                            disabled={loading || isSpinning || !slicesLoaded}
+                                        >
+                                            {isSpinning ? "⏳" : "GIRAR"}
+                                        </button>
+                                    )}
+                                    {stage === "spinning" && (
+                                        <button className="center-spin-btn" disabled>⏳</button>
                                     )}
                                 </div>
+                            </div>
+                            {isSpinning && stage !== "prize" && (
+                                <p className="spinning-indicator" style={{ marginTop: "10px" }}>✨ ¡El universo está eligiendo tu premio!</p>
                             )}
+                        </div>
+                    )}
 
+                    {/* REMAINDER OF STAGE FORM DETAILS */}
+                    {stage === "form" && (
+                        <>
                             {!slicesLoaded && (
                                 <div style={{ textAlign: "center", padding: "30px 0", color: "rgba(196,181,253,0.6)" }}>
                                     <div style={{ width: "40px", height: "40px", border: "3px solid rgba(167,139,250,0.3)", borderTop: "3px solid #a78bfa", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
@@ -872,49 +893,9 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                         </>
                     )}
 
-                    {/* STAGE: SPINNING — wheel is drawn on canvas, just show indicator */}
-                    {stage === "spinning" && (
-                        <>
-                            <h1 className="title" style={{ marginBottom: "16px" }}>⏳ ¡Girando!</h1>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-                                <div className="wheel-container">
-                                    <div className="wheel-wrapper">
-                                        <div className="glow-ring" style={{
-                                            inset: "-8px",
-                                            background: "transparent",
-                                            border: "3px solid rgba(167,139,250,0.6)",
-                                            boxShadow: "0 0 40px rgba(167,139,250,0.5)"
-                                        }} />
-                                        <div className="needle" />
-                                        <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
-                                        <button className="center-spin-btn" disabled>
-                                             ⏳
-                                        </button>
-                                    </div>
-                                </div>
-                                <p className="spinning-indicator" style={{ marginTop: "16px", fontSize: "1rem" }}>
-                                    ✨ ¡El universo está eligiendo tu premio!
-                                </p>
-                            </div>
-                        </>
-                    )}
-
-                    {/* STAGE: PRIZE */}
+                    {/* REMAINDER OF STAGE PRIZE DETAILS */}
                     {stage === "prize" && winner && (
                         <>
-                            <h1 className="title">¡Felicitaciones<br />{nombre}! 🎉</h1>
-                            <p className="subtitle">¡La ruleta eligió tu premio! Reclamalo por WhatsApp.</p>
-
-                            {/* Show final wheel position */}
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginBottom: "16px" }}>
-                                <div className="wheel-container">
-                                    <div className="wheel-wrapper is-prize">
-                                        <div className="needle" />
-                                        <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
-                                    </div>
-                                </div>
-                            </div>
-
                             <div className="prize-card">
                                 {winner.imagenUrl ? (
                                     <img src={winner.imagenUrl} alt={winner.nombre} style={{ width: "96px", height: "96px", objectFit: "contain", margin: "0 auto 12px", borderRadius: "12px", filter: "drop-shadow(0 0 20px rgba(167,139,250,0.5))" }} />
