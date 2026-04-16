@@ -9,7 +9,7 @@ import {
     getPremios, createPremio, updatePremio, deletePremio,
     getParticipantes, resetParticipante,
     reserveShortLink, releaseShortLink,
-    getRuletaSlices, createRuletaSlice, updateRuletaSlice, deleteRuletaSlice,
+    getRuletaSlices, createRuletaSlice, updateRuletaSlice, deleteRuletaSlice, uploadRuletaImage
 } from "@/lib/services/promoWebService";
 
 
@@ -825,9 +825,39 @@ export default function PromosWebPage() {
                                 <textarea className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100 min-h-[70px]" placeholder="Detallá el premio..." value={sliceForm.descripcion} onChange={e => setSliceForm({ ...sliceForm, descripcion: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">URL de Imagen (opcional)</label>
-                                <input type="url" className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100" placeholder="Ej: https://.../imagen.png" value={sliceForm.imagenUrl || ""} onChange={e => setSliceForm({ ...sliceForm, imagenUrl: e.target.value })} />
-                                <p className="text-[10px] text-gray-400 mt-1">Si cargás una URL, aparecerá la imagen en lugar del texto en el segmento</p>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Imagen (opcional)</label>
+                                <div className="flex items-center gap-2">
+                                    {sliceForm.imagenUrl && (
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200">
+                                            <img src={sliceForm.imagenUrl} alt="Preview" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        className="w-full bg-gray-50 rounded-xl p-2 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100" 
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            setRuletaSaving(true);
+                                            try {
+                                                const url = await uploadRuletaImage(file, TENANT_ID);
+                                                setSliceForm({ ...sliceForm, imagenUrl: url });
+                                                toast.success("Imagen subida 🖼️");
+                                            } catch (err) {
+                                                toast.error("Error al subir imagen");
+                                            } finally {
+                                                setRuletaSaving(false);
+                                            }
+                                        }} 
+                                    />
+                                    {sliceForm.imagenUrl && (
+                                        <button onClick={() => setSliceForm({ ...sliceForm, imagenUrl: undefined })} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1">Si subís una imagen, aparecerá en el segmento en lugar del texto</p>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>

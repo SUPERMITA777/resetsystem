@@ -529,14 +529,17 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    margin: 0 auto 20px;
+                    margin: 10px auto 20px;
                     position: relative;
+                    width: 100%;
+                    height: 220px; /* Only top part visible */
+                    overflow: hidden;
+                    flex-shrink: 0;
                 }
                 .wheel-wrapper {
                     position: relative;
                     display: inline-block;
-                    transform: scale(0.85);
-                    margin: -20px auto;
+                    margin-top: 25px; /* space for needle to not be cut by hidden overflow */
                 }
                 .center-spin-btn {
                     position: absolute;
@@ -825,29 +828,31 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
 
                             {/* WHEEL */}
                             {slicesLoaded && slices.filter(s => s.activo).length > 0 && (
-                                <div className="wheel-container" style={{ marginTop: "20px" }}>
-                                    <div className="wheel-wrapper">
-                                        {/* Glow ring */}
-                                        {isSpinning && (
-                                            <div className="glow-ring" style={{
-                                                inset: "-8px",
-                                                background: "transparent",
-                                                border: "3px solid rgba(167,139,250,0.5)",
-                                                boxShadow: "0 0 30px rgba(167,139,250,0.4)"
-                                            }} />
-                                        )}
-                                        <div className="needle" />
-                                        <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
-                                        <button 
-                                            className="center-spin-btn" 
-                                            onClick={handleSortear} 
-                                            disabled={loading || isSpinning || !slicesLoaded}
-                                        >
-                                            {isSpinning ? "⏳" : "GIRAR"}
-                                        </button>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                                    <div className="wheel-container">
+                                        <div className="wheel-wrapper">
+                                            {/* Glow ring */}
+                                            {isSpinning && (
+                                                <div className="glow-ring" style={{
+                                                    inset: "-8px",
+                                                    background: "transparent",
+                                                    border: "3px solid rgba(167,139,250,0.5)",
+                                                    boxShadow: "0 0 30px rgba(167,139,250,0.4)"
+                                                }} />
+                                            )}
+                                            <div className="needle" />
+                                            <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                                            <button 
+                                                className="center-spin-btn" 
+                                                onClick={handleSortear} 
+                                                disabled={loading || isSpinning || !slicesLoaded}
+                                            >
+                                                {isSpinning ? "⏳" : "GIRAR"}
+                                            </button>
+                                        </div>
                                     </div>
                                     {isSpinning && (
-                                        <p className="spinning-indicator">✨ ¡La ruleta está girando!</p>
+                                        <p className="spinning-indicator" style={{ marginTop: "10px" }}>✨ ¡La ruleta está girando!</p>
                                     )}
                                 </div>
                             )}
@@ -870,19 +875,21 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                     {stage === "spinning" && (
                         <>
                             <h1 className="title" style={{ marginBottom: "16px" }}>⏳ ¡Girando!</h1>
-                            <div className="wheel-container">
-                                <div className="wheel-wrapper">
-                                    <div className="glow-ring" style={{
-                                        inset: "-8px",
-                                        background: "transparent",
-                                        border: "3px solid rgba(167,139,250,0.6)",
-                                        boxShadow: "0 0 40px rgba(167,139,250,0.5)"
-                                    }} />
-                                    <div className="needle" />
-                                    <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
-                                    <button className="center-spin-btn" disabled>
-                                         ⏳
-                                    </button>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                                <div className="wheel-container">
+                                    <div className="wheel-wrapper">
+                                        <div className="glow-ring" style={{
+                                            inset: "-8px",
+                                            background: "transparent",
+                                            border: "3px solid rgba(167,139,250,0.6)",
+                                            boxShadow: "0 0 40px rgba(167,139,250,0.5)"
+                                        }} />
+                                        <div className="needle" />
+                                        <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                                        <button className="center-spin-btn" disabled>
+                                             ⏳
+                                        </button>
+                                    </div>
                                 </div>
                                 <p className="spinning-indicator" style={{ marginTop: "16px", fontSize: "1rem" }}>
                                     ✨ ¡El universo está eligiendo tu premio!
@@ -898,10 +905,12 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                             <p className="subtitle">¡La ruleta eligió tu premio! Reclamalo por WhatsApp.</p>
 
                             {/* Show final wheel position */}
-                            <div className="wheel-container" style={{ marginBottom: "16px" }}>
-                                <div className="wheel-wrapper">
-                                    <div className="needle" />
-                                    <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginBottom: "16px" }}>
+                                <div className="wheel-container">
+                                    <div className="wheel-wrapper">
+                                        <div className="needle" />
+                                        <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                                    </div>
                                 </div>
                             </div>
 

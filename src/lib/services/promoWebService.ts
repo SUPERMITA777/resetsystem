@@ -1,4 +1,6 @@
 import { dbGet, dbList, dbSet, dbAdd, dbUpdate, dbDelete } from "./apiBridge";
+import { storage } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export interface PromoWeb {
     id: string;
@@ -192,3 +194,9 @@ export function sortearPremio(premios: Premio[]): Premio | null {
     }
     return elegibles[elegibles.length - 1];
 }
+
+export const uploadRuletaImage = async (file: File, tenantId: string): Promise<string> => {
+    const storageRef = ref(storage, `tenants/${tenantId}/ruleta_images/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+};
