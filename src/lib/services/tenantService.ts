@@ -97,12 +97,12 @@ export async function createOrUpdateTenant(slug: string, data: Partial<TenantDat
     await dbUpdate(COLLECTION_NAME, slug, data);
 }
 
-export async function getTenant(slug: string): Promise<TenantData | null> {
+export async function getTenant(slug: string, options = { useCache: true }): Promise<TenantData | null> {
     if (!slug) return null;
-    return await dbGet(COLLECTION_NAME, slug);
+    return await dbGet(COLLECTION_NAME, slug, options);
 }
 
-export async function getAllTenants(): Promise<(TenantData & { id: string })[]> {
-    const list = await dbList(COLLECTION_NAME);
+export async function getAllTenants(options = { useCache: true }): Promise<(TenantData & { id: string })[]> {
+    const list = await dbList(COLLECTION_NAME, [], options);
     return list.map((t: any) => ({ ...t, id: t.id || t.slug }));
 }

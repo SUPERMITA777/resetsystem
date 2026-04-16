@@ -15,5 +15,8 @@ export default async function ShortLinkRedirect({ params }: PageProps) {
         return notFound();
     }
     
+    if (linkData.tipo === "ruleta") {
+        redirect(`/ruleta/${linkData.tenantId}/${linkData.promoId}`);
+    }
     redirect(`/promo/${linkData.tenantId}/${linkData.promoId}`);
 }

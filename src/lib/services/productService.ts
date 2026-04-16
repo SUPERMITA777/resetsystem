@@ -21,12 +21,13 @@ export interface CarritoItem {
 export const productService = {
     async createProducto(tenantId: string, data: Omit<Producto, "id">): Promise<string> {
         const res = await dbAdd(`tenants/${tenantId}/productos`, { ...data, createdAt: Date.now() });
+        // Mantenemos esto por compatibilidad
         await dbUpdate(`tenants/${tenantId}/productos`, res.id, { id: res.id });
         return res.id;
     },
 
-    async getProductos(tenantId: string): Promise<Producto[]> {
-        return await dbList(`tenants/${tenantId}/productos`);
+    async getProductos(tenantId: string, useCache = true): Promise<Producto[]> {
+        return await dbList(`tenants/${tenantId}/productos`, [], { useCache });
     },
 
     async updateProducto(tenantId: string, id: string, data: Partial<Producto>): Promise<void> {
@@ -39,9 +40,10 @@ export const productService = {
 
     /**
      * Decrement product stock.
+     * Note: Bypasses cache to avoid using stale stock data.
      */
     async decrementStock(tenantId: string, productoId: string, cantidad: number): Promise<void> {
-        const product = await dbGet(`tenants/${tenantId}/productos`, productoId);
+        const product = await dbGet(`tenants/${tenantId}/productos`, productoId, { useCache: false });
         if (product) {
             const currentStock = product.stock || 0;
             await dbUpdate(`tenants/${tenantId}/productos`, productoId, { 

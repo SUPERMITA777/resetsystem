@@ -29,20 +29,18 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
     await dbUpdate(COLLECTION_NAME, uid, data);
 }
 
-export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+export async function getUserProfile(uid: string, options = { useCache: true }): Promise<UserProfile | null> {
     if (!uid) return null;
-    return await dbGet(COLLECTION_NAME, uid);
+    return await dbGet(COLLECTION_NAME, uid, options);
 }
 
-export async function getUsersByTenant(tenantId: string): Promise<UserProfile[]> {
+export async function getUsersByTenant(tenantId: string, options = { useCache: true }): Promise<UserProfile[]> {
     return await dbList(COLLECTION_NAME, [
         { field: "tenantId", operator: "==", value: tenantId }
-    ]);
+    ], options);
 }
 
-export async function getAllUsers(): Promise<UserProfile[]> {
-    // Nota: El proxy actualmente soporta filtros básicos. 
-    // Si necesitamos ordenamiento complejo lo manejamos en el cliente tras recibir la lista.
-    const list = await dbList(COLLECTION_NAME);
+export async function getAllUsers(options = { useCache: true }): Promise<UserProfile[]> {
+    const list = await dbList(COLLECTION_NAME, [], options);
     return list.sort((a: any, b: any) => (b.createdAt > a.createdAt ? 1 : -1));
 }

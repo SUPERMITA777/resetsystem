@@ -43,8 +43,8 @@ export const claseService = {
         return res.id;
     },
 
-    async getClases(tenantId: string): Promise<Clase[]> {
-        const list = await dbList(`tenants/${tenantId}/${COLLECTION_NAME}`);
+    async getClases(tenantId: string, useCache = true): Promise<Clase[]> {
+        const list = await dbList(`tenants/${tenantId}/${COLLECTION_NAME}`, [], { useCache });
         return list.sort((a: any, b: any) => (b.createdAt > a.createdAt ? 1 : -1));
     },
 
@@ -56,12 +56,12 @@ export const claseService = {
         await dbDelete(`tenants/${tenantId}/${COLLECTION_NAME}`, id);
     },
 
-    async getClaseById(tenantId: string, id: string): Promise<Clase | null> {
-        return await dbGet(`tenants/${tenantId}/${COLLECTION_NAME}`, id);
+    async getClaseById(tenantId: string, id: string, options = { useCache: true }): Promise<Clase | null> {
+        return await dbGet(`tenants/${tenantId}/${COLLECTION_NAME}`, id, options);
     },
 
     async rescheduleSession(tenantId: string, claseId: string, oldFecha: string, oldHora: string, newFecha: string, newHora: string, newBoxId?: string) {
-        const clase = await this.getClaseById(tenantId, claseId);
+        const clase = await this.getClaseById(tenantId, claseId, { useCache: false });
         if (clase) {
             const updatedHorarios = (clase.horarios || []).map(h => 
                 (h.fecha === oldFecha && h.hora === oldHora) ? { ...h, fecha: newFecha, hora: newHora } : h
@@ -84,7 +84,7 @@ export const claseService = {
     },
 
     async incrementInscriptos(tenantId: string, id: string, horarioId: string, amount: number = 1) {
-        const clase = await this.getClaseById(tenantId, id);
+        const clase = await this.getClaseById(tenantId, id, { useCache: false });
         if (clase) {
             const updatedHorarios = (clase.horarios || []).map(h => 
                 h.id === horarioId ? { ...h, inscriptosCount: (h.inscriptosCount || 0) + amount } : h

@@ -7,6 +7,7 @@ export interface PromoWeb {
     whatsapp_negocio: string;
     subtitulo_logo?: string;
     short_code?: string;
+    tipo?: "sorteo" | "ruleta";
     createdAt?: any;
 }
 
@@ -22,6 +23,16 @@ export interface Premio {
     ganadores: number;
 }
 
+// Segmento de ruleta
+export interface RuletaSlice {
+    id: string;
+    nombre: string;
+    descripcion?: string;
+    probabilidad: number; // peso relativo (ej: 10 = 10%)
+    color: string;        // hex color del segmento
+    activo: boolean;
+}
+
 export interface Participante {
     nombre: string;
     whatsapp: string;
@@ -33,6 +44,7 @@ export interface Participante {
 export interface ShortLink {
     tenantId: string;
     promoId: string;
+    tipo?: "sorteo" | "ruleta";
 }
 
 // ─── SHORT LINKS ──────────────────────────────────────────────────────────────
@@ -41,15 +53,35 @@ export async function getShortLink(shortCode: string): Promise<ShortLink | null>
     return await dbGet("short_links", shortCode.toLowerCase());
 }
 
-export async function reserveShortLink(shortCode: string, tenantId: string, promoId: string): Promise<void> {
+// ─── RULETA SLICES ────────────────────────────────────────────────────────────
+
+export async function getRuletaSlices(tenantId: string, promoId: string): Promise<RuletaSlice[]> {
+    return await dbList(`tenants/${tenantId}/promos_web/${promoId}/ruleta_slices`);
+}
+
+export async function createRuletaSlice(tenantId: string, promoId: string, data: Omit<RuletaSlice, "id">): Promise<string> {
+    const res = await dbAdd(`tenants/${tenantId}/promos_web/${promoId}/ruleta_slices`, data);
+    return res.id;
+}
+
+export async function updateRuletaSlice(tenantId: string, promoId: string, sliceId: string, data: Partial<Omit<RuletaSlice, "id">>): Promise<void> {
+    await dbUpdate(`tenants/${tenantId}/promos_web/${promoId}/ruleta_slices`, sliceId, data);
+}
+
+export async function deleteRuletaSlice(tenantId: string, promoId: string, sliceId: string): Promise<void> {
+    await dbDelete(`tenants/${tenantId}/promos_web/${promoId}/ruleta_slices`, sliceId);
+}
+
+export async function reserveShortLink(shortCode: string, tenantId: string, promoId: string, tipo?: "sorteo" | "ruleta"): Promise<void> {
     const code = shortCode.toLowerCase();
     const existing = await getShortLink(code);
     if (existing) {
         if (existing.tenantId !== tenantId || existing.promoId !== promoId) {
             throw new Error(`El link /p/${code} ya está siendo utilizado por otra promo.`);
+
         }
     }
-    await dbSet("short_links", code, { tenantId, promoId });
+    await dbSet("short_links", code, { tenantId, promoId, ...(tipo ? { tipo } : {}) });
 }
 
 export async function releaseShortLink(shortCode: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { dbGet, dbList, dbSet, dbUpdate, dbDelete, dbAdd } from "./apiBridge";
+import { dbGet, dbList, dbSet, dbUpdate, dbDelete, dbAdd, dbListWithSub } from "./apiBridge";
 
 export interface Subtratamiento {
     id: string;
@@ -35,13 +35,16 @@ export interface Tratamiento {
 export const serviceManagement = {
     // CATEGORÍAS (TRATAMIENTOS)
     async createTratamiento(tenantId: string, data: Omit<Tratamiento, "id">) {
-        const res = await dbAdd(`tenants/${tenantId}/tratamientos`, data);
+        // Optimizamos: Usamos Add y el proxy ya devuelve el ID. 
+        // Eliminamos el segundo round-trip si el cliente acepta que el ID sea el de Firestore.
+        const res = await dbAdd(`tenants/${tenantId}/tratamientos`, { ...data });
+        // Mantenemos esto por compatibilidad si el código depende de tener 'id' dentro del objeto
         await dbUpdate(`tenants/${tenantId}/tratamientos`, res.id, { id: res.id });
         return res.id;
     },
 
-    async getTratamientos(tenantId: string): Promise<Tratamiento[]> {
-        return await dbList(`tenants/${tenantId}/tratamientos`);
+    async getTratamientos(tenantId: string, useCache = true): Promise<Tratamiento[]> {
+        return await dbList(`tenants/${tenantId}/tratamientos`, [], { useCache });
     },
 
     async updateTratamiento(tenantId: string, id: string, data: Partial<Tratamiento>) {
@@ -59,9 +62,9 @@ export const serviceManagement = {
         return res.id;
     },
 
-    async getSubtratamientos(tenantId: string, tratamientoId: string): Promise<Subtratamiento[]> {
+    async getSubtratamientos(tenantId: string, tratamientoId: string, useCache = true): Promise<Subtratamiento[]> {
         if (!tratamientoId) return [];
-        return await dbList(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`);
+        return await dbList(`tenants/${tenantId}/tratamientos/${tratamientoId}/subtratamientos`, [], { useCache });
     },
 
     async updateSubtratamiento(tenantId: string, tratamientoId: string, id: string, data: Partial<Subtratamiento>) {
@@ -74,16 +77,33 @@ export const serviceManagement = {
 
     /**
      * Obtiene TODOS los subtratamientos de un salón, útil para el selector de la agenda
+     * AHORA OPTIMIZADO: Una sola petición al Proxy para traer todo el árbol.
      */
     async getAllSubtratamientos(tenantId: string): Promise<(Subtratamiento & { tratamientoId: string })[]> {
-        const tratamientos = await this.getTratamientos(tenantId);
-        let all: (Subtratamiento & { tratamientoId: string })[] = [];
+        console.log(`[ServiceManagement] Fetching all subtreatments for ${tenantId} optimized`);
+        
+        try {
+            const data = await dbListWithSub(`tenants/${tenantId}/tratamientos`, "subtratamientos", { useCache: true });
+            
+            let all: (Subtratamiento & { tratamientoId: string })[] = [];
+            data.forEach((t: any) => {
+                const subs = t.subtratamientos || [];
+                all = [...all, ...subs.map((s: any) => ({ ...s, tratamientoId: t.id }))];
+            });
 
-        for (const t of tratamientos) {
-            const subs = await this.getSubtratamientos(tenantId, t.id);
-            all = [...all, ...subs.map(s => ({ ...s, tratamientoId: t.id }))];
+            return all;
+        } catch (error) {
+            console.error("Error in optimized getAllSubtratamientos, falling back to sequential:", error);
+            // Fallback por si acaso fallara la nueva acción del proxy
+            const tratamientos = await this.getTratamientos(tenantId);
+            const subsPromises = tratamientos.map(t => 
+                this.getSubtratamientos(tenantId, t.id).then(subs => 
+                    subs.map(s => ({ ...s, tratamientoId: t.id }))
+                )
+            );
+            const results = await Promise.all(subsPromises);
+            return results.flat();
         }
-
-        return all;
     }
 };
+
