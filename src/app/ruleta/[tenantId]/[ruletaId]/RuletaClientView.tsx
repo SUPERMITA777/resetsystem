@@ -529,17 +529,18 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    margin: 10px auto 20px;
+                    margin: 0 auto 20px;
                     position: relative;
                     width: 100%;
-                    height: 220px; /* Only top part visible */
-                    overflow: hidden;
-                    flex-shrink: 0;
                 }
                 .wheel-wrapper {
                     position: relative;
                     display: inline-block;
-                    margin-top: 25px; /* space for needle to not be cut by hidden overflow */
+                    transform: scale(0.85); 
+                    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                .wheel-wrapper.is-prize {
+                    transform: scale(1.0);
                 }
                 .center-spin-btn {
                     position: absolute;
@@ -907,7 +908,7 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                             {/* Show final wheel position */}
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginBottom: "16px" }}>
                                 <div className="wheel-container">
-                                    <div className="wheel-wrapper">
+                                    <div className="wheel-wrapper is-prize">
                                         <div className="needle" />
                                         <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
                                     </div>
