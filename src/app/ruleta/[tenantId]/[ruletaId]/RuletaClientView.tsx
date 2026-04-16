@@ -61,6 +61,7 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [slices, setSlices] = useState<RuletaSlice[]>([]);
     const [slicesLoaded, setSlicesLoaded] = useState(false);
+    const [loadedImages, setLoadedImages] = useState<Record<string, HTMLImageElement>>({});
     const rotationRef = useRef(0);       // current visual rotation (degrees)
     const spinningRef = useRef(false);
     const animFrameRef = useRef<number>(0);
@@ -79,7 +80,21 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
     // Load slices on mount
     useEffect(() => {
         if (!initialPromo.activa) return;
-        getRuletaSlices(tenantId, ruletaId).then(list => {
+        getRuletaSlices(tenantId, ruletaId).then(async list => {
+            const imgs: Record<string, HTMLImageElement> = {};
+            await Promise.all(list.map(s => {
+                if (s.imagenUrl) {
+                    return new Promise(resolve => {
+                        const img = new Image();
+                        img.crossOrigin = "Anonymous";
+                        img.onload = () => { imgs[s.id] = img; resolve(true); };
+                        img.onerror = () => resolve(true);
+                        img.src = s.imagenUrl!;
+                    });
+                }
+                return Promise.resolve(true);
+            }));
+            setLoadedImages(imgs);
             setSlices(list);
             setSlicesLoaded(true);
         });
@@ -130,39 +145,45 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Text
+            // Text or Image
             const midAngle = startAngle + sliceAngle / 2;
             const textRad = ((midAngle - 90) * Math.PI) / 180;
-            const textR = r * 0.68;
+            const textR = r * 0.65;
             const tx = cx + textR * Math.cos(textRad);
             const ty = cy + textR * Math.sin(textRad);
 
             ctx.save();
             ctx.translate(tx, ty);
             ctx.rotate(textRad + Math.PI / 2);
-            ctx.fillStyle = "#fff";
-            ctx.font = `bold ${size < 280 ? 9 : 11}px 'Plus Jakarta Sans', sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.shadowColor = "rgba(0,0,0,0.6)";
-            ctx.shadowBlur = 4;
+            
+            const img = loadedImages[s.id];
+            if (img) {
+                 const imgSize = r * 0.45;
+                 ctx.drawImage(img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+            } else {
+                 ctx.fillStyle = "#fff";
+                 ctx.font = `bold ${size < 280 ? 9 : 11}px 'Plus Jakarta Sans', sans-serif`;
+                 ctx.textAlign = "center";
+                 ctx.textBaseline = "middle";
+                 ctx.shadowColor = "rgba(0,0,0,0.6)";
+                 ctx.shadowBlur = 4;
 
-            // Wrap text if needed
-            const maxWidth = (2 * Math.PI * textR * (sliceAngle / 360)) * 0.8;
-            const words = s.nombre.split(" ");
-            let line = "";
-            const lines: string[] = [];
-            for (const w of words) {
-                const test = line ? line + " " + w : w;
-                if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
-                else line = test;
+                 const maxWidth = (2 * Math.PI * textR * (sliceAngle / 360)) * 0.8;
+                 const words = s.nombre.split(" ");
+                 let line = "";
+                 const lines: string[] = [];
+                 for (const w of words) {
+                     const test = line ? line + " " + w : w;
+                     if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
+                     else line = test;
+                 }
+                 lines.push(line);
+
+                 const lineH = size < 280 ? 11 : 13;
+                 lines.slice(0, 3).forEach((l, li) => {
+                     ctx.fillText(l, 0, (li - (Math.min(lines.length, 3) - 1) / 2) * lineH);
+                 });
             }
-            lines.push(line);
-
-            const lineH = size < 280 ? 11 : 13;
-            lines.slice(0, 3).forEach((l, li) => {
-                ctx.fillText(l, 0, (li - (Math.min(lines.length, 3) - 1) / 2) * lineH);
-            });
             ctx.restore();
 
             startAngle = endAngle;
@@ -183,7 +204,7 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
         ctx.strokeStyle = "rgba(255,255,255,0.3)";
         ctx.lineWidth = 3;
         ctx.stroke();
-    }, [slices]);
+    }, [slices, loadedImages]);
 
     // Init canvas size with DPR
     useEffect(() => {
@@ -514,6 +535,39 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                 .wheel-wrapper {
                     position: relative;
                     display: inline-block;
+                    transform: scale(0.85);
+                    margin: -20px auto;
+                }
+                .center-spin-btn {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle at top left, #c026d3, #db2777);
+                    border: 4px solid #fff;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.3);
+                    color: white;
+                    font-family: 'Epilogue', sans-serif;
+                    font-weight: 900;
+                    font-size: 0.95rem;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+                }
+                .center-spin-btn:active:not(:disabled) {
+                    transform: translate(-50%, -50%) scale(0.92);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+                }
+                .center-spin-btn:disabled {
+                    cursor: not-allowed;
+                    filter: saturate(0) brightness(0.8);
                 }
                 .needle {
                     position: absolute;
@@ -784,6 +838,13 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                                         )}
                                         <div className="needle" />
                                         <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                                        <button 
+                                            className="center-spin-btn" 
+                                            onClick={handleSortear} 
+                                            disabled={loading || isSpinning || !slicesLoaded}
+                                        >
+                                            {isSpinning ? "⏳" : "GIRAR"}
+                                        </button>
                                     </div>
                                     {isSpinning && (
                                         <p className="spinning-indicator">✨ ¡La ruleta está girando!</p>
@@ -797,15 +858,6 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                                     Cargando ruleta...
                                 </div>
                             )}
-
-                            <button
-                                className={`btn-spin ${isSpinning ? "spinning" : ""}`}
-                                onClick={handleSortear}
-                                disabled={loading || isSpinning || !slicesLoaded}
-                                style={{ marginTop: "20px" }}
-                            >
-                                {isSpinning ? "⏳ Girando..." : loading ? "Verificando..." : "🎡 ¡GIRAR LA RULETA!"}
-                            </button>
 
                             <p className="disclaimer">
                                 🌟 Una participación por número de WhatsApp.<br />
@@ -828,14 +880,14 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                                     }} />
                                     <div className="needle" />
                                     <canvas ref={canvasRef} style={{ display: "block", borderRadius: "50%" }} />
+                                    <button className="center-spin-btn" disabled>
+                                         ⏳
+                                    </button>
                                 </div>
                                 <p className="spinning-indicator" style={{ marginTop: "16px", fontSize: "1rem" }}>
                                     ✨ ¡El universo está eligiendo tu premio!
                                 </p>
                             </div>
-                            <button className="btn-spin spinning" disabled style={{ marginTop: "16px" }}>
-                                ⏳ La ruleta decide...
-                            </button>
                         </>
                     )}
 
@@ -854,7 +906,11 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                             </div>
 
                             <div className="prize-card">
-                                <div className="prize-swatch" style={{ background: winner.color }} />
+                                {winner.imagenUrl ? (
+                                    <img src={winner.imagenUrl} alt={winner.nombre} style={{ width: "96px", height: "96px", objectFit: "contain", margin: "0 auto 12px", borderRadius: "12px", filter: "drop-shadow(0 0 20px rgba(167,139,250,0.5))" }} />
+                                ) : (
+                                    <div className="prize-swatch" style={{ background: winner.color }} />
+                                )}
                                 <div className="prize-name">{winner.nombre}</div>
                                 {winner.descripcion && (
                                     <p style={{ color: "rgba(196,181,253,0.8)", fontSize: "0.88rem", marginBottom: "8px", position: "relative" }}>{winner.descripcion}</p>

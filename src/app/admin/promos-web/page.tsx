@@ -41,6 +41,7 @@ interface SliceForm {
     probabilidad: number;
     color: string;
     activo: boolean;
+    imagenUrl?: string;
 }
 const ROULETTE_COLORS = [
     "#FF6384", "#FF9F40", "#FFCD56", "#4BC0C0", "#36A2EB",
@@ -54,6 +55,7 @@ const emptySliceForm = (index = 0): SliceForm => ({
     probabilidad: 10,
     color: ROULETTE_COLORS[index % ROULETTE_COLORS.length],
     activo: true,
+    imagenUrl: "",
 });
 
 // Helper para convertir fechas que vienen del proxy
@@ -821,6 +823,11 @@ export default function PromosWebPage() {
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Descripción (opcional)</label>
                                 <textarea className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100 min-h-[70px]" placeholder="Detallá el premio..." value={sliceForm.descripcion} onChange={e => setSliceForm({ ...sliceForm, descripcion: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">URL de Imagen (opcional)</label>
+                                <input type="url" className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100" placeholder="Ej: https://.../imagen.png" value={sliceForm.imagenUrl || ""} onChange={e => setSliceForm({ ...sliceForm, imagenUrl: e.target.value })} />
+                                <p className="text-[10px] text-gray-400 mt-1">Si cargás una URL, aparecerá la imagen en lugar del texto en el segmento</p>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>

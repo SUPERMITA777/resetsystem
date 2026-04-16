@@ -31,6 +31,7 @@ export interface RuletaSlice {
     probabilidad: number; // peso relativo (ej: 10 = 10%)
     color: string;        // hex color del segmento
     activo: boolean;
+    imagenUrl?: string;   // Imagen opcional para en lugar del texto
 }
 
 export interface Participante {
