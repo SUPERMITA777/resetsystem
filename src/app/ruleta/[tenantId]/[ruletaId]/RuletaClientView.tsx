@@ -98,7 +98,6 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
         const r = size / 2 - 6;
         const active = slices.filter(s => s.activo);
         if (active.length === 0) return;
-        const total = active.reduce((acc, s) => acc + s.probabilidad, 0);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -113,8 +112,8 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
         ctx.restore();
 
         let startAngle = rotation;
+        const sliceAngle = 360 / active.length; // ← todos iguales visualmente
         active.forEach((s) => {
-            const sliceAngle = (s.probabilidad / total) * 360;
             const endAngle = startAngle + sliceAngle;
 
             const startRad = ((startAngle - 90) * Math.PI) / 180;
@@ -210,18 +209,17 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
 
     const spinTo = useCallback((targetSlice: RuletaSlice) => {
         const active = slices.filter(s => s.activo);
-        const total = active.reduce((acc, s) => acc + s.probabilidad, 0);
 
-        // Find the center angle of the winning slice (where needle at top = 0°)
+        // Find the center angle of the winning slice using EQUAL segments (visual)
+        const sliceAngle = 360 / active.length;
         let accumulated = 0;
         let winCenter = 0;
         for (const s of active) {
-            const angle = (s.probabilidad / total) * 360;
             if (s.id === targetSlice.id) {
-                winCenter = accumulated + angle / 2;
+                winCenter = accumulated + sliceAngle / 2;
                 break;
             }
-            accumulated += angle;
+            accumulated += sliceAngle;
         }
 
         // The needle points UP (top center = 0°). We need to rotate the wheel so the winning segment aligns with the top.
