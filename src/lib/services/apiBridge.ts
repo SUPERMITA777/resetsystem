@@ -114,9 +114,9 @@ async function fetchProxy(body: any, useCache = false) {
                 case "list-with-sub":
                     const { subcollection: subName } = data;
                     const parentSnap = await colRef.get();
-                    const listWithSubs = await Promise.all(parentSnap.docs.map(async (d) => {
+                    const listWithSubs = await Promise.all(parentSnap.docs.map(async (d: any) => {
                         const sSnap = await d.ref.collection(subName).get();
-                        const sData = sSnap.docs.map(sd => ({ id: sd.id, ...sd.data() }));
+                        const sData = sSnap.docs.map((sd: any) => ({ id: sd.id, ...sd.data() }));
                         return { id: d.id, ...d.data(), [subName]: sData };
                     }));
                     result = { success: true, data: listWithSubs };
