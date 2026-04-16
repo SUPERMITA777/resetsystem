@@ -191,6 +191,10 @@ export interface BatchOperation {
     data?: any;
 }
 
+export const dbBatch = async (operations: BatchOperation[]): Promise<void> => {
+    await fetchProxy({ action: "batch", collection: "_batch", data: { operations } });
+};
+
 export const dbListWithSub = async (collection: string, subcollection: string, options = { useCache: false }) => {
     const res = await fetchProxy({ collection, action: "list-with-sub", data: { subcollection } }, options.useCache);
     return res.data;
