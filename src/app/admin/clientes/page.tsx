@@ -13,6 +13,7 @@ import { NuevoClienteModal } from "@/components/admin/clientes/NuevoClienteModal
 import { ImportarClientesModal } from "@/components/admin/clientes/ImportClientesModal";
 import { EditarClienteModal } from "@/components/admin/clientes/EditarClienteModal";
 import { AddCreditsModal } from "@/components/admin/clientes/AddCreditsModal";
+import { FidelizacionModal } from "@/components/admin/clientes/FidelizacionModal";
 
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -27,6 +28,10 @@ export default function ClientesPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
     const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+
+    // Fidelización States
+    const [isFidelizacionOpen, setIsFidelizacionOpen] = useState(false);
+    const [fidelizacionMode, setFidelizacionMode] = useState<'CON_VENTAS'|'SIN_VENTAS'>('CON_VENTAS');
 
     const currentTenant = typeof window !== 'undefined' ? localStorage.getItem('currentTenant') || 'resetspa' : 'resetspa';
 
@@ -160,6 +165,26 @@ export default function ClientesPage() {
                         <Filter className="w-5 h-5" />
                         Filtros
                     </button>
+                </div>
+
+                {/* Fidelización Campaigns */}
+                <div className="flex flex-col md:flex-row gap-3 items-center w-full">
+                    <Button 
+                        onClick={() => { setFidelizacionMode('CON_VENTAS'); setIsFidelizacionOpen(true); }}
+                        variant="outline"
+                        className="w-full md:w-auto border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-2xl px-6 h-12 font-bold transition-all"
+                    >
+                        <MessageCircle className="w-5 h-5 mr-2" />
+                        CAMPAÑA: CON VENTAS
+                    </Button>
+                    <Button 
+                        onClick={() => { setFidelizacionMode('SIN_VENTAS'); setIsFidelizacionOpen(true); }}
+                        variant="outline"
+                        className="w-full md:w-auto border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-2xl px-6 h-12 font-bold transition-all"
+                    >
+                        <MessageCircle className="w-5 h-5 mr-2" />
+                        CAMPAÑA: SIN VENTAS
+                    </Button>
                 </div>
 
                 {/* Clients Grid/List */}
@@ -373,6 +398,14 @@ export default function ClientesPage() {
                 onSave={loadClientes}
                 tenantId={currentTenant}
                 cliente={selectedCliente}
+            />
+
+            <FidelizacionModal
+                isOpen={isFidelizacionOpen}
+                onClose={() => setIsFidelizacionOpen(false)}
+                tenantId={currentTenant}
+                mode={fidelizacionMode}
+                clientes={clientes}
             />
         </>
     );
