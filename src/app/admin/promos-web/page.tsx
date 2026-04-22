@@ -343,7 +343,14 @@ export default function PromosWebPage() {
     const handleOpenSliceModal = (slice?: RuletaSlice) => {
         if (slice) {
             setEditingSlice(slice);
-            setSliceForm({ nombre: slice.nombre, descripcion: slice.descripcion || "", probabilidad: slice.probabilidad, color: slice.color, activo: slice.activo });
+            setSliceForm({ 
+                nombre: slice.nombre, 
+                descripcion: slice.descripcion || "", 
+                probabilidad: slice.probabilidad, 
+                color: slice.color, 
+                activo: slice.activo,
+                imagenUrl: slice.imagenUrl || ""
+            });
         } else {
             setEditingSlice(null);
             setSliceForm(emptySliceForm(slices.length));
@@ -852,7 +859,7 @@ export default function PromosWebPage() {
                                         }} 
                                     />
                                     {sliceForm.imagenUrl && (
-                                        <button onClick={() => setSliceForm({ ...sliceForm, imagenUrl: undefined })} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                        <button onClick={() => setSliceForm({ ...sliceForm, imagenUrl: "" })} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     )}
