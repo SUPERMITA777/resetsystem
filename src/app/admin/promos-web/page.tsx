@@ -42,6 +42,7 @@ interface SliceForm {
     color: string;
     activo: boolean;
     imagenUrl?: string;
+    validez?: string;
 }
 const ROULETTE_COLORS = [
     "#FF6384", "#FF9F40", "#FFCD56", "#4BC0C0", "#36A2EB",
@@ -56,6 +57,7 @@ const emptySliceForm = (index = 0): SliceForm => ({
     color: ROULETTE_COLORS[index % ROULETTE_COLORS.length],
     activo: true,
     imagenUrl: "",
+    validez: "",
 });
 
 // Helper para convertir fechas que vienen del proxy
@@ -349,7 +351,8 @@ export default function PromosWebPage() {
                 probabilidad: slice.probabilidad, 
                 color: slice.color, 
                 activo: slice.activo,
-                imagenUrl: slice.imagenUrl || ""
+                imagenUrl: slice.imagenUrl || "",
+                validez: slice.validez || ""
             });
         } else {
             setEditingSlice(null);
@@ -695,6 +698,7 @@ export default function PromosWebPage() {
                                                                 <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-1">
                                                                     <span>Peso: {s.probabilidad}</span><span>•</span>
                                                                     <span className="text-purple-600 font-black">{pct}% de la ruleta</span>
+                                                                    {s.validez && <><span>•</span><span className="text-blue-500">Vence: {s.validez}</span></>}
                                                                     {!s.activo && <><span>•</span><span className="text-red-400">Inactivo</span></>}
                                                                 </div>
                                                                 {/* Mini progress bar */}
@@ -830,6 +834,10 @@ export default function PromosWebPage() {
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Descripción (opcional)</label>
                                 <textarea className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100 min-h-[70px]" placeholder="Detallá el premio..." value={sliceForm.descripcion} onChange={e => setSliceForm({ ...sliceForm, descripcion: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Validez del premio (opcional)</label>
+                                <input className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none border border-gray-100" placeholder="Ej: Vence en 48hs / Válido hasta el 30/05" value={sliceForm.validez} onChange={e => setSliceForm({ ...sliceForm, validez: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Imagen (opcional)</label>

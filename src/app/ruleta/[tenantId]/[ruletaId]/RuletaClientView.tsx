@@ -371,7 +371,8 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
 
     const handleReclamar = () => {
         if (!winner || !whatsappNegocio) return;
-        const text = encodeURIComponent(`Hola! soy ${nombre.trim()} y me gané "${winner.nombre}" en la ruleta 🎡🎉`);
+        const validezText = winner.validez ? ` (Vence: ${winner.validez})` : "";
+        const text = encodeURIComponent(`Hola! soy ${nombre.trim()} y me gané "${winner.nombre}"${validezText} en la ruleta 🎡🎉`);
         const clean = whatsappNegocio.replace(/\D/g, "");
         window.open(`https://wa.me/${clean}?text=${text}`, "_blank");
     };
@@ -762,6 +763,61 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                     0%, 100% { opacity: 0.3; transform: scale(1); }
                     50% { opacity: 0.7; transform: scale(1.04); }
                 }
+
+                /* MODAL PREMIO */
+                .modal-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0, 0, 0, 0.7);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    z-index: 200;
+                    animation: fadeIn 0.4s ease-out;
+                }
+                .modal-content {
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 40px;
+                    padding: 32px 24px;
+                    width: 100%;
+                    max-width: 380px;
+                    text-align: center;
+                    box-shadow: 0 32px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+                    position: relative;
+                    animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+                .prize-title {
+                    font-family: 'Epilogue', sans-serif;
+                    font-weight: 900;
+                    font-size: 2.2rem;
+                    line-height: 1.1;
+                    background: linear-gradient(135deg, #FFD700, #FFA500);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    margin-bottom: 12px;
+                }
+                .validez-badge {
+                    display: inline-block;
+                    background: rgba(167,139,250,0.2);
+                    color: #a78bfa;
+                    padding: 6px 16px;
+                    border-radius: 999px;
+                    font-size: 0.75rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-top: 12px;
+                    border: 1px solid rgba(167,139,250,0.3);
+                }
             `}</style>
 
             {/* Confetti */}
@@ -834,10 +890,37 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                     )}
 
                     {stage === "prize" && winner && (
-                        <>
-                            <h1 className="title">¡Felicitaciones<br />{nombre}! 🎉</h1>
-                            <p className="subtitle">¡La ruleta eligió tu premio! Reclamalo por WhatsApp.</p>
-                        </>
+                        <div className="modal-overlay">
+                            <div className="modal-content">
+                                <div style={{ fontSize: "4rem", marginBottom: "16px", filter: "drop-shadow(0 0 15px rgba(255,215,0,0.4))" }}>🎉</div>
+                                <h2 className="prize-title">¡GANASTE!</h2>
+                                <p className="subtitle" style={{ marginBottom: "24px" }}>{nombre}, la ruleta eligió este premio para vos:</p>
+                                
+                                <div className="prize-card" style={{ marginTop: "0" }}>
+                                    {winner.imagenUrl ? (
+                                        <img src={winner.imagenUrl} alt={winner.nombre} style={{ width: "100px", height: "100px", objectFit: "contain", margin: "0 auto 16px", borderRadius: "16px", filter: "drop-shadow(0 0 25px rgba(167,139,250,0.6))" }} />
+                                    ) : (
+                                        <div className="prize-swatch" style={{ background: winner.color, width: "64px", height: "64px" }} />
+                                    )}
+                                    <div className="prize-name" style={{ fontSize: "1.8rem" }}>{winner.nombre}</div>
+                                    {winner.descripcion && (
+                                        <p style={{ color: "rgba(196,181,253,0.9)", fontSize: "0.95rem", marginTop: "8px" }}>{winner.descripcion}</p>
+                                    )}
+                                    {winner.validez && (
+                                        <div className="validez-badge">⏳ {winner.validez}</div>
+                                    )}
+                                </div>
+
+                                <button className="btn-whatsapp" onClick={handleReclamar} style={{ marginTop: "24px" }}>
+                                    💬 RECLAMAR MI PREMIO
+                                </button>
+                                
+                                <p className="disclaimer" style={{ marginTop: "20px" }}>
+                                    Se abrirá WhatsApp con el mensaje de tu premio.<br />
+                                    ¡Envialo para hacerlo válido! 🎁
+                                </p>
+                            </div>
+                        </div>
                     )}
 
                     {/* WHEEL ALWAYS RENDERED FOR THESE 3 STAGES */}
@@ -893,33 +976,7 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                         </>
                     )}
 
-                    {/* REMAINDER OF STAGE PRIZE DETAILS */}
-                    {stage === "prize" && winner && (
-                        <>
-                            <div className="prize-card">
-                                {winner.imagenUrl ? (
-                                    <img src={winner.imagenUrl} alt={winner.nombre} style={{ width: "96px", height: "96px", objectFit: "contain", margin: "0 auto 12px", borderRadius: "12px", filter: "drop-shadow(0 0 20px rgba(167,139,250,0.5))" }} />
-                                ) : (
-                                    <div className="prize-swatch" style={{ background: winner.color }} />
-                                )}
-                                <div className="prize-name">{winner.nombre}</div>
-                                {winner.descripcion && (
-                                    <p style={{ color: "rgba(196,181,253,0.8)", fontSize: "0.88rem", marginBottom: "8px", position: "relative" }}>{winner.descripcion}</p>
-                                )}
-                            </div>
-
-                            <p style={{ fontSize: "0.75rem", color: "rgba(196,181,253,0.6)", textAlign: "center", fontWeight: 600, marginBottom: "4px" }}>
-                                ⚠️ Promociones no acumulables
-                            </p>
-                            <button className="btn-whatsapp" onClick={handleReclamar}>
-                                💬 RECLAMAR MI PREMIO
-                            </button>
-                            <p className="disclaimer">
-                                Al hacer clic se abrirá WhatsApp con el mensaje de tu premio.<br />
-                                Envialo al negocio para hacerlo válido.
-                            </p>
-                        </>
-                    )}
+                    {/* REMAINDER OF STAGE PRIZE DETAILS - REMOVED AS IT IS NOW IN MODAL */}
 
                     {/* STAGE: ALREADY PLAYED */}
                     {stage === "already_played" && (
