@@ -372,7 +372,8 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
     const handleReclamar = () => {
         if (!winner || !whatsappNegocio) return;
         const validezText = winner.validez ? ` (Vence: ${winner.validez})` : "";
-        const text = encodeURIComponent(`Hola! soy ${nombre.trim()} y me gané "${winner.nombre}"${validezText} en la ruleta 🎡🎉`);
+        const emojis = initialPromo.whatsapp_emojis || "🎡🎉";
+        const text = encodeURIComponent(`Hola! soy ${nombre.trim()} y me gané "${winner.nombre}"${validezText} en la ruleta ${emojis}`);
         const clean = whatsappNegocio.replace(/\D/g, "");
         window.open(`https://wa.me/${clean}?text=${text}`, "_blank");
     };

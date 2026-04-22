@@ -11,6 +11,7 @@ export interface PromoWeb {
     short_code?: string;
     tipo?: "sorteo" | "ruleta";
     createdAt?: any;
+    whatsapp_emojis?: string; // <-- NUEVO: Emojis personalizados para el mensaje de reclamo
 }
 
 export interface Premio {

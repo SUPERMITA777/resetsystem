@@ -120,7 +120,7 @@ export default function PromosWebPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [promoForm, setPromoForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Tu mejor versión! ✨", short_code: "", activa: true });
+    const [promoForm, setPromoForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Tu mejor versión! ✨", short_code: "", activa: true, whatsapp_emojis: "🎡🎉" });
     const [showPremioModal, setShowPremioModal] = useState(false);
     const [editingPremio, setEditingPremio] = useState<Premio | null>(null);
     const [premioForm, setPremioForm] = useState<PremioForm>(emptyPremioForm());
@@ -135,7 +135,7 @@ export default function PromosWebPage() {
     const [ruletaLoading, setRuletaLoading] = useState(false);
     const [ruletaSaving, setRuletaSaving] = useState(false);
     const [ruletaCopied, setRuletaCopied] = useState(false);
-    const [ruletaForm, setRuletaForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Girá y ganá! 🎡", short_code: "", activa: true });
+    const [ruletaForm, setRuletaForm] = useState({ nombre: "", whatsapp_negocio: "", subtitulo_logo: "¡Girá y ganá! 🎡", short_code: "", activa: true, whatsapp_emojis: "🎡🎉" });
     const [showSliceModal, setShowSliceModal] = useState(false);
     const [editingSlice, setEditingSlice] = useState<RuletaSlice | null>(null);
     const [sliceForm, setSliceForm] = useState<SliceForm>(emptySliceForm());
@@ -149,7 +149,14 @@ export default function PromosWebPage() {
             if (list.length > 0) {
                 const p = list[0];
                 setSelectedSorteo(p);
-                setPromoForm({ nombre: p.nombre, whatsapp_negocio: p.whatsapp_negocio, subtitulo_logo: p.subtitulo_logo || "¡Tu mejor versión! ✨", short_code: p.short_code || "", activa: p.activa });
+                setPromoForm({
+                    nombre: p.nombre,
+                    whatsapp_negocio: p.whatsapp_negocio,
+                    subtitulo_logo: p.subtitulo_logo || "¡Tu mejor versión! ✨",
+                    short_code: p.short_code || "",
+                    activa: p.activa,
+                    whatsapp_emojis: p.whatsapp_emojis || "🎡🎉"
+                });
                 const [premiosList, ganList] = await Promise.all([
                     getPremios(TENANT_ID, p.id),
                     getParticipantes(TENANT_ID, p.id),
@@ -173,7 +180,14 @@ export default function PromosWebPage() {
             if (list.length > 0) {
                 const r = list[0];
                 setSelectedRuleta(r);
-                setRuletaForm({ nombre: r.nombre, whatsapp_negocio: r.whatsapp_negocio, subtitulo_logo: r.subtitulo_logo || "¡Girá y ganá! 🎡", short_code: r.short_code || "", activa: r.activa });
+                setRuletaForm({
+                    nombre: r.nombre,
+                    whatsapp_negocio: r.whatsapp_negocio,
+                    subtitulo_logo: r.subtitulo_logo || "¡Girá y ganá! 🎡",
+                    short_code: r.short_code || "",
+                    activa: r.activa,
+                    whatsapp_emojis: r.whatsapp_emojis || "🎡🎉"
+                });
                 const [slicesList, ganList] = await Promise.all([
                     getRuletaSlices(TENANT_ID, r.id),
                     getParticipantes(TENANT_ID, r.id),
@@ -472,6 +486,10 @@ export default function PromosWebPage() {
                                         <input className="w-full bg-gray-50 rounded-r-xl p-3 text-sm font-medium focus:ring-2 focus:ring-pink-300 outline-none transition-all border border-gray-100" placeholder="ej: mi-sorteo" value={promoForm.short_code} onChange={e => setPromoForm({ ...promoForm, short_code: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} />
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Emojis WhatsApp</label>
+                                    <input className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-pink-300 outline-none transition-all border border-gray-100" placeholder="Ej: 🥳🎉" value={promoForm.whatsapp_emojis} onChange={e => setPromoForm({ ...promoForm, whatsapp_emojis: e.target.value })} />
+                                </div>
                             </div>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">
                                 <button onClick={() => setPromoForm(prev => ({ ...prev, activa: !prev.activa }))} className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${promoForm.activa ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
@@ -624,6 +642,10 @@ export default function PromosWebPage() {
                                                 <span className="bg-gray-100 border border-r-0 border-gray-100 rounded-l-xl px-3 py-3 text-sm text-gray-400">/p/</span>
                                                 <input className="w-full bg-gray-50 rounded-r-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none transition-all border border-gray-100" placeholder="ej: mi-ruleta" value={ruletaForm.short_code} onChange={e => setRuletaForm({ ...ruletaForm, short_code: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} />
                                             </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">Emojis WhatsApp</label>
+                                            <input className="w-full bg-gray-50 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-300 outline-none transition-all border border-gray-100" placeholder="Ej: 🎡✨" value={ruletaForm.whatsapp_emojis} onChange={e => setRuletaForm({ ...ruletaForm, whatsapp_emojis: e.target.value })} />
                                         </div>
                                     </div>
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">

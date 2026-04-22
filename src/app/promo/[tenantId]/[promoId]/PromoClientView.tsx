@@ -131,7 +131,8 @@ export default function PromoClientView({ tenantId, promoId, initialPromo, initi
 
     const handleReclamar = () => {
         if (!premio || !whatsappNegocio) return;
-        const text = encodeURIComponent(`Hola! soy ${nombre.trim()} y me gané ${premio.nombre} 🎉`);
+        const emojis = initialPromo.whatsapp_emojis || "🎉";
+        const text = encodeURIComponent(`Hola! soy ${nombre.trim()} y me gané ${premio.nombre} ${emojis}`);
         const clean = whatsappNegocio.replace(/\D/g, "");
         window.open(`https://wa.me/${clean}?text=${text}`, "_blank");
     };
