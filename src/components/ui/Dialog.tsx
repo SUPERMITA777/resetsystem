@@ -40,3 +40,7 @@ export function DialogTitle({ children, className = "" }: { children: React.Reac
 export function DialogFooter({ children, className = "" }: { children: React.ReactNode; className?: string }) {
     return <div className={`p-6 pt-2 bg-gray-50/50 flex justify-end gap-2 ${className}`}>{children}</div>;
 }
+
+export function DialogDescription({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+    return <p className={`text-sm text-gray-500 ${className}`}>{children}</p>;
+}
