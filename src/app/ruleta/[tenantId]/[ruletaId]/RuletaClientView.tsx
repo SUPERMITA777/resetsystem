@@ -919,6 +919,20 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                                     Se abrirá WhatsApp con el mensaje de tu premio.<br />
                                     ¡Envialo para hacerlo válido! 🎁
                                 </p>
+
+                                {/* Instagram inside modal to ensure it's below the button */}
+                                {instagramHandle && instagramUrl && (
+                                    <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="ig-footer" style={{ marginTop: "16px" }}>
+                                        <div className="ig-chip">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                <rect x="2" y="2" width="20" height="20" rx="5" stroke="rgba(196,181,253,0.8)" strokeWidth="2" />
+                                                <circle cx="12" cy="12" r="4" stroke="rgba(196,181,253,0.8)" strokeWidth="2" />
+                                                <circle cx="17.5" cy="6.5" r="1" fill="rgba(196,181,253,0.8)" />
+                                            </svg>
+                                            <span className="ig-handle">{instagramHandle}</span>
+                                        </div>
+                                    </a>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1014,8 +1028,8 @@ export default function RuletaClientView({ tenantId, ruletaId, initialPromo, ini
                     )}
                 </div>
 
-                {/* Instagram Footer */}
-                {instagramHandle && instagramUrl && (
+                {/* Instagram Footer - Only show if modal is NOT active */}
+                {stage !== "prize" && instagramHandle && instagramUrl && (
                     <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="ig-footer">
                         <div className="ig-chip">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
